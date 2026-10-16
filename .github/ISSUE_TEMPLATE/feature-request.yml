@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest a new feature or a change to an existing feature.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What problem should this solve?
+      description: Explain who needs it and when.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Proposed change
+      description: Describe what the user should be able to do.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Related scope and completion checks
+      description: Add any related R01-R48 IDs and explain how to check the result. A request does not change the agreed scope.

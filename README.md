@@ -23,3 +23,7 @@ The four [user-needs files](docs/product-description.md#user-needs) explain requ
 - Update the scope and affected references together when the team changes a decision.
 
 Data source: [Consumer Council Online Price Watch](https://data.gov.hk/en-data/dataset/cc-pricewatch-pricewatch).
+
+---
+
+Setup & run instructions: [docs/SETUP.md](docs/SETUP.md)
