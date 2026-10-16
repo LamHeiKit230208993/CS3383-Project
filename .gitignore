@@ -1,2 +1,6 @@
 # OpenCode
 opencode.json
+
+# Build output
+target/
+*.class
