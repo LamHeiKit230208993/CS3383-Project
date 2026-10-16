@@ -1,0 +1,25 @@
+name: Documentation update
+description: Report unclear, incorrect, or missing project information.
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: location
+    attributes:
+      label: Affected documents
+      description: Give file paths, section names, or links.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What needs correction?
+      description: Explain what is unclear, incorrect, missing, or inconsistent.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected update and completion checks
+      description: Describe the needed change and how to check it. Include related R01-R48 IDs when useful.
+    validations:
+      required: true
