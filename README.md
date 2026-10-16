@@ -4,3 +4,7 @@ base app idea:
 - help user get best deal
 - ai agent chat
 - etc.
+
+---
+
+Setup & run instructions: [docs/SETUP.md](docs/SETUP.md)
