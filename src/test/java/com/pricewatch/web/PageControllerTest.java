@@ -42,4 +42,12 @@ class PageControllerTest {
                 .andExpect(content().string(containsString("<a class=\"compare\"")))
                 .andExpect(content().string(containsString("href=\"/history\"")));
     }
+
+    @Test
+    void pagesLabelSampleDataAndLinkToHistory() throws Exception {
+        mockMvc.perform(get("/list"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Sample data")))
+                .andExpect(content().string(containsString("href=\"/history\"")));
+    }
 }

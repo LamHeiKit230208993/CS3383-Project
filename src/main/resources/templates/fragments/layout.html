@@ -16,6 +16,7 @@
   </a>
 
   <div th:fragment="header(tag)">
+    <div class="sample">Sample data — demo prices &amp; dates, not real market data</div>
     <div class="header">
       <div th:replace="~{fragments/layout :: brand}"></div>
       <div class="page">
@@ -31,13 +32,13 @@
   <div class="nav" th:fragment="nav(active)">
     <div th:replace="~{fragments/layout :: brand}"></div>
       <div class="nav-links">
-        <a class="item" th:classappend="${active == 'search'} ? 'active'" th:href="@{/search}">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <span class="lbl">Search</span>
-        </a>
         <a class="item" th:classappend="${active == 'alerts'} ? 'active'" th:href="@{/alerts}">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
           <span class="lbl">Alerts</span>
+        </a>
+        <a class="item" th:classappend="${active == 'history'} ? 'active'" th:href="@{/history}">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.7 2.8L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+          <span class="lbl">History</span>
         </a>
         <a class="cta" th:href="@{/assistant}">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
