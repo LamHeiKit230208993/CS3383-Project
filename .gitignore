@@ -1,5 +1,6 @@
 # OpenCode
 opencode.json
+.opencode/
 
 # Build output
 target/
