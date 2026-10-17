@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Market Desk · PriceWatch</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232854ce'/%3E%3Ctext x='5' y='25' fill='white' font-family='sans-serif' font-size='28' font-weight='bold'%3Em%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" th:href="@{/css/market-desk.css}">
+  <script th:src="@{/js/market-desk.js}" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h.01M3 12h.01M3 19h.01"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 11h8M8 15h5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="m3 3 2 2 3 12h11l2-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></symbol>
+</svg>
+<div class="workspace">
+  <aside class="sidebar">
+    <a class="wordmark" href="#discover" aria-label="Market Desk home"><span class="brand-mark">m<span>.</span></span><span>market desk<small>BY PRICEWATCH</small></span></a>
+    <div class="sidebar-label">YOUR SHOPPING SPACE</div>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="#discover" data-nav="discover" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="discover">Discover</span></a>
+      <a href="#list" data-nav="list"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="list">My list</span><span class="nav-count" data-list-count>3</span></a>
+      <a href="#saved" data-nav="saved"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg><span data-i18n="saved">Saved</span></a>
+      <a href="#updates" data-nav="updates"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="updates">Updates</span><span class="nav-dot" aria-label="Sample updates available"></span></a>
+      <a href="#assistant" data-nav="assistant"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span data-i18n="assistant">Ask</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-note"><span class="local-dot"></span><div>Your space. Your choices.<small>One local user · no sign-in</small></div></div>
+      <button class="settings-button" type="button" data-open-settings><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Display &amp; settings</button>
+      <span class="version-note">MARKET DESK / JOHN’S UI VERSION</span>
+    </div>
+  </aside>
+  <div class="workspace-body">
+    <div class="prototype-banner"><span class="prototype-tag">UI prototype</span><span>Sample data · prices, dates &amp; quantities are made up</span><span class="banner-tail">Nothing is saved after reload</span></div>
+    <header class="topbar">
+      <a class="mobile-brand" href="#discover">market desk<span>.</span></a>
+      <div class="breadcrumb">Your workspace <span>/</span> <strong id="breadcrumb-label">Discover</strong></div>
+      <div class="topbar-actions"><span class="demo-pill"><span></span>Demo workspace</span><button type="button" class="icon-button" data-open-settings aria-label="Open display and settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></button></div>
+    </header>
+    <main id="main-content" tabindex="-1">
+      <section id="scene-discover" class="scene" aria-labelledby="discover-heading">
+        <div class="page-heading"><div><p class="eyebrow">LESS CHECKING. BETTER CHOICES.</p><h1 id="discover-heading" tabindex="-1" data-i18n="discoverTitle">Everyday essentials.<br>A better way to shop.</h1><p class="intro">Compare listed prices. Plan your basket. Keep it simple.</p></div><span class="heading-note"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>Daily price data, when connected</span></div>
+        <div class="discovery-layout">
+          <div class="discovery-main">
+            <form id="search-form" class="search-box" role="search">
+              <label class="sr-only" for="product-search">Search sample products, brands, or categories</label>
+              <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+              <input id="product-search" name="query" type="search" autocomplete="off" placeholder="Try milk, rice, or a brand…">
+              <button type="submit" class="button primary">Search<span class="sr-only"> sample products</span></button>
+            </form>
+            <div class="filter-row" role="group" aria-label="Filter sample products">
+              <button type="button" class="filter active" data-category="all" aria-pressed="true">All essentials</button><button type="button" class="filter" data-category="dairy" aria-pressed="false">Dairy &amp; eggs</button><button type="button" class="filter" data-category="pantry" aria-pressed="false">Pantry</button><button type="button" class="filter" data-category="household" aria-pressed="false">Household</button>
+            </div>
+            <div class="section-heading"><h2>Small things. Real-life needs.</h2><span id="result-count" aria-live="polite">6 sample products</span></div>
+            <div id="product-grid" class="product-grid"></div>
+            <div id="search-empty" class="empty-state" hidden><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><h2>No sample products found</h2><p>Try “milk”, “rice”, or “oats”, or choose another category.</p><button type="button" class="button secondary" id="clear-search">Clear search</button></div>
+            <div class="source-note"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><p><strong>Know what you are comparing.</strong> Same product, same pack. Listed prices only; delivery and stock are not included.</p></div>
+          </div>
+          <aside class="basket-preview" aria-labelledby="basket-preview-heading"><div class="preview-top"><span class="eyebrow">A LITTLE PLANNING GOES A LONG WAY</span><svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg></div><h2 id="basket-preview-heading">This week’s basket</h2><p>Your essentials, all in one place.</p><div id="basket-preview-items"></div><div class="preview-total"><span>Estimated list cost</span><strong data-basket-total>HK$147.70</strong></div><div class="budget-meter"><span>Sample weekly budget</span><strong>HK$250.00</strong><meter id="preview-budget" aria-label="Estimated list cost against sample weekly budget" min="0" max="250" value="147.7">147.70 of 250</meter><small id="budget-remaining">HK$102.30 left in your plan</small></div><a class="button primary full" href="#list">Review my list<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><p class="preview-footnote">A shopping plan, not a purchase record.</p></aside>
+        </div>
+      </section>
+      <section id="scene-compare" class="scene" hidden aria-labelledby="compare-heading">
+        <a class="back-link" href="#discover">← Back to discover</a>
+        <div class="page-heading"><div><p class="eyebrow">ONE PRODUCT. A CLEAR COMPARISON.</p><h1 id="compare-heading" tabindex="-1">Compare listed prices</h1><p class="intro">Check the pack and offer conditions before you choose.</p></div></div>
+        <div id="comparison-content"></div>
+        <div class="panel history-panel"><div class="section-heading"><div><p class="eyebrow">SAMPLE TRACKING VIEW</p><h2>Price history</h2></div><label class="compact-field" for="history-period">Show<select id="history-period" name="historyPeriod"><option value="sample">7 recorded days</option><option value="empty">Not enough history</option></select></label></div><div id="history-content"></div></div>
+      </section>
+      <section id="scene-list" class="scene" hidden aria-labelledby="list-heading">
+        <div class="page-heading"><div><p class="eyebrow">READY WHEN YOU ARE</p><h1 id="list-heading" tabindex="-1" data-i18n="listTitle">Your next shop, sorted.</h1><p class="intro">A simple list for a less scattered shopping trip.</p></div><a class="button primary" href="#discover"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add an item</a></div>
+        <div class="list-layout"><div class="panel"><div class="panel-heading"><div><h2>Weekly essentials</h2><p id="list-progress">3 products · 0 checked</p></div><span class="small-tag">Sample list</span></div><div id="shopping-list"></div><div class="list-bottom-note">Checking an item changes this demo list only. It does not record a purchase.</div></div><aside class="panel list-summary"><p class="eyebrow">YOUR PLAN AT A GLANCE</p><h2>Basket summary</h2><div class="summary-row"><span>Estimated list cost</span><strong data-basket-total>HK$147.70</strong></div><div class="summary-row"><span>Sample budget</span><strong>HK$250.00</strong></div><p class="helper">Items may come from different retailers. Delivery costs and stock are not checked.</p><hr><h3>Planned cost by category</h3><div id="category-summary"></div><div class="soft-callout">Review your saved list without a connection in the later baseline. This UI prototype does not save an offline copy.</div></aside></div>
+      </section>
+      <section id="scene-saved" class="scene" hidden aria-labelledby="saved-heading">
+        <div class="page-heading"><div><p class="eyebrow">KEEP THE USEFUL THINGS CLOSE</p><h1 id="saved-heading" tabindex="-1" data-i18n="savedTitle">Saved for another day.</h1><p class="intro">Saving is a bookmark. Tracking is a separate choice.</p></div></div>
+        <div class="section-heading"><h2>Your wishlist</h2><span>Sample selections</span></div><div id="saved-products" class="product-grid saved-grid"></div>
+        <div class="panel tracking-panel"><div class="section-heading"><h2>Items you are tracking</h2><a href="#updates">Manage sample alerts →</a></div><div id="tracked-products"></div><p class="helper">Only selected products collect history in the baseline. This prototype uses made-up records.</p></div>
+      </section>
+      <section id="scene-updates" class="scene" hidden aria-labelledby="updates-heading">
+        <div class="page-heading"><div><p class="eyebrow">FEWER PINGS. MORE USEFUL INFORMATION.</p><h1 id="updates-heading" tabindex="-1" data-i18n="updatesTitle">A little heads-up.</h1><p class="intro">Sample alerts and reminders for the active app.</p></div><span class="small-tag">In-app only</span></div>
+        <div class="digest-card"><div class="digest-icon"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg></div><div><p class="eyebrow">MORNING SUMMARY · SAMPLE</p><h2>Your planned shop, in a minute.</h2><p>Milk meets the sample target. Your basket is within its sample budget. Rice is due for review.</p><small>Example only · no notification was sent</small></div></div>
+        <div class="two-column"><section class="panel"><div class="panel-heading"><h2>Price alerts</h2><span class="small-tag">Two separate rules</span></div><form id="alert-form" class="settings-form"><label for="alert-product">Sample product<select id="alert-product" name="alertProduct"><option value="milk">Fresh milk · 946 mL</option><option value="rice">Jasmine rice · 5 kg</option></select></label><label for="alert-kind">Alert rule<select id="alert-kind" name="alertKind"><option value="target">At or below a target price</option><option value="drop">Drop from an earlier listed price</option></select></label><label for="alert-value" id="alert-value-label">Target price (HKD)<input id="alert-value" name="alertValue" type="number" inputmode="decimal" autocomplete="off" min="0.01" step="0.01" value="24.00" required></label><p class="helper" id="alert-rule-help">A target check needs one current price. This rule is a sample UI choice.</p><button type="submit" class="button primary">Preview sample alert</button><p class="form-status" id="alert-status" aria-live="polite"></p></form></section><section class="panel"><div class="panel-heading"><h2>Re-buy reminder</h2><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></div><form id="reminder-form" class="settings-form"><label for="reminder-product">Sample product<select id="reminder-product" name="reminderProduct"><option value="rice">Jasmine rice · 5 kg</option><option value="milk">Fresh milk · 946 mL</option></select></label><label for="reminder-days">Remind after (days)<input id="reminder-days" name="reminderDays" type="number" inputmode="numeric" autocomplete="off" min="1" max="365" value="14" required></label><p class="helper">You set the interval. Price data cannot tell when your household will run out.</p><button class="button secondary" type="submit">Preview reminder</button><div class="button-row"><button class="text-button" id="reminder-add" type="button">Add item to list</button><button class="text-button" id="reminder-snooze" type="button">Snooze sample</button></div><p class="form-status" id="reminder-status" aria-live="polite"></p></form></section></div>
+        <section class="panel quiet-panel"><div><h2>Quiet hours</h2><p class="helper">A preview of your alert preferences. No background messages are sent.</p></div><label class="check-label"><input id="quiet-hours" name="quietHours" type="checkbox" checked>Quiet between 23:00 and 07:00</label><label class="check-label"><input id="repeat-alerts" name="repeatAlerts" type="checkbox" checked>Avoid repeated alerts for the same price</label></section>
+      </section>
+      <section id="scene-assistant" class="scene" hidden aria-labelledby="assistant-heading">
+        <div class="page-heading"><div><p class="eyebrow">A SHORTER WAY TO A CLEAR ANSWER</p><h1 id="assistant-heading" tabindex="-1" data-i18n="assistantTitle">Ask. Compare. Decide.</h1><p class="intro">A sample conversation, with the facts kept in view.</p></div><span class="small-tag">Scripted demo · no AI connected</span></div>
+        <div class="assistant-layout"><section class="panel chat-panel" aria-label="Sample conversation"><div class="chat-feed" id="chat-feed" aria-live="polite"><div class="chat-message user-message"><span class="chat-label">You · sample</span><p>Where can I get this 946 mL milk for less?</p></div><div class="chat-message answer-message"><span class="chat-label">Price assistant · scripted example</span><p><strong>AEON has the lowest sample listed price: HK$22.90.</strong></p><p>That is HK$2.00 below WELLCOME for the same demo pack. Delivery and stock are not included.</p><a href="#compare/milk" class="answer-link">See the sample comparison →</a></div></div><div class="chat-chips"><button type="button" class="filter" data-chat-prompt="Compare rice">Compare rice</button><button type="button" class="filter" data-chat-prompt="What does tracking mean?">What is tracking?</button></div><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-question">Ask a sample price question</label><input id="chat-question" name="question" autocomplete="off" maxlength="300" placeholder="Ask about the sample products…" required><button type="submit" class="button primary" aria-label="Send sample question"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></form><p class="helper chat-footnote">Replies are scripted from the demo catalogue. No message leaves this page.</p></section><aside class="assistant-note"><span class="assistant-emblem"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg></span><h2>A helpful answer shows its work.</h2><p>The product. The pack. The retailer. The listed price.</p><ul><li>Clear when a product is uncertain</li><li>No invented savings or stock claims</li><li>No prediction of tomorrow’s price</li></ul><span class="small-tag">Designed for checked results</span></aside></div>
+      </section>
+      <footer class="page-footer"><span>Thoughtful shopping, one list at a time.</span><span>Market Desk · sample UI by John</span></footer>
+    </main>
+  </div>
+</div>
+<dialog id="quantity-dialog" aria-labelledby="quantity-heading"><form id="quantity-form"><div class="dialog-heading"><div><p class="eyebrow">MAKE ROOM IN YOUR LIST</p><h2 id="quantity-heading">Add an item</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close add-item dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div><div id="quantity-product" class="dialog-product"></div><label for="item-quantity">Quantity (packs)</label><input id="item-quantity" name="quantity" type="number" inputmode="numeric" autocomplete="off" min="1" max="12" step="1" value="1" required aria-describedby="quantity-help"><p id="quantity-help" class="helper">Choose 1–12 packs for this sample list. This is not an order.</p><button class="button primary full" type="submit">Add to sample list<svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></form></dialog>
+<dialog id="settings-dialog" aria-labelledby="settings-heading"><div class="dialog-heading"><div><p class="eyebrow">MAKE IT COMFORTABLE</p><h2 id="settings-heading">Display &amp; settings</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close settings"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div><div class="settings-form"><label for="display-language">Language preview<select id="display-language" name="language"><option value="en">English</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option></select></label><p class="helper">Preview navigation, headings, and sample product names. Other prototype text stays in English.</p><label class="check-label"><input id="high-contrast" name="highContrast" type="checkbox">High-contrast display</label><hr><h3>Your demo data</h3><p class="helper">Selections live in this page only. Reloading resets the demo. Nothing is sent, saved, or purchased.</p><button class="button secondary" type="button" id="reset-demo">Reset demo selections</button></div></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<noscript><p class="noscript-note">Enable JavaScript to use this sample UI. No price or AI service is connected.</p></noscript>
+</body>
+</html>

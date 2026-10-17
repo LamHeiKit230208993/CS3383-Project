@@ -1,27 +1,28 @@
-# TC-WEB-001 — Root page renders Hello view
+# TC-WEB-001 — Root page renders Market Desk
 
 | Field | Details |
 |---|---|
 | Test class | `HelloControllerTest` |
-| Test method | `rootReturnsHelloViewWithMessage()` |
+| Test method | `rootReturnsMarketDeskView()` |
 | Type | Spring MVC slice test |
 | Request | `GET /` |
 | Setup | `@WebMvcTest(HelloController.class)` with `MockMvc` |
 
 ## Purpose
 
-Verify the root endpoint selects the expected view and supplies its greeting.
+Verify the root endpoint selects the Market Desk view and renders its title.
 
 ## Steps
 
 1. Send `GET /` through `MockMvc`.
-2. Check the response status, view, and model.
+2. Check the response status, view, content type, and browser title.
 
 ## Expected result
 
 - HTTP status is `200 OK`.
-- View name is `hello`.
-- Model attribute `message` is `Hello, World!`.
+- View name is `market-desk`.
+- Content type is compatible with `text/html`.
+- The page title is `Market Desk · PriceWatch`.
 
 ## Review notes
 
