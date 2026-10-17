@@ -91,7 +91,10 @@ First run downloads all dependencies (can take a few minutes). When you see `Sta
 http://localhost:8080
 ```
 
-You should see the page render **"Hello, World!"**.
+You should see the **Market Desk** UI prototype. Use the navigation to try the
+sample shopping flows. All data is made up, and changes reset on reload.
+There is no separate frontend build or extra frontend dependency to install.
+See [the theme and evaluation notes](Plan/market-desk-theme.md) for the demo scope.
 
 To stop the app, press `Ctrl+C` in the terminal.
 
