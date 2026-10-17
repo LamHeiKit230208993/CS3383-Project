@@ -6,6 +6,10 @@ Status: Current description, aligned with the [project scope](project-scope.md).
 
 Help Hong Kong shoppers compare listed prices for daily goods, track selected items, and plan household shopping.
 
+The app has one local user, with no account, sign-in, or cloud saving. A user can share a shopping list as a link or file. The recipient imports it as a separate local list; later edits do not sync.
+
+Use Spring Boot and save local records across restarts. First reminders and alerts appear inside the active app. Offline mode first allows read-only review of a saved shopping list; it does not fetch prices or call the remote AI.
+
 The course focuses on using AI in software engineering. The app's price chat is one product feature. This document defines the product, not the development workflow.
 
 ## Users
@@ -23,10 +27,12 @@ The four [user-needs files](#user-needs) contain requests generated through AI r
 | Retailer | A store company. It does not identify an individual branch. |
 | Listed price | The price shown in a source record; delivery cost and stock may be unknown. |
 | Tracked item | An item the user explicitly adds for tracking. Features marked ! apply only to these items. |
-| Wishlist item | An item the user saves. Whether saving also starts tracking is still open. |
+| Wishlist item | An item the user saves. Saving alone does not start tracking or record a purchase. |
 | Shopping-list item | A product and quantity the user plans to buy. It is not proof of a purchase. |
+| Shared list copy | An exported list that another person can import. Each copy is edited separately. |
 | Purchase entry | A record of an actual purchase, including quantity and amount paid. The entry method is still open. |
 | Price history | Dated price records. The chart can only cover the dates available. |
+| Latest catalogue | The most recently accepted product and retailer price records, used for search. This is separate from selected products' older history. |
 | Target-price alert | A message when a current price meets the user's chosen limit. |
 | Price-drop alert | A message when a current price falls relative to a stated earlier price. |
 

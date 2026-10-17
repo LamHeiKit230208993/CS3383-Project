@@ -4,6 +4,10 @@ Updated: 17 October 2026.
 
 Status: Reflects the team's manual feature review. Implementation and data checks are not complete.
 
+Team update, 17 October 2026: keep one local user, with no account, sign-in, or cloud saving. R32 shares a list by export and import; it does not require live shared editing.
+
+Baseline update: use Spring Boot with local file storage that survives restart. First alerts and reminders work inside the active app. Offline use first covers read-only saved-list review; live price refresh and remote chat stay off. Save history for selected products first; all-product history has not been measured or proved impossible.
+
 This is the main record of feature decisions. The [feasibility review](feasibility-review-simple.md) records data limits. The [product description](product-description.md) defines shared terms. Earlier suggestions do not override this scope.
 
 ## 1. How to read the decisions
@@ -12,7 +16,7 @@ This is the main record of feature decisions. The [feasibility review](feasibili
 |---|---|
 | + | Build this feature. Keep the stated technical limits. |
 | # or ex | Future consideration only. It may not be built. |
-| ! | Applies only to items the app user adds for tracking. Keep the emoji's condition. |
+| ! | Applies only to items the app user adds for tracking. Keep the emoji's condition. History-dependent features also need dated records; the mark alone does not require a long history. |
 | Unmarked ✅ | Include the feature. |
 | Unmarked ❌ | Exclude the feature. |
 | Unmarked ⚠️ | Conditional: keep the stated limits and resolve the required information before committing to unsupported behaviour. |
@@ -50,7 +54,7 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 | ID | Feature | Original mark | Decision and boundary |
 |---|---|---|---|
 | R15 | Ask a price question and receive a recommendation with a reason | ⚠️ + | Build. Answer from checked records; identify product, pack, retailer, and listed price. Explain ties or missing data. |
-| R16 | Buy-now or wait advice | ⚠️ | Conditional. Historical comparison is possible with records. A future-price claim needs a defined method and separate tests. |
+| R16 | Buy-now or wait advice | ⚠️ | Conditional. First explain historical differences where records support them. Future-price prediction is not part of the first baseline; it needs a defined method and separate tests. |
 | R17 | Bulk-buy advice based on storage space | ❌ | Excluded. Pack, quantity, and household information are not established. |
 | R18 | Clarify an unclear request; use past purchases where available | ⚠️ + | Build. Ask for a product choice when unclear. Past-purchase defaults need recorded purchases; saved items are not proof of purchases. |
 | R19 | Voice input and answers within five seconds | ⚠️ ex | Future consideration. Neither voice nor this response-time target is a current commitment. |
@@ -60,12 +64,12 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 
 | ID | Feature | Original mark | Decision and boundary |
 |---|---|---|---|
-| R21 | Target-price alerts and price-drop alerts | ⚠️ + | Build as two checks. A target needs a current price; a drop needs an earlier price. Check after valid daily updates. |
+| R21 | Target-price alerts and price-drop alerts | ⚠️ + | Build as two checks inside the active app first. A target needs a current price; a drop needs an earlier price for the same product/retailer. Check after valid updates while the app is running. |
 | R22 | Amount or percentage change thresholds | ⚠️ ! | Tracked; conditional on a stated comparison price. A percentage change is not a verified store discount. |
 | R23 | Quiet hours, prevention of repeated alerts, and snooze | ✅ + | Build. Define when a repeated price or a new tracking period can trigger another alert. |
 | R24 | Different notification channels | ⚠️ | Conditional. Choose and test the channels; daily data does not support live flash-sale alerts. |
 | R25 | Alerts near a store branch | ❌ # | Future consideration. Branch location data is not established. |
-| R26 | Morning summary | ✅ + | Build. Agree which items it covers, its delivery channel, and its time. |
+| R26 | Morning summary | ✅ + | Build inside the active app first. Agree which items it covers, its time, and what happens if the app was closed at that time. |
 
 ## 6. Lists and spending
 
@@ -76,19 +80,19 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 | R29 | Track changes in a fixed shopping-list cost | ⚠️ | Conditional on comparable dated records. Keep items and quantities fixed. This is not a measure of general inflation. |
 | R30 | Weekly/monthly budgets, totals, and warnings | ✅ + | Build. Label planned cost separately from actual spending. Actual spending needs purchase entries. |
 | R31 | Spending by category | ✅ + | Build. State whether the chart uses planned cost or recorded purchases. |
-| R32 | Shared lists, updates, and handoff between shoppers | ✅ + | Build. Define access, simultaneous edits, and who is shopping. |
+| R32 | Share a shopping list by export and import | ✅ + | Build. Export a chosen list as a link or file that another local app can import as a separate list. No account, cloud saving, live sync, or automatic merge of later edits. |
 | R33 | Flag larger packs as better value | ❌ | Excluded. This depends on unit-price comparison. |
 
 ## 7. Reminders and saved items
 
 | ID | Feature | Original mark | Decision and boundary |
 |---|---|---|---|
-| R34 | Reminders based on use | ✅ + | Build. Obtain a user-set use rate or interval; price data cannot show household consumption. |
+| R34 | Reminders based on use | ✅ + | Build inside the active app first. Obtain a user-set use rate or interval; price data cannot show household consumption. Background device/cloud delivery is future work. |
 | R35 | Buy-now or wait advice in reminders | ⚠️ ! | Tracked; conditional. Apply R16's evidence limits. This does not create a separate permission to predict prices. |
 | R36 | Add a reminder item to a list with a listed-price comparison | ✅ + | Build. Keep the chosen product and quantity clear. |
 | R37 | Clear or snooze a reminder | ✅ + | Build. Define the next reminder date after each action. |
 | R38 | Link to a purchase page | ⚠️ | Conditional. A verified retailer link is possible; an item page needs a verified item URL. No checkout is implied. |
-| R39 | Save to a wishlist | ✅ + | Build. Define its relation to the tracked-items list; saving does not record a purchase. |
+| R39 | Save to a wishlist | ✅ + | Build. Saving alone does not start tracking or record a purchase. Use an explicit tracking choice. |
 | R40 | Share a result to WhatsApp; copy a coupon code | ⚠️ | Conditional, with separate actions. Sharing needs a usable result. Copying a coupon needs an actual code from a checked source. |
 | R41 | Online-only, in-store-only, or member-only eligibility labels | ❌ | Excluded. No reliable structured source has been established. |
 | R42 | Buy inside the app or get a walking route | ⚠️ # | Future consideration. Needs store checkout support or branch/map data. |
@@ -99,10 +103,10 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 |---|---|---|---|
 | R43 | Money saved this month | ⚠️ | Conditional. Actual savings need purchases and a stated comparison price. Otherwise show an estimated price difference. |
 | R44 | Price change since last week/month | ⚠️ | Conditional on comparable dated records. Show gaps and the dates used. |
-| R45 | View, export, and delete stored personal data | ✅ + | Build. Define which records belong to each user, including shared-list records. |
+| R45 | View, export, and delete stored personal data | ✅ + | Build for the local user's records. List sharing exports only the chosen list. Deleting local data cannot remove copies already sent to another person. |
 | R46 | English, Traditional Chinese, and Simplified Chinese | ✅ + | Build. Cover app text and product display; check search behaviour in each language. |
 | R47 | High-contrast, easy-to-read mode | ✅ + | Build. Check readable text, clear controls, and meaning that does not rely only on colour. |
-| R48 | Offline use of saved data | ✅ + | Build. Show the saved data's age. Decide separately whether offline editing is supported. |
+| R48 | Offline use of saved data | ✅ + | Build read-only saved shopping-list review first, on the device where the list was saved. Show saved-data age; disable live price refresh and remote chat. Offline editing is later work. |
 
 ## 9. Rules for every included feature
 
