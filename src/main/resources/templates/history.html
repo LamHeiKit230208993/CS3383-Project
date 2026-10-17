@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History · PriceWatch</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+  <div class="app">
+    <div class="main">
+    <div th:insert="~{fragments/layout :: header('Price history')}"></div>
+
+    <div class="scroll">
+      <div class="compare">
+        <div class="cat">Dairy &amp; Eggs</div>
+        <div class="name">Fresh Milk 946ml</div>
+        <div class="brand">Garden · tracked for 30 days</div>
+
+        <div class="hist-bars" style="margin-top:16px">
+          <div class="hist-bar" style="height:55%"><span class="v">$42</span></div>
+          <div class="hist-bar" style="height:62%"><span class="v">$43</span></div>
+          <div class="hist-bar" style="height:50%"><span class="v">$41</span></div>
+          <div class="hist-bar" style="height:70%"><span class="v">$45</span></div>
+          <div class="hist-bar" style="height:64%"><span class="v">$44</span></div>
+          <div class="hist-bar" style="height:48%"><span class="v">$41</span></div>
+          <div class="hist-bar hi" style="height:34%"><span class="v">$40</span></div>
+        </div>
+        <div class="hist-axis"><span>30 days ago</span><span>Today</span></div>
+      </div>
+
+      <div class="saved">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f7a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg>
+        <div class="txt">Price down <b>$5.00</b> since 30 days ago.<span class="sub">Chart covers only the dates we have — historical price does not predict the future.</span></div>
+      </div>
+
+      <div class="setting" style="margin-top:16px">
+        <div class="s-body">
+          <div class="s-title">Data source</div>
+          <div class="s-sub">Consumer Council · updated today</div>
+        </div>
+      </div>
+
+      <div class="section" style="margin-top:16px">
+        <h2>Buy now or wait?</h2>
+      </div>
+      <div class="saved" style="margin-top:0">
+        <div class="txt">Price is at its lowest in 30 days — <b>a reasonable time to buy</b>.<span class="sub">Based on tracked history; not a price prediction.</span></div>
+      </div>
+    </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: nav('')}"></div>
+  </div>
+</body>
+</html>

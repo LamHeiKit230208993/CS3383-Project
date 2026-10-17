@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PriceWatch — AI Assistant Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary:       #2563EB;   /* family blue */
+    --primary-dark:  #1d4ed8;
+    --primary-light: #e8f0fe;
+    --green:         #059669;   /* chore green — best deal */
+    --green-light:   #e6f6f1;
+    --amber:         #D97706;   /* savings accent */
+    --amber-light:   #fdf3e3;
+    --bg:            #F8FAFC;
+    --surface:       #FFFFFF;
+    --text:          #0F172A;
+    --muted:         #475569;
+    --muted-2:       #64748B;
+    --line:          #E2E8F0;
+    --danger:        #DC2626;
+    --radius:        16px;
+    --radius-sm:     12px;
+    --shadow:        0 1px 3px rgba(15,23,42,.08);
+    --safe-top:      10px;
+  }
+
+  body {
+    font-family: "Nunito Sans", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", sans-serif;
+    background: #dbe2e8;
+    color: var(--text);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 28px 16px;
+  }
+
+  .caption {
+    color: #4b5a68; font-size: 13px; line-height: 1.5;
+    max-width: 420px; text-align: center; margin-bottom: 20px;
+  }
+  .caption strong { color: #1e293b; }
+
+  /* ===== PHONE ===== */
+  .phone {
+    width: 390px; max-width: 100%; height: 800px;
+    background: var(--bg);
+    border-radius: 42px;
+    border: 10px solid #1f2937;
+    box-shadow: 0 24px 60px rgba(15,23,42,.28);
+    overflow: hidden; display: flex; flex-direction: column;
+    position: relative;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 140px; height: 28px; background: #1f2937;
+    border-radius: 0 0 18px 18px; z-index: 6;
+  }
+
+  /* ===== STATUS BAR ===== */
+  .status {
+    padding: 12px 22px 4px; display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; font-weight: 700; color: #1f2937; background: var(--bg);
+  }
+  .status .sig { letter-spacing: 1px; font-size: 11px; }
+
+  /* ===== HEADER ===== */
+  .header {
+    padding: 8px 16px 12px; display: flex; align-items: center; gap: 12px;
+    background: var(--bg);
+  }
+  .header .avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--green));
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    box-shadow: var(--shadow); flex-shrink: 0;
+  }
+  .header .who { flex: 1; }
+  .header .who .name { font-size: 16px; font-weight: 800; }
+  .header .who .status-line { font-size: 12px; color: var(--green); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .header .who .status-line .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .header .more { width: 38px; height: 38px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--muted); }
+
+  /* ===== SCROLL ===== */
+  .scroll { flex: 1; overflow-y: auto; padding: 4px 16px 16px; }
+
+  /* ===== DATE DIVIDER ===== */
+  .day { text-align: center; font-size: 11px; color: var(--muted-2); font-weight: 600; margin: 8px 0 14px; }
+
+  /* ===== CHAT BUBBLES ===== */
+  .row { display: flex; margin-bottom: 12px; }
+  .row.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 82%; padding: 12px 15px; font-size: 14.5px; line-height: 1.5;
+    border-radius: var(--radius); word-wrap: break-word;
+  }
+  .row.user .bubble {
+    background: var(--primary); color: #fff;
+    border-bottom-right-radius: 5px;
+  }
+  .row.ai .bubble {
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--line); border-bottom-left-radius: 5px;
+    box-shadow: var(--shadow);
+  }
+  .row.ai { align-items: flex-start; gap: 9px; }
+  .row.ai .bot-ico {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary), var(--green));
+    display: flex; align-items: center; justify-content: center; color: #fff; margin-top: 2px;
+  }
+  .bubble .b { font-weight: 800; }
+  .bubble .muted { color: var(--muted); font-size: 12.5px; }
+
+  /* ===== CARD INSIDE BUBBLE ===== */
+  .result {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 12px; margin-top: 10px;
+  }
+  .result .label { font-size: 11px; color: var(--muted-2); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+  .store-line { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .store-line + .store-line { border-top: 1px solid var(--line); }
+  .store-line .logo {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #fff;
+  }
+  .store-line .info { flex: 1; }
+  .store-line .name { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .store-line .offer { font-size: 12px; color: var(--amber); font-weight: 600; }
+  .store-line .price { font-size: 16px; font-weight: 800; }
+  .store-line.best { background: var(--green-light); border-radius: 9px; }
+  .store-line.best .price { color: var(--green); }
+
+  .badge {
+    font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 20px;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .badge.best { background: var(--green); color: #fff; }
+
+  /* savings callout */
+  .save {
+    margin-top: 10px; padding: 10px 12px; border-radius: var(--radius-sm);
+    background: var(--amber-light); display: flex; align-items: center; gap: 9px;
+  }
+  .save .ico { color: var(--amber); }
+  .save .txt { font-size: 13px; }
+  .save .txt b { color: var(--amber); font-weight: 800; }
+  .save .txt .sub { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 1px; }
+
+  /* caveat note */
+  .note {
+    margin-top: 10px; font-size: 11.5px; color: var(--muted-2);
+    display: flex; gap: 6px; align-items: flex-start; line-height: 1.45;
+  }
+  .note svg { flex-shrink: 0; margin-top: 1px; }
+
+  /* ===== SUGGESTION CHIPS ===== */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .chip {
+    font-size: 12.5px; font-weight: 700; color: var(--primary-dark);
+    background: var(--primary-light); border-radius: 20px; padding: 8px 13px;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ===== INPUT BAR ===== */
+  .composer {
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding: 10px 14px 20px; display: flex; align-items: flex-end; gap: 9px;
+    position: relative;
+  }
+  .composer .attach {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background: var(--bg); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; color: var(--muted);
+  }
+  .composer .field {
+    flex: 1; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 22px; padding: 10px 15px; font-size: 14px; color: var(--text);
+    display: flex; align-items: center; min-height: 44px;
+  }
+  .composer .field .ph { color: var(--muted-2); }
+  .composer .send {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(37,99,235,.35);
+  }
+
+  /* ===== SVG ICON STYLES ===== */
+  .ico { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+  <p class="caption">
+    <strong>PriceWatch · AI price assistant</strong><br>
+    The differentiator — natural-language "where's cheapest?" with honest, sourced answers.
+    Mobile-first mockup.
+  </p>
+
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- status -->
+    <div class="status">
+      <span>9:41</span>
+      <span class="sig">▂▄▆ ▪ 100%</span>
+    </div>
+
+    <!-- header -->
+    <div class="header">
+      <div class="avatar">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="3.5"/></svg>
+      </div>
+      <div class="who">
+        <div class="name">Price assistant</div>
+        <div class="status-line"><span class="dot"></span> Online · checks Consumer Council data</div>
+      </div>
+      <div class="more">
+        <svg class="ico" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="day">Today</div>
+
+      <!-- user message -->
+      <div class="row user">
+        <div class="bubble">Where's fresh milk cheapest today? I need a 946ml carton.</div>
+      </div>
+
+      <!-- AI reply -->
+      <div class="row ai">
+        <div class="bot-ico">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="3.5"/></svg>
+        </div>
+        <div class="bubble">
+          Cheapest listed price for <span class="b">Garden Fresh Milk 946ml</span> is
+          <span class="b">$40.00</span> at <span class="b">AEON</span> — $5.00 under the next closest.
+
+          <div class="result">
+            <div class="label">Across 9 retailers · lowest first</div>
+
+            <div class="store-line best">
+              <div class="logo" style="background:#d97706">AE</div>
+              <div class="info">
+                <div class="name">AEON <span class="badge best">BEST</span></div>
+                <div class="offer">Buy 2 to save $4.00</div>
+              </div>
+              <div class="price">$40.00</div>
+            </div>
+
+            <div class="store-line">
+              <div class="logo" style="background:#0ea5e9">PK</div>
+              <div class="info">
+                <div class="name">PARKnSHOP</div>
+                <div class="offer">—</div>
+              </div>
+              <div class="price">$45.00</div>
+            </div>
+
+            <div class="store-line">
+              <div class="logo" style="background:#64748b">WL</div>
+              <div class="info">
+                <div class="name">WELLCOME</div>
+                <div class="offer">2 for $14.00</div>
+              </div>
+              <div class="price">$45.50</div>
+            </div>
+          </div>
+
+          <div class="save">
+            <span class="ico" style="color:#D97706">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg>
+            </span>
+            <span class="txt"><b>You'd save $5.00</b> by shopping AEON vs the next cheapest.<span class="sub">Listed prices only — delivery &amp; stock not included.</span></span>
+          </div>
+
+          <div class="note">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+            <span>Based on today's daily snapshot. Prices are listed prices, not a guaranteed checkout price. Want me to track this item?</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- suggestion chips -->
+      <div class="row ai">
+        <div class="bot-ico"></div>
+        <div class="chips">
+          <div class="chip">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/><circle cx="12" cy="12" r="3.5"/></svg>
+            Track milk for price drops
+          </div>
+          <div class="chip">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h8M12 8v8"/></svg>
+            Add to shopping list
+          </div>
+          <div class="chip">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg>
+            Show 30-day history
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- composer -->
+    <div class="composer">
+      <div class="attach">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-9 8.4 8.5 8.5 0 118.3-11.5"/><path d="M16 13l-3 3-3-3"/><path d="M13 16V9"/></svg>
+      </div>
+      <div class="field"><span class="ph">Ask about any product, brand, or category…</span></div>
+      <div class="send">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
