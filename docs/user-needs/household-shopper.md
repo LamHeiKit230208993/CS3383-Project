@@ -32,10 +32,12 @@ One person plans most household shopping, but a partner may do the buying. Fresh
 
 | Request group | Team decision |
 |---|---|
-| Recurring lists, estimates, budgets, categories, shared editing and handoff | Build with stated limits: R27–R28, R30–R32 |
+| Recurring lists, estimates, budgets, categories, and sharing | Build: R27–R28, R30–R32. R32 transfers a list by link or file and imports a separate local copy; live shared editing and handoff are not included. |
 | Use-based reminders, add-to-list, clear, and snooze | Build: R34, R36–R37; the use input and next-date rules remain open |
-| Offline use and personal-data controls | Build: R45, R48; offline editing is not yet defined |
+| Offline use and personal-data controls | Build: R45, R48. First offline use is read-only saved-list review; offline editing is later work. |
 | Basket-cost changes, actual savings, buy/wait advice | Conditional: R29, R43, R16, R35; R35 is tracked-only |
 | Stock checks and bulk/storage advice | Excluded: R07, R17, R33 |
 
 Brand restrictions and household examples explain why substitutions need care. They do not add automatic health or allergy advice to the project.
+
+The requests above retain the household's wishes. The team chose one local user, no account, and no cloud saving. Partners must send a new export to pass later changes; the app does not combine their copies.

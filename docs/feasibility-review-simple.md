@@ -2,7 +2,7 @@
 
 Updated: 17 October 2026.
 
-Status: Document review. Live data and implementation checks remain incomplete.
+Status: One live JSON download and basic field checks completed on 17 October 2026. App implementation checks remain incomplete.
 
 The [project scope](project-scope.md) is the main record of team decisions. This file explains feasibility; it does not add, remove, or defer selected features.
 
@@ -10,7 +10,9 @@ The [project scope](project-scope.md) is the main record of team decisions. This
 
 The planned app is feasible in principle, subject to data checks and clear feature rules. Search, comparison, saved items, lists, and user-set reminders have a clear basis. Chat must use checked price results.
 
-The selected scope also includes budgets, shared lists, three languages, high-contrast display, and offline use. These need real work and testing. They are not optional merely because a small comparison demo can work without them.
+The selected scope also includes budgets, list export/import, three languages, high-contrast display, and offline use. The app has one local user, no accounts, and no cloud saving. Each imported list is a separate copy. These selected features still need work and testing.
+
+Spring Boot is chosen. Normal storage must survive restart. First alerts/reminders appear inside the active app; first offline use is read-only saved-list review with live price refresh and remote chat disabled.
 
 Conditional features need specific evidence. Price history requires dated records. Actual savings require purchases and a stated comparison price. Future-price advice needs a tested method.
 
@@ -20,22 +22,24 @@ No reliable completion date or cost can be given until the team records its dead
 
 The [official dataset page](https://data.gov.hk/en-data/dataset/cc-pricewatch-pricewatch) was checked during the earlier review on 16 October 2026. It listed daily updates, a JSON resource, CSV resources in three languages, and a historical-download section.
 
-The current CSV and JSON contents were not retrieved successfully in that review. The web tool could not read the CSV and timed out on JSON; a direct request failed to resolve the host name. This document update did not repeat those requests.
+The 16 October review could not retrieve the source files. A direct JSON download succeeded on 17 October 2026. It contained 2,736 products, 7,818 retailer price entries, 2,482 offer entries, and nine retailer codes in a file of 2,741,295 bytes. These are counts for one download, not fixed provider limits.
 
-Therefore, the following field description comes from the earlier local analysis, not a fresh file check:
+The [JSON sample check](Plan/data-sample-review.md) records the fields, checks, file hash, two saved source records, and remaining limits. CSV contents and historical downloads were not checked in this update.
 
-| Reported field | Possible use | Check required |
+| Observed JSON field | Possible use | Check still required |
 |---|---|---|
-| Product code | Match records across retailers | Verify code stability and exact product/pack matches |
-| Brand and product name | Search and display | Check language, pack descriptions, and inconsistent names |
-| Three category fields | Browse and group products | Check missing and inconsistent categories |
-| Retailer code | Identify a store company | Confirm code meanings; do not infer branches |
-| Price | Compare listed amounts | Check currency, missing values, and offer treatment |
-| Offer text | Show conditions from the source | Retain original text; calculate only understood offer types |
+| `code` | Keep language labels and retailer prices under one product | Verify cross-day stability and exact product/pack matches |
+| `brand`, `name` | Search/display labels in `en`, `zh-Hant`, and `zh-Hans` | Test spelling tolerance, mixed queries, and aliases not supplied by the source |
+| `cat1Name`, `cat2Name`, `cat3Name` | Browse/group using multilingual labels | Check category meanings before category-level alerts |
+| `prices[].supermarketCode` | Identify a store company | Confirm code meanings; do not infer branches |
+| `prices[].price` | Parse listed price strings as decimals | Check currency and offer treatment; test missing/invalid future input |
+| `offers[]` | Keep retailer-linked offer text in three languages | Preserve quantities; calculate only understood offer types |
 
-The earlier analysis reports no separate fields for regular price, structured pack size, delivery charges, stock, branch locations, item purchase URLs, or offer dates. Verify this against the selected resource before implementation. Do not assume CSV and JSON have identical fields.
+This download had no duplicate product codes, no missing name label in the three languages, and no price value that failed decimal parsing or was negative. This does not prove that future files have the same quality.
 
-The current record count, retailer count, duplicate rate, source-date fields, and historical coverage are unverified. No current price-service connection, AI answer, alert delivery, or running cost has been tested here.
+The product fields did not supply separate regular prices, structured pack sizes, delivery charges, stock, branch locations, purchase URLs, offer dates, or a source-date field. Do not assume CSV and JSON have identical fields. Retrieval time must not be presented as the source price date.
+
+Full-catalogue history is not proved impossible. The baseline keeps only selected products' older price records to limit the first implementation. The checked endpoint returned the whole catalogue; smaller filtered downloads were not established. Database growth, historical coverage, search behaviour, AI answers, and alert delivery remain untested.
 
 ## 3. Corrections to the earlier analysis
 
@@ -48,7 +52,8 @@ The current record count, retailer count, duplicate rate, source-date fields, an
 | A price trend is enough to advise waiting | A future-price claim needs a defined method and tests against later observations. |
 | Savings can only be calculated from our own history | A stated alternative price can provide a comparison. Actual savings still require purchase quantities and amounts. |
 | Product codes solve product matching | Codes help, but exact product and pack matching must be checked. |
-| Features are easy because they are “app-side” | Shared lists, offline edits, user access, and notifications each need defined rules and tests. |
+| Features are easy because they are “app-side” | List imports, offline edits, and notifications each need defined rules and tests. |
+| All-product history is impossible, but selected history is possible | One catalogue download succeeded. Neither long-term storage limit has been measured. Selected tracking is a baseline design choice; it does not prove that the provider supports smaller downloads. |
 
 These corrections explain technical limits. They do not change the team's Build, Conditional, Excluded, or Future decisions.
 
@@ -64,8 +69,10 @@ These corrections explain technical limits. They do not change the team's Build,
 | Updates | Keep the last good data when an import fails | A failed or empty response must not erase valid listings |
 | Chat | Use checked results and handle unknowns | Every amount in the answer matches a source record; an unclear product triggers clarification |
 | Tracked items | Apply ! only to explicitly tracked items | Define the effect of adding, removing, and re-adding an item |
-| Shared lists | Respect access and avoid silent loss of changes | Two users editing the same item get the agreed result |
-| Offline use | Show saved-data age and supported actions | No connection must not be presented as a fresh price or successful remote chat |
+| List sharing | Export and import a separate local copy | Preserve items, quantities, and checked state; reject invalid input; leave existing lists unchanged; later edits do not sync |
+| Local storage | Preserve saved records across app restarts | Save a list and settings, restart the normal app, and read them again |
+| Active-app jobs | Run scheduled work only while the local app runs | A closed app does not claim to have collected history or delivered an alert; startup checks whether an update is needed |
+| Offline use | Read a previously saved list on the viewing device; show saved-data age | Disconnect and reopen the saved list; price refresh and remote chat remain off |
 
 These are acceptance checks, not results from completed tests. Made-up data may test a rule, but it does not verify live data access.
 
@@ -75,23 +82,23 @@ Open decisions do not make planned features optional. They define the remaining 
 
 | Topic | Decision still needed | Related scope |
 |---|---|---|
-| Tracking | Are wishlist and tracked items separate? Does adding a shopping-list item start tracking? One retailer or all? What happens on removal and re-addition? | R10, R14, R21–R22, R35, R39 |
+| Tracking | Use explicit tracking, separate from saving a wishlist or list. Before the tracking job, set retailer selection, retained records, and re-addition rules. | R10, R14, R21–R22, R35, R39 |
 | History and dates | Start history at tracking time or include older records? How much data is retained? What source/date label appears on untracked results? | R10, R14, R44 |
 | Alert rules | At or below target, or strictly below? Which earlier price is used? Alert immediately if already met? When can the same price trigger again? | R21–R24 |
-| Morning summary | Which products, delivery channel, time, and quiet-hours behaviour? | R23, R26 |
+| Morning summary | Which products, time, quiet-hours rule, and missed-run behaviour? First delivery is inside the active app. | R23, R26 |
 | Spending | Planned costs, actual purchases, or both? How are purchases entered? Which comparison price defines savings? | R18, R30–R31, R43 |
-| Shared and offline lists | Who can view/edit? How are simultaneous edits handled? Offline viewing only, or editing too? | R32, R45, R48 |
+| Saved-list viewing | How is the list/page saved on the viewing device? First offline use is read-only, with no live price refresh or remote chat. | R48 |
 | Advice and offers | What measured rule supports conditional advice or price comparisons? What happens without enough records? | R11, R16, R20, R35 |
 | Reminders | User-set interval or recorded use rate? How does a purchase or snooze change the next date? | R34, R36–R37 |
-| Project limits | Course marking guide, deadline, team availability, operating budget, and chosen tools | All planned work |
+| Project limits | Course marking guide, deadline, team availability, and operating budget. Spring Boot is chosen; other frameworks are backups. | All planned work |
 
 ## 6. Evidence needed before stronger claims
 
-Retrieve and inspect a real file. Check the reported fields, duplicate records, missing prices, product matches, offer text, and language joins. Check historical downloads separately. Confirm source credit and usage terms before release.
+The live JSON was retrieved and inspected as described above. Next, test an actual app import and compare its stored results with the saved source examples. Check cross-day code stability, exact pack matches, malformed responses, and offer handling. Check historical downloads separately. Confirm source credit and usage terms before release.
 
 Measure AI answer correctness, response time, notification delivery, and operating cost with the selected services. Record observed values; do not replace missing measurements with estimates presented as facts.
 
-The main cost categories are hosting, storage, AI calls, and external messages. No provider price or free-service limit is assumed here.
+The first baseline runs locally. Measure local storage and AI-call costs; hosting and external-message costs apply only if those future services are added. No provider price or free-service limit is assumed here.
 
 ## Sources
 
@@ -99,4 +106,5 @@ The main cost categories are hosting, storage, AI calls, and external messages. 
 - [Product description and user-needs links](product-description.md)
 - [Build options](architecture-options.md)
 - [Official dataset page](https://data.gov.hk/en-data/dataset/cc-pricewatch-pricewatch)
-- [English CSV](https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch_en.csv) and [JSON resource](https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch.json): linked by the source page; contents not verified in the earlier retrieval attempt.
+- [JSON resource](https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch.json): downloaded and inspected on 17 October 2026; see the [sample check](Plan/data-sample-review.md).
+- [English CSV](https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch_en.csv): alternative resource; contents not checked in this update.

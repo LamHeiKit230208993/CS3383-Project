@@ -10,6 +10,7 @@ The original idea was a price-comparison app with a chat helper. The team has si
 2. [Project scope](docs/project-scope.md): team choices, feature IDs, and required behaviour.
 3. [Data and feasibility](docs/feasibility-review-simple.md): evidence, limits, and open questions.
 4. [Architecture options](docs/architecture-options.md): proposed parts, data flow, records, and build options.
+5. [Baseline jobs](docs/Plan/features.md): build the first search-to-saved-list flow, then the remaining baseline jobs. Read the linked decisions and checked JSON sample before implementation.
 
 The four [user-needs files](docs/product-description.md#user-needs) explain requests and their reasons. They include needs that the team has excluded or left for the future.
 
