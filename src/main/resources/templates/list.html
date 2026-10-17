@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>List · PriceWatch</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+  <div class="app">
+    <div class="main">
+    <div th:insert="~{fragments/layout :: header('Weekly basket')}"></div>
+
+    <div class="scroll">
+      <!-- budget -->
+      <div class="budget">
+        <div class="top">
+          <div class="label">Weekly budget</div>
+          <div class="amt">Cap $600</div>
+        </div>
+        <div class="num">$408<small> spent</small></div>
+        <div class="bar"><div class="fill" style="width:68%"></div></div>
+        <div class="cap"><span>$408 / $600</span><span>68% · on track</span></div>
+      </div>
+
+      <div class="section">
+        <h2>This week's list</h2>
+        <div class="count">6 items · best prices</div>
+      </div>
+
+      <div class="item done">
+        <div class="check">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
+        </div>
+        <div class="body">
+          <div class="name">Fresh Milk 946ml</div>
+          <div class="sub">Garden · 1 pack</div>
+          <div class="best">◆ Cheapest at AEON</div>
+        </div>
+        <div class="price">
+          <div class="v">$40.00</div>
+          <div class="store">AEON</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Rice 5kg</div>
+          <div class="sub">Golden · 1 bag</div>
+          <div class="best">◆ Cheapest at WELLCOME</div>
+        </div>
+        <div class="price">
+          <div class="v">$58.00</div>
+          <div class="store">WELLCOME</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Eggs 30s</div>
+          <div class="sub">Large · 1 tray</div>
+          <div class="best">◆ Cheapest at PARKnSHOP</div>
+        </div>
+        <div class="price">
+          <div class="v">$72.00</div>
+          <div class="store">PARKnSHOP</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Detergent 3L</div>
+          <div class="sub">Regular · 1 bottle</div>
+          <div class="best">◆ Cheapest at WATSONS</div>
+        </div>
+        <div class="price">
+          <div class="v">$95.00</div>
+          <div class="store">WATSONS</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Bananas</div>
+          <div class="sub">Fresh · 2 bunches</div>
+          <div class="best">◆ Cheapest at AEON</div>
+        </div>
+        <div class="price">
+          <div class="v">$28.00</div>
+          <div class="store">AEON</div>
+        </div>
+      </div>
+
+      <div class="saved">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f7a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg>
+        <div class="txt">Shopping these stores saves you <b>$46.00</b> vs. buying everything at one store.<span class="sub">Listed prices only — delivery &amp; stock not included.</span></div>
+      </div>
+    </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: nav('list')}"></div>
+  </div>
+</body>
+</html>

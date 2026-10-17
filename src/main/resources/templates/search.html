@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search · PriceWatch</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+  <div class="app">
+    <div class="main">
+    <div th:insert="~{fragments/layout :: header('Compare prices')}"></div>
+
+    <div class="scroll">
+      <div class="searchbar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span>Search products, brands, categories…</span>
+        <span class="lang">EN · 繁 · 简</span>
+      </div>
+
+      <div class="section">
+        <h2>Browse categories</h2>
+      </div>
+
+      <div class="category-grid">
+        <a class="category-card" href="#">
+          <span class="cat-ico" style="background:#1f7a5c">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+          </span>
+          <span class="cat-name">Fresh food</span>
+          <span class="cat-sub">Fruit, veg, dairy, meat</span>
+        </a>
+        <a class="category-card" href="#">
+          <span class="cat-ico" style="background:#d9402f">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8l3 13M17 8l-3 13M4 8h16M8 4h8a2 2 0 012 2v2H6V6a2 2 0 012-2z"/></svg>
+          </span>
+          <span class="cat-name">Household</span>
+          <span class="cat-sub">Cleaning, laundry, storage</span>
+        </a>
+        <a class="category-card" href="#">
+          <span class="cat-ico" style="background:#c98a1a">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+          </span>
+          <span class="cat-name">Baby &amp; care</span>
+          <span class="cat-sub">Diapers, toiletries</span>
+        </a>
+        <a class="category-card" href="#">
+          <span class="cat-ico" style="background:#2c4d57">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          </span>
+          <span class="cat-name">Grocery staples</span>
+          <span class="cat-sub">Rice, noodles, sauces</span>
+        </a>
+      </div>
+
+      <div class="section">
+        <h2>You compared</h2>
+        <div class="count">Today</div>
+      </div>
+
+      <!-- product comparison card -->
+      <a class="compare" th:href="@{/history}">
+        <div class="cat">Dairy &amp; Eggs</div>
+        <div class="name">Fresh Milk 946ml</div>
+        <div class="brand">Garden · Product code P000000192</div>
+        <div class="headline">Cheapest listed price <b>$40.00</b> at <b>AEON</b> — $5.00 under the next closest.</div>
+      </a>
+
+      <div class="store-list">
+        <div class="store-row best">
+          <div class="store-logo" style="background:#d9402f">AE</div>
+          <div class="info">
+            <div class="s-name">AEON <span class="badge best">BEST</span></div>
+            <div class="s-offer">Buy 2 to save $4.00</div>
+          </div>
+          <div class="s-price">$40.00</div>
+        </div>
+        <div class="store-row">
+          <div class="store-logo" style="background:#0ea5e9">PK</div>
+          <div class="info">
+            <div class="s-name">PARKnSHOP</div>
+            <div class="s-offer">—</div>
+          </div>
+          <div class="s-price">$45.00</div>
+        </div>
+        <div class="store-row">
+          <div class="store-logo" style="background:#64748b">WL</div>
+          <div class="info">
+            <div class="s-name">WELLCOME</div>
+            <div class="s-offer">2 for $14.00</div>
+          </div>
+          <div class="s-price">$45.50</div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: nav('search')}"></div>
+  </div>
+</body>
+</html>

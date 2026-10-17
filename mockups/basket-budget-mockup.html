@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PriceWatch — Basket &amp; Budget</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=Nunito+Sans:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    /* warm market-ink palette */
+    --paper:      #fbf6ec;   /* warm cream paper */
+    --paper-2:    #f3ebdc;   /* slightly deeper cream */
+    --ink:        #17323b;   /* deep teal ink */
+    --ink-soft:   #2c4d57;
+    --line:       #e6dcc7;   /* hairline on paper */
+    --red:        #d9402f;   /* market-tag coral red (HK supermarket red) */
+    --red-dark:   #b33526;
+    --green:      #1f7a5c;   /* best-price green */
+    --green-pale: #e7f1ea;
+    --amber:      #c98a1a;   /* budget warning amber */
+    --muted:      #7c8790;
+    --radius:     18px;
+    --shadow:     0 2px 14px rgba(23,50,59,.10);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Nunito Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: #cfc6b4;
+    color: var(--ink);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 28px 16px;
+  }
+
+  .caption {
+    font-family: var(--sans); color: #4a4a3f; font-size: 13px;
+    max-width: 420px; text-align: center; line-height: 1.5; margin-bottom: 20px;
+  }
+  .caption strong { color: #2c2c24; }
+
+  /* ===== PHONE ===== */
+  .phone {
+    width: 390px; max-width: 100%; height: 820px;
+    background: var(--paper);
+    border-radius: 44px;
+    border: 11px solid #241f1a;
+    box-shadow: 0 26px 70px rgba(23,50,59,.30);
+    overflow: hidden; display: flex; flex-direction: column; position: relative;
+    /* rice-paper texture */
+    background-image: radial-gradient(rgba(23,50,59,.045) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 132px; height: 28px; background: #241f1a; border-radius: 0 0 18px 18px; z-index: 6;
+  }
+
+  /* ===== STATUS ===== */
+  .status {
+    padding: 12px 22px 4px; display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; font-weight: 800; color: var(--ink); letter-spacing: .3px;
+  }
+  .status .sig { font-size: 11px; }
+
+  /* ===== HEADER ===== */
+  .header {
+    padding: 10px 20px 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .header .brand { display: flex; align-items: center; gap: 10px; }
+  .header .logo {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--ink); color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 800; font-size: 20px;
+    box-shadow: var(--shadow);
+  }
+  .header .brand .name { font-family: var(--serif); font-size: 19px; font-weight: 800; letter-spacing: -.3px; }
+  .header .brand .tag { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: -2px; }
+  .header .menu { width: 38px; height: 38px; border-radius: 50%; background: var(--paper-2); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); }
+
+  /* ===== SCROLL ===== */
+  .scroll { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
+
+  /* ===== BUDGET METER ===== */
+  .budget {
+    background: var(--ink); border-radius: var(--radius);
+    padding: 16px 18px; color: var(--paper); box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+  .budget .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .budget .top .label { font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; opacity: .8; }
+  .budget .top .amt { font-family: var(--serif); font-size: 15px; font-weight: 700; }
+  .budget .num { font-family: var(--serif); font-size: 40px; font-weight: 800; margin-top: 4px; letter-spacing: -1px; }
+  .budget .num small { font-size: 16px; font-weight: 600; opacity: .7; }
+  .budget .bar { height: 9px; border-radius: 10px; background: rgba(255,255,255,.18); margin-top: 14px; overflow: hidden; }
+  .budget .fill { height: 100%; border-radius: 10px; background: var(--green); width: 68%; }
+  .budget .cap { display: flex; justify-content: space-between; font-size: 11px; opacity: .8; margin-top: 7px; font-weight: 600; }
+
+  /* ===== SECTION ===== */
+  .section { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 12px; }
+  .section h2 { font-family: var(--serif); font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+  .section .count { font-size: 12px; color: var(--muted); font-weight: 700; }
+
+  /* ===== ITEM ROW ===== */
+  .item {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 1px 4px rgba(23,50,59,.05);
+  }
+  .item .check {
+    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+    border: 2px solid var(--line); display: flex; align-items: center; justify-content: center;
+  }
+  .item.done .check { background: var(--green); border-color: var(--green); color: #fff; }
+  .item .body { flex: 1; min-width: 0; }
+  .item .body .name { font-size: 14.5px; font-weight: 700; }
+  .item.done .body .name { color: var(--muted); text-decoration: line-through; }
+  .item .body .sub { font-size: 11.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .item .body .best { font-size: 11.5px; color: var(--green); font-weight: 800; margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+  .item .price { text-align: right; }
+  .item .price .v { font-family: var(--serif); font-size: 19px; font-weight: 800; color: var(--ink); }
+  .item .price .store { font-size: 10.5px; color: var(--muted); font-weight: 700; margin-top: 2px; }
+
+  /* ===== SAVE CALL ===== */
+  .saved {
+    margin-top: 4px; padding: 12px 14px; border-radius: var(--radius);
+    background: var(--green-pale); border: 1px dashed var(--green);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .saved .txt { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .saved .txt b { color: var(--green); }
+  .saved .txt .sub { display: block; font-size: 11px; color: var(--ink-soft); font-weight: 600; }
+
+  /* ===== BOTTOM BAR ===== */
+  .nav {
+    background: #fff; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 9px 0 20px;
+  }
+  .nav .item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: var(--muted); min-width: 56px; }
+  .nav .item.active { color: var(--red); }
+  .nav .item .lbl { font-family: var(--sans); }
+  .nav .ico { width: 22px; height: 22px; }
+  .nav .cta {
+    width: 52px; height: 52px; border-radius: 50%; margin-top: -22px;
+    background: var(--red); color: #fff; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 18px rgba(217,64,47,.38);
+  }
+</style>
+</head>
+<body>
+  <p class="caption">
+    <strong>PriceWatch · Shopping list &amp; budget</strong><br>
+    The "household manager" value — a recurring list priced at each store's best, tracked against your weekly budget.
+  </p>
+
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- status -->
+    <div class="status">
+      <span>9:41</span>
+      <span class="sig">▪ 100%</span>
+    </div>
+
+    <!-- header -->
+    <div class="header">
+      <div class="brand">
+        <div class="logo">pw</div>
+        <div>
+          <div class="name">PriceWatch</div>
+          <div class="tag">Weekly basket</div>
+        </div>
+      </div>
+      <div class="menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M5 6h14M5 18h14"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <!-- budget -->
+      <div class="budget">
+        <div class="top">
+          <div class="label">Weekly budget</div>
+          <div class="amt">Cap $600</div>
+        </div>
+        <div class="num">$408<small> spent</small></div>
+        <div class="bar"><div class="fill"></div></div>
+        <div class="cap"><span>$408 / $600</span><span>68% · on track</span></div>
+      </div>
+
+      <!-- items -->
+      <div class="section">
+        <h2>This week's list</h2>
+        <div class="count">6 items · best prices</div>
+      </div>
+
+      <div class="item done">
+        <div class="check">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
+        </div>
+        <div class="body">
+          <div class="name">Fresh Milk 946ml</div>
+          <div class="sub">Garden · 1 pack</div>
+          <div class="best">◆ Cheapest at AEON</div>
+        </div>
+        <div class="price">
+          <div class="v">$40.00</div>
+          <div class="store">AEON</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Rice 5kg</div>
+          <div class="sub">Golden · 1 bag</div>
+          <div class="best">◆ Cheapest at WELLCOME</div>
+        </div>
+        <div class="price">
+          <div class="v">$58.00</div>
+          <div class="store">WELLCOME</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Eggs 30s</div>
+          <div class="sub">Large · 1 tray</div>
+          <div class="best">◆ Cheapest at PARKnSHOP</div>
+        </div>
+        <div class="price">
+          <div class="v">$72.00</div>
+          <div class="store">PARKnSHOP</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Detergent 3L</div>
+          <div class="sub">Regular · 1 bottle</div>
+          <div class="best">◆ Cheapest at WATSONS</div>
+        </div>
+        <div class="price">
+          <div class="v">$95.00</div>
+          <div class="store">WATSONS</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="check"></div>
+        <div class="body">
+          <div class="name">Bananas</div>
+          <div class="sub">Fresh · 2 bunches</div>
+          <div class="best">◆ Cheapest at AEON</div>
+        </div>
+        <div class="price">
+          <div class="v">$28.00</div>
+          <div class="store">AEON</div>
+        </div>
+      </div>
+
+      <!-- savings -->
+      <div class="saved">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f7a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg>
+        <div class="txt">Shopping these stores saves you <b>$46.00</b> vs. buying everything at one store.<span class="sub">Listed prices only — delivery &amp; stock not included.</span></div>
+      </div>
+    </div>
+
+    <!-- bottom nav -->
+    <div class="nav">
+      <div class="item">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span class="lbl">Search</span>
+      </div>
+      <div class="item">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        <span class="lbl">Alerts</span>
+      </div>
+      <div class="cta">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <div class="item active">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
+        <span class="lbl">List</span>
+      </div>
+      <div class="item">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span class="lbl">More</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

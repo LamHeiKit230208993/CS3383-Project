@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerts · PriceWatch</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+  <div class="app">
+    <div class="main">
+    <div th:insert="~{fragments/layout :: header('Alerts &amp; watchlist')}"></div>
+
+    <div class="scroll">
+      <div class="section">
+        <h2>Watching</h2>
+        <div class="count">3 active</div>
+      </div>
+
+      <div class="alert-card">
+        <div class="a-head">
+          <div class="a-name">Fresh Milk 946ml</div>
+          <div class="a-price">$40.00</div>
+        </div>
+        <div class="a-type">Target price · below $45</div>
+        <div class="a-state trig" style="margin-top:6px">● Price drop alert fired</div>
+      </div>
+
+      <div class="alert-card">
+        <div class="a-head">
+          <div class="a-name">Milk (any brand)</div>
+          <div class="a-price">$5.00</div>
+        </div>
+        <div class="a-type">Product type target · milk at $5</div>
+        <div class="a-state arm" style="margin-top:6px">○ Watching · not yet hit</div>
+      </div>
+
+      <div class="alert-card">
+        <div class="a-head">
+          <div class="a-name">Rice 5kg</div>
+          <div class="a-price">$58.00</div>
+        </div>
+        <div class="a-type">Price drop · 5% threshold</div>
+        <div class="a-state arm" style="margin-top:6px">○ Watching · no drop yet</div>
+      </div>
+
+      <div class="section">
+        <h2>Today's digest</h2>
+        <div class="count">Morning</div>
+      </div>
+
+      <div class="saved" style="margin-top:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f7a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg>
+        <div class="txt">Good morning — 3 deals found overnight. Best: milk down $5 at AEON.<span class="sub">Delivered 7:00 am · listed prices only</span></div>
+      </div>
+
+      <div class="setting" style="margin-top:16px">
+        <div class="s-body">
+          <div class="s-title">Quiet hours</div>
+          <div class="s-sub">11:00 pm – 7:00 am</div>
+        </div>
+        <div class="switch on"><span class="knob"></span></div>
+      </div>
+      <div class="setting">
+        <div class="s-body">
+          <div class="s-title">Prevent repeats</div>
+          <div class="s-sub">Don't re-alert the same price level</div>
+        </div>
+        <div class="switch on"><span class="knob"></span></div>
+      </div>
+    </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: nav('alerts')}"></div>
+  </div>
+</body>
+</html>
