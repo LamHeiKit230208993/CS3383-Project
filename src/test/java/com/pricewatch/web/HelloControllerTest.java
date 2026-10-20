@@ -17,8 +17,8 @@ class HelloControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void rootReturnsHelloViewWithMessage() throws Exception {
-        mockMvc.perform(get("/"))
+    void helloReturnsHelloViewWithMessage() throws Exception {
+        mockMvc.perform(get("/hello"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("hello"))
                 .andExpect(model().attribute("message", "Hello, World!"));

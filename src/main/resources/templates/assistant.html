@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Ask')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <div class="assistant-layout">
+                <section class="panel chat-panel" aria-labelledby="chat-heading">
+                    <div class="section-head chat-head">
+                        <h2 id="chat-heading">Sample conversation</h2>
+                        <span class="sample-pill">Sample</span>
+                    </div>
+
+                    <div class="chat-feed" id="chat-feed">
+                        <div class="chat-row chat-user">
+                            <div class="chat-bubble">
+                                Where's fresh milk cheapest today? I need a 946ml carton.
+                            </div>
+                        </div>
+
+                        <div class="chat-row chat-assistant">
+                            <div class="chat-avatar" aria-hidden="true">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="3.5"/></svg>
+                            </div>
+                            <div class="chat-bubble">
+                                <p>Cheapest sample listing for <strong>Garden Fresh Milk 946ml</strong> is <strong>$40.00</strong> at <strong>AEON</strong> — $5.00 below the next sample listing.</p>
+
+                                <div class="chat-result">
+                                    <div class="chat-result-row is-best">
+                                        <span>AEON</span>
+                                        <span>Buy 2 to save $4.00</span>
+                                        <strong>$40.00</strong>
+                                    </div>
+                                    <div class="chat-result-row">
+                                        <span>PARKnSHOP</span>
+                                        <span>—</span>
+                                        <strong>$45.00</strong>
+                                    </div>
+                                    <div class="chat-result-row">
+                                        <span>WELLCOME</span>
+                                        <span>2 for $14.00</span>
+                                        <strong>$45.50</strong>
+                                    </div>
+                                </div>
+
+                                <p class="chat-source">Based on a checked sample comparison for this exact product and pack. Listed prices only; delivery and stock are not included.</p>
+                                <p class="chat-clarify">Ambiguous request? The assistant should ask one question, for example: “Which brand or pack size?”</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-chips" aria-label="Suggested sample questions">
+                        <button class="chip" type="button" data-chat-suggestion="Is milk cheaper at AEON or PARKnSHOP?">Compare milk retailers</button>
+                        <button class="chip" type="button" data-chat-suggestion="Show the sample 30-day history for milk">Show sample history</button>
+                        <button class="chip" type="button" data-chat-suggestion="Add milk to my list">Add milk to list</button>
+                    </div>
+
+                    <form class="chat-form" id="chat-form">
+                        <label class="sr-only" for="chat-input">Ask about a product</label>
+                        <input id="chat-input" name="question" type="text" placeholder="Ask about a product, brand, or category…" autocomplete="off">
+                        <button class="button button-primary" type="submit">Send</button>
+                    </form>
+                    <p class="helper chat-footnote">Prototype only. No AI service is called; replies are canned sample text.</p>
+                </section>
+
+                <aside class="panel assistant-note" aria-labelledby="assistant-note-heading">
+                    <div class="assistant-mark" aria-hidden="true">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="3.5"/></svg>
+                    </div>
+                    <h2 id="assistant-note-heading">What the answer may use</h2>
+                    <ul>
+                        <li>Checked product, pack, retailer, and listed price.</li>
+                        <li>Ties and missing sample listings.</li>
+                        <li>Historical differences only where sample records exist.</li>
+                        <li>One clarifying question when the request is ambiguous.</li>
+                    </ul>
+                    <p>It must not invent prices, stock, dates, purchases, or future-price claims.</p>
+                </aside>
+            </div>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

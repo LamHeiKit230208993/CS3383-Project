@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title th:text="${title} + ' · PriceWatch'">PriceWatch</title>
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <script defer th:src="@{/js/prototype.js}"></script>
+</head>
+<body>
+
+<div class="sample-banner" th:fragment="banner" role="note">
+    <span class="sample-tag">UI prototype</span>
+    <span>Sample data — demo prices and dates, not real market data.</span>
+    <span class="banner-tail">No backend · state resets on reload</span>
+</div>
+
+<aside class="sidebar" th:fragment="sidebar(active)" aria-label="Sidebar">
+    <a class="brand" th:href="@{/search}">
+        <span class="brand-mark">pw</span>
+        <span class="brand-text">
+            <span class="brand-name">PriceWatch</span>
+            <span class="brand-tag">HK market prices</span>
+        </span>
+    </a>
+
+    <p class="nav-label">Browse</p>
+    <nav class="side-nav" aria-label="Main navigation">
+        <a class="nav-link" th:classappend="${active == 'search'} ? 'is-active'" th:href="@{/search}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <span>Search</span>
+        </a>
+        <a class="nav-link" th:classappend="${active == 'list'} ? 'is-active'" th:href="@{/list}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
+            <span>List</span>
+        </a>
+        <a class="nav-link" th:classappend="${active == 'saved'} ? 'is-active'" th:href="@{/saved}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 000-7.8z"/></svg>
+            <span>Saved</span>
+        </a>
+        <a class="nav-link" th:classappend="${active == 'alerts'} ? 'is-active'" th:href="@{/alerts}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+            <span>Alerts</span>
+        </a>
+        <a class="nav-link" th:classappend="${active == 'history'} ? 'is-active'" th:href="@{/history}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.7 2.8L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+            <span>History</span>
+        </a>
+        <a class="nav-link" th:classappend="${active == 'assistant'} ? 'is-active'" th:href="@{/assistant}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="3.5"/></svg>
+            <span>Ask</span>
+        </a>
+        <a class="nav-link" th:classappend="${active == 'settings'} ? 'is-active'" th:href="@{/settings}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.6V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.6-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.6V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.6 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+            <span>Settings</span>
+        </a>
+    </nav>
+
+    <div class="side-foot">
+        <p class="side-note">Listed prices only. Delivery, stock, and checkout totals are not included.</p>
+        <a class="side-link" th:href="@{/hello}">Hello fallback page</a>
+    </div>
+</aside>
+
+<header class="topbar" th:fragment="topbar(tag, subtitle)">
+    <div class="topbar-copy">
+        <p class="eyebrow">PriceWatch · prototype</p>
+        <h1 th:text="${tag}">Page title</h1>
+        <p class="topbar-sub" th:text="${subtitle}">Page subtitle</p>
+    </div>
+    <div class="topbar-actions">
+        <a class="button button-ghost" th:href="@{/assistant}">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/></svg>
+            Ask
+        </a>
+    </div>
+</header>
+
+<footer class="footer" th:fragment="footer">
+    <span>UI prototype · Sample data</span>
+    <span>Consumer Council Online Price Watch is the intended source; this page is not affiliated.</span>
+</footer>
+
+<nav class="mobile-nav" th:fragment="mobileNav(active)" aria-label="Mobile navigation">
+    <a class="mobile-link" th:classappend="${active == 'search'} ? 'is-active'" th:href="@{/search}">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span>Search</span>
+    </a>
+    <a class="mobile-link" th:classappend="${active == 'list'} ? 'is-active'" th:href="@{/list}">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>
+        <span>List</span>
+    </a>
+    <a class="mobile-link" th:classappend="${active == 'saved'} ? 'is-active'" th:href="@{/saved}">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 000-7.8z"/></svg>
+        <span>Saved</span>
+    </a>
+    <a class="mobile-link" th:classappend="${active == 'alerts'} ? 'is-active'" th:href="@{/alerts}">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        <span>Alerts</span>
+    </a>
+    <a class="mobile-link" th:classappend="${active == 'settings' or active == 'history' or active == 'assistant'} ? 'is-active'" th:href="@{/settings}">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>More</span>
+    </a>
+</nav>
+
+</body>
+</html>

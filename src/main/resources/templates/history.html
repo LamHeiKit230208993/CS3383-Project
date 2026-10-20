@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('History')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <section class="panel product-hero" aria-labelledby="history-product">
+                <div class="product-hero-copy">
+                    <p class="eyebrow" th:text="${product.category}">Dairy &amp; Eggs</p>
+                    <h2 id="history-product" th:text="${product.name}">Fresh Milk 946ml</h2>
+                    <p class="product-meta">
+                        <span th:text="${product.brand}">Garden</span> ·
+                        <span th:text="${product.pack}">946ml carton</span> ·
+                        Tracked for 30 sample days
+                    </p>
+                </div>
+                <div class="hero-price">
+                    <span class="price-label">Latest sample price <span class="sample-pill">Sample</span></span>
+                    <strong class="price price-large" th:text="'$' + ${product.bestPrice}">$40.00</strong>
+                    <span class="retailer" th:text="${product.bestRetailer}">AEON</span>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="chart-heading">
+                <div class="section-head">
+                    <h2 id="chart-heading">30-day sample history</h2>
+                    <span class="section-note">Available dates only</span>
+                </div>
+
+                <div class="history-chart" role="img" aria-label="Sample price history for Fresh Milk, from 24 September to today">
+                    <div class="chart-bars">
+                        <div class="chart-bar" th:each="point : ${historyPoints}" th:style="'height:' + ${point.height} + '%'">
+                            <span class="chart-value" th:text="'$' + ${point.price}">$40</span>
+                        </div>
+                    </div>
+                    <div class="chart-axis">
+                        <span th:text="${historyPoints[0].date}">24 Sep</span>
+                        <span>Dates with gaps</span>
+                        <span th:text="${historyPoints[#lists.size(historyPoints) - 1].date}">Today</span>
+                    </div>
+                </div>
+
+                <p class="helper">The chart shows only dates the prototype pretends to have. It does not fill gaps or invent a 30/90-day series.</p>
+
+                <details class="history-table">
+                    <summary>View sample values</summary>
+                    <table>
+                        <thead>
+                        <tr><th>Date</th><th>Listed price</th><th>Source</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="point : ${historyPoints}">
+                            <td th:text="${point.date}">24 Sep</td>
+                            <td th:text="'$' + ${point.price}">$42.00</td>
+                            <td>Sample</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </details>
+            </section>
+
+            <section class="empty-state panel" aria-labelledby="empty-history-heading">
+                <h2 id="empty-history-heading">Not enough history yet</h2>
+                <p>A newly tracked item would show this state instead of an invented series. This example is deliberately empty.</p>
+                <button class="button button-ghost" type="button" id="toggle-empty-history">Show an empty example</button>
+                <div id="empty-history-example" class="empty-example" hidden>
+                    <p>No dated price records are available for this sample item.</p>
+                </div>
+            </section>
+
+            <section class="panel note-panel" aria-labelledby="buy-heading">
+                <h2 id="buy-heading">Buy now or wait?</h2>
+                <p>The latest sample price is at the lowest point in the sample series. This is a sample comparison, not a prediction of future prices.</p>
+                <span class="sample-pill">Sample</span>
+            </section>
+
+            <div class="source-bar">
+                <span>Source date: <strong>20 Oct 2026</strong></span>
+                <span>Retrieved: <strong>20 Oct 2026</strong></span>
+                <span>Source: Consumer Council Online Price Watch · sample</span>
+            </div>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Saved')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <section aria-labelledby="wishlist-heading">
+                <div class="section-head">
+                    <h2 id="wishlist-heading">Wishlist</h2>
+                    <span class="section-note">Saved only · not tracking</span>
+                </div>
+                <p class="helper section-helper">Saving an item does not start tracking or record a purchase.</p>
+
+                <div class="saved-grid">
+                    <article class="saved-card" th:each="item : ${wishlist}">
+                        <div class="saved-top">
+                            <span class="category-tag">Wishlist</span>
+                            <span class="sample-pill">Sample</span>
+                        </div>
+                        <h3 th:text="${item.name}">Olive Oil 1L</h3>
+                        <p th:text="${item.detail}">Saved 3 days ago</p>
+                        <strong class="price" th:text="'$' + ${item.price}">$68.00</strong>
+                        <a class="button button-ghost" th:href="@{/search}">Find a listing</a>
+                    </article>
+                </div>
+            </section>
+
+            <section aria-labelledby="tracking-heading">
+                <div class="section-head">
+                    <h2 id="tracking-heading">Tracking</h2>
+                    <span class="section-note">Explicit choice</span>
+                </div>
+                <p class="helper section-helper">Tracking stores sample price history for the exact product and pack. Removing it would stop new collection.</p>
+
+                <div class="saved-grid">
+                    <article class="saved-card is-tracking" th:each="item : ${tracking}">
+                        <div class="saved-top">
+                            <span class="state-badge">TRACKING</span>
+                            <span class="sample-pill">Sample</span>
+                        </div>
+                        <h3 th:text="${item.name}">Fresh Milk 946ml</h3>
+                        <p th:text="${item.detail}">Tracked for 30 days</p>
+                        <strong class="price" th:text="'$' + ${item.price}">$40.00</strong>
+                        <a class="button button-ghost" th:href="@{/history}">View sample history</a>
+                    </article>
+                </div>
+            </section>
+
+            <section class="panel note-panel">
+                <h2>Why these are separate</h2>
+                <p>A wishlist is a saved choice. Tracking is a separate decision that starts collecting older prices. Neither one is a purchase record.</p>
+                <a class="text-link" th:href="@{/alerts}">Set a target price or drop alert</a>
+            </section>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

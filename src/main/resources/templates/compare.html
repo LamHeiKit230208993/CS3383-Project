@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Compare')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <a class="back-link" th:href="@{/search}">← Back to search</a>
+
+            <section class="panel product-hero" aria-labelledby="product-name">
+                <div class="product-hero-copy">
+                    <p class="eyebrow" th:text="${product.category}">Dairy &amp; Eggs</p>
+                    <h2 id="product-name" th:text="${product.name}">Fresh Milk 946ml</h2>
+                    <p class="product-meta">
+                        <span th:text="${product.brand}">Garden</span> ·
+                        <span th:text="${product.pack}">946ml carton</span> ·
+                        <span th:text="${product.code}">P000000192</span>
+                    </p>
+                    <p class="product-zh" th:text="${product.nameZhHant}">鮮牛奶 946毫升</p>
+                </div>
+                <div class="hero-price">
+                    <span class="price-label">Cheapest sample listing <span class="sample-pill">Sample</span></span>
+                    <strong class="price price-large" th:text="'$' + ${product.bestPrice}">$40.00</strong>
+                    <span class="retailer" th:text="${product.bestRetailer}">AEON</span>
+                    <span class="saving-note" th:text="${savingNote}">$5.00 below the next cheapest sample listing</span>
+                </div>
+            </section>
+
+            <section aria-labelledby="listings-heading">
+                <div class="section-head">
+                    <h2 id="listings-heading">Retailer listings</h2>
+                    <span class="section-note">Lowest sample price first</span>
+                </div>
+
+                <ul class="listing-list">
+                    <li class="listing-row" th:each="listing : ${listings}" th:classappend="'state-' + ${listing.state}">
+                        <div class="listing-store">
+                            <span class="store-mark" th:text="${#strings.substring(listing.retailer, 0, 2)}">AE</span>
+                            <div>
+                                <strong th:text="${listing.retailer}">AEON</strong>
+                                <span class="listing-code" th:text="${listing.code}">AEON</span>
+                            </div>
+                        </div>
+                        <p class="listing-offer" th:text="${listing.offer}">Buy 2 to save $4.00</p>
+                        <strong class="listing-price" th:text="${listing.state == 'missing' ? '—' : '$' + listing.price}">$40.00</strong>
+                        <span class="state-badge" th:if="${listing.state == 'best'}">BEST</span>
+                        <span class="state-badge state-badge-tie" th:if="${listing.state == 'tie'}">TIED</span>
+                        <span class="state-badge state-badge-missing" th:if="${listing.state == 'missing'}">NO LISTING</span>
+                        <span class="state-badge state-badge-muted" th:if="${listing.state == 'listed'}">LISTED</span>
+                    </li>
+                </ul>
+
+                <div class="source-bar">
+                    <span>Source date: <strong>20 Oct 2026</strong></span>
+                    <span>Retrieved: <strong>20 Oct 2026</strong></span>
+                    <span class="sample-pill">Sample</span>
+                </div>
+            </section>
+
+            <section class="panel action-panel" aria-labelledby="add-heading">
+                <div>
+                    <h2 id="add-heading">Add this exact product</h2>
+                    <p class="helper">Quantity is kept in the demo list only. Nothing is saved after reload.</p>
+                </div>
+                <div class="action-row">
+                    <button class="button button-primary" type="button" id="open-quantity">
+                        Add to shopping list
+                    </button>
+                    <a class="button button-ghost" th:href="@{/history}">View sample history</a>
+                </div>
+            </section>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+
+<dialog id="quantity-dialog" class="dialog" aria-labelledby="quantity-title">
+    <form method="dialog" id="quantity-form">
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Add to shopping list</p>
+                <h2 id="quantity-title" th:text="${product.name}">Fresh Milk 946ml</h2>
+            </div>
+            <button class="icon-button" value="cancel" aria-label="Close dialog">×</button>
+        </div>
+        <p class="helper" th:text="${product.brand} + ' · ' + ${product.pack} + ' · $' + ${product.bestPrice} + ' at ' + ${product.bestRetailer}">Garden · 946ml carton · $40.00 at AEON</p>
+        <label class="field-label" for="item-quantity">Quantity</label>
+        <input id="item-quantity" name="quantity" type="number" min="1" max="99" value="1">
+        <div class="dialog-actions">
+            <button class="button button-ghost" value="cancel">Cancel</button>
+            <button class="button button-primary" value="add" id="confirm-add">Add sample item</button>
+        </div>
+    </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

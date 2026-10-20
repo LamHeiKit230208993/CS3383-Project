@@ -1,20 +1,21 @@
-# TC-WEB-001 — Root page renders Hello view
+# TC-WEB-001 — Hello fallback page renders
 
 | Field | Details |
 |---|---|
 | Test class | `HelloControllerTest` |
-| Test method | `rootReturnsHelloViewWithMessage()` |
+| Test method | `helloReturnsHelloViewWithMessage()` |
 | Type | Spring MVC slice test |
-| Request | `GET /` |
+| Request | `GET /hello` |
 | Setup | `@WebMvcTest(HelloController.class)` with `MockMvc` |
 
 ## Purpose
 
-Verify the root endpoint selects the expected view and supplies its greeting.
+Verify the retained fallback endpoint selects the Hello view and supplies its
+greeting. The root route belongs to the UI prototype and redirects to `/search`.
 
 ## Steps
 
-1. Send `GET /` through `MockMvc`.
+1. Send `GET /hello` through `MockMvc`.
 2. Check the response status, view, and model.
 
 ## Expected result

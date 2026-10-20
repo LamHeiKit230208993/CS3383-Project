@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('List')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <section class="budget-card" aria-labelledby="budget-heading">
+                <div class="budget-top">
+                    <div>
+                        <p class="eyebrow">Planned weekly budget</p>
+                        <h2 id="budget-heading">Estimated basket</h2>
+                    </div>
+                    <span class="sample-pill">Sample</span>
+                </div>
+                <div class="budget-amount">
+                    <strong id="list-total" th:text="'$' + ${estimatedTotal}">$361.00</strong>
+                    <span>of $<span th:text="${budget}">600.00</span> planned</span>
+                </div>
+                <div class="budget-track" role="img" th:attr="aria-label=|${budgetPercent}% of the planned budget used|">
+                    <div class="budget-fill" id="budget-fill" th:style="'width:' + ${budgetPercent} + '%'"></div>
+                </div>
+                <div class="budget-caption">
+                    <span th:text="${budgetPercent} + '% of planned budget'">60% of planned budget</span>
+                    <span>Not actual spending</span>
+                </div>
+            </section>
+
+            <section aria-labelledby="list-heading">
+                <div class="section-head">
+                    <h2 id="list-heading">This week's list</h2>
+                    <a class="text-link" th:href="@{/search}">Add another item</a>
+                </div>
+
+                <ul class="list-items">
+                    <li class="list-item" th:each="item : ${listItems}"
+                        th:classappend="${item.checked} ? 'is-checked'"
+                        th:attr="data-price=${item.price},data-quantity=${item.quantity}">
+                        <label class="check-label">
+                            <input type="checkbox" th:checked="${item.checked}">
+                            <span class="sr-only" th:text="'Mark ' + ${item.name} + ' as checked'">Mark item as checked</span>
+                        </label>
+                        <div class="list-item-copy">
+                            <h3 th:text="${item.name}">Fresh Milk 946ml</h3>
+                            <p>
+                                <span th:text="${item.brand}">Garden</span> ·
+                                <span th:text="${item.pack}">946ml carton</span> ·
+                                Qty <strong th:text="${item.quantity}">2</strong>
+                            </p>
+                            <span class="best-note" th:text="${item.note}">Cheapest at AEON</span>
+                        </div>
+                        <div class="list-item-price">
+                            <strong th:text="'$' + ${item.price}">$40.00</strong>
+                            <span th:text="${item.retailer}">AEON</span>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="panel list-summary" aria-labelledby="summary-heading">
+                <h2 id="summary-heading">Basket summary</h2>
+                <div class="summary-row">
+                    <span>Estimated total</span>
+                    <strong id="summary-total" th:text="'$' + ${estimatedTotal}">$361.00</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Items</span>
+                    <strong th:text="${#lists.size(listItems)}">5</strong>
+                </div>
+                <p class="helper">A planned estimate from sample listed prices. It is not actual spending.</p>
+                <p class="saved-note">
+                    Shopping the cheapest sample retailer per item would save <strong>$46.00</strong>
+                    versus one store. <span class="sample-pill">Sample</span>
+                </p>
+            </section>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

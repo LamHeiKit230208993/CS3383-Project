@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Settings')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <section class="panel" aria-labelledby="language-heading">
+                <div class="section-head">
+                    <h2 id="language-heading">Language preview</h2>
+                    <span class="sample-pill">Sample</span>
+                </div>
+                <p class="helper">Only a few labels change in this prototype. Full English, Traditional Chinese, and Simplified Chinese support is later work.</p>
+
+                <div class="language-buttons" role="group" aria-label="Language preview">
+                    <button class="filter is-active" type="button" data-lang="en">English</button>
+                    <button class="filter" type="button" data-lang="zh-Hant">繁體中文</button>
+                    <button class="filter" type="button" data-lang="zh-Hans">简体中文</button>
+                </div>
+
+                <div class="language-preview" id="language-preview">
+                    <p class="eyebrow">Preview · <span id="language-name">English</span></p>
+                    <p data-i18n="searchLabel">Search products</p>
+                    <p data-i18n="listLabel">Shopping list</p>
+                    <p data-i18n="bestPriceLabel">Best listed price</p>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="display-heading">
+                <div class="section-head">
+                    <h2 id="display-heading">Display</h2>
+                </div>
+
+                <label class="setting-row">
+                    <span>
+                        <strong>High-contrast mode</strong>
+                        <small>Stronger text, borders, and price cues. Meaning is never carried by colour alone.</small>
+                    </span>
+                    <input class="switch-input" type="checkbox" id="contrast-toggle" role="switch">
+                </label>
+
+                <div class="setting-row">
+                    <span>
+                        <strong>Reduced motion</strong>
+                        <small>The prototype respects your system’s reduced-motion setting.</small>
+                    </span>
+                    <span class="state-badge state-badge-muted">AUTO</span>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="privacy-heading">
+                <div class="section-head">
+                    <h2 id="privacy-heading">Privacy &amp; data</h2>
+                </div>
+                <div class="setting-row">
+                    <span>
+                        <strong>Local-only prototype</strong>
+                        <small>No account, cloud saving, analytics, or data sale. State resets on reload.</small>
+                    </span>
+                </div>
+                <div class="setting-row">
+                    <span>
+                        <strong>View, export, or delete stored data</strong>
+                        <small>Later baseline work. This prototype stores nothing.</small>
+                    </span>
+                </div>
+                <div class="setting-row">
+                    <span>
+                        <strong>Location</strong>
+                        <small>Not requested. Geo-aware alerts are not part of this prototype.</small>
+                    </span>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="links-heading">
+                <div class="section-head">
+                    <h2 id="links-heading">Quick links</h2>
+                </div>
+                <div class="quick-links">
+                    <a class="quick-link" th:href="@{/history}">Price history</a>
+                    <a class="quick-link" th:href="@{/assistant}">Price assistant</a>
+                    <a class="quick-link" th:href="@{/saved}">Saved items</a>
+                    <a class="quick-link" th:href="@{/hello}">Hello fallback page</a>
+                </div>
+            </section>
+
+            <section class="panel note-panel" aria-labelledby="about-heading">
+                <h2 id="about-heading">About this prototype</h2>
+                <p>UI prototype for issue #7. It does not complete the baseline jobs and does not prove real data import, storage, search, history, alerts, or AI.</p>
+                <p class="helper">Intended data source: Consumer Council Online Price Watch. This app is not affiliated with the Consumer Council.</p>
+                <span class="sample-pill">Sample data</span>
+            </section>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

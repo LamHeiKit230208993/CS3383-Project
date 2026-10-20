@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Alerts')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <section aria-labelledby="alerts-heading">
+                <div class="section-head">
+                    <h2 id="alerts-heading">Watching</h2>
+                    <span class="section-note">3 sample alerts · in-app only</span>
+                </div>
+
+                <ul class="alert-list">
+                    <li class="alert-card" th:each="alert : ${alerts}" th:classappend="'state-' + ${alert.state}">
+                        <div class="alert-top">
+                            <div>
+                                <h3 th:text="${alert.name}">Fresh Milk 946ml</h3>
+                                <p th:text="${alert.target}">Target: below $45.00</p>
+                            </div>
+                            <div class="alert-price">
+                                <strong th:text="'$' + ${alert.price}">$40.00</strong>
+                                <span class="sample-pill">Sample</span>
+                            </div>
+                        </div>
+                        <p class="alert-detail" th:text="${alert.detail}">Target met</p>
+                        <div class="alert-actions">
+                            <span class="state-badge" th:if="${alert.state == 'fired'}">FIRED</span>
+                            <span class="state-badge state-badge-muted" th:if="${alert.state == 'watching'}">WATCHING</span>
+                            <button class="button button-ghost button-small" type="button" data-snooze>Snooze 3 months</button>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="panel digest-card" aria-labelledby="digest-heading">
+                <div class="digest-mark" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M14 8h6v6"/></svg>
+                </div>
+                <div>
+                    <p class="eyebrow">Morning digest · sample</p>
+                    <h2 id="digest-heading">Three things worth knowing</h2>
+                    <p>Milk is $5.00 below its earlier sample price at AEON. Rice is steady. Eggs have not reached the target yet.</p>
+                    <p class="helper">Shown inside the active app only. No background or device notification is sent.</p>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="controls-heading">
+                <div class="section-head">
+                    <h2 id="controls-heading">Alert controls</h2>
+                    <span class="sample-pill">Sample</span>
+                </div>
+
+                <label class="setting-row">
+                    <span>
+                        <strong>Quiet hours</strong>
+                        <small>11:00 pm – 7:00 am</small>
+                    </span>
+                    <input class="switch-input" type="checkbox" checked>
+                </label>
+
+                <label class="setting-row">
+                    <span>
+                        <strong>Prevent repeats</strong>
+                        <small>Do not alert again for the same sample price level</small>
+                    </span>
+                    <input class="switch-input" type="checkbox" checked>
+                </label>
+
+                <label class="setting-row">
+                    <span>
+                        <strong>Reminder interval</strong>
+                        <small>Based on a user-set interval, not household usage data</small>
+                    </span>
+                    <select class="select-input" aria-label="Reminder interval">
+                        <option>Every 2 weeks</option>
+                        <option selected>Every 4 weeks</option>
+                        <option>Every 6 weeks</option>
+                    </select>
+                </label>
+
+                <label class="setting-row">
+                    <span>
+                        <strong>Morning summary time</strong>
+                        <small>Checked only while the app is running</small>
+                    </span>
+                    <input class="time-input" type="time" value="08:00" aria-label="Morning summary time">
+                </label>
+            </section>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

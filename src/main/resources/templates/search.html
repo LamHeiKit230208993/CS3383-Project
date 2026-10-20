@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Search')}"></head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+    <aside th:replace="~{fragments/layout :: sidebar(${active})}"></aside>
+    <div class="workspace">
+        <div th:replace="~{fragments/layout :: banner}"></div>
+        <header th:replace="~{fragments/layout :: topbar(${tag}, ${subtitle})}"></header>
+
+        <main id="main-content" class="content">
+            <section class="panel search-panel" aria-labelledby="search-heading">
+                <h2 id="search-heading" class="sr-only">Search products</h2>
+                <form class="search-box" role="search" onsubmit="return false">
+                    <label class="sr-only" for="product-search">Search products</label>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                    <input id="product-search" name="q" type="search" placeholder="Search products, brands, categories…" autocomplete="off">
+                    <span class="sample-pill">Sample</span>
+                </form>
+                <div class="filter-row" role="group" aria-label="Filter by category">
+                    <button class="filter is-active" type="button" data-filter="All">All</button>
+                    <button class="filter" type="button" data-filter="Dairy &amp; Eggs">Dairy &amp; Eggs</button>
+                    <button class="filter" type="button" data-filter="Grocery staples">Grocery staples</button>
+                    <button class="filter" type="button" data-filter="Household">Household</button>
+                </div>
+            </section>
+
+            <section aria-labelledby="results-heading">
+                <div class="section-head">
+                    <h2 id="results-heading">Products</h2>
+                    <span class="section-note">Sample catalogue · <span id="result-count" th:text="${#lists.size(products)}">4</span> items</span>
+                </div>
+
+                <div class="product-grid" id="product-results">
+                    <article class="product-card" th:each="product : ${products}"
+                             th:attr="data-name=${product.name + ' ' + product.brand + ' ' + product.nameZhHant + ' ' + product.nameZhHans},data-category=${product.category}">
+                        <div class="product-top">
+                            <span class="category-tag" th:text="${product.category}">Dairy</span>
+                            <span class="sample-pill">Sample</span>
+                        </div>
+                        <h3 th:text="${product.name}">Fresh Milk 946ml</h3>
+                        <p class="product-meta"><span th:text="${product.brand}">Garden</span> · <span th:text="${product.pack}">946ml carton</span></p>
+                        <p class="product-zh" th:text="${product.nameZhHant}">鮮牛奶 946毫升</p>
+                        <div class="product-bottom">
+                            <div>
+                                <span class="price-label">Best listed price</span>
+                                <strong class="price" th:text="'$' + ${product.bestPrice}">$40.00</strong>
+                                <span class="retailer" th:text="${product.bestRetailer}">AEON</span>
+                            </div>
+                            <a class="button button-primary" th:href="@{/compare(product=${product.code})}">Compare</a>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="empty-state" id="no-results" hidden>
+                    <h3>No sample products match that search</h3>
+                    <p>Try “milk”, “rice”, “洗衣”, or clear the filters.</p>
+                    <button class="button button-ghost" type="button" id="clear-search">Clear search</button>
+                </div>
+            </section>
+
+            <section class="panel recent-panel" aria-labelledby="recent-heading">
+                <div class="section-head">
+                    <h2 id="recent-heading">Recent comparison</h2>
+                    <span class="section-note">Sample</span>
+                </div>
+                <a class="recent-card" th:href="@{/compare}">
+                    <div>
+                        <p class="eyebrow">Dairy &amp; Eggs</p>
+                        <h3>Fresh Milk 946ml</h3>
+                        <p>Garden · 946ml carton · P000000192</p>
+                    </div>
+                    <div class="recent-price">
+                        <strong>$40.00</strong>
+                        <span>AEON · cheapest sample listing</span>
+                    </div>
+                </a>
+            </section>
+        </main>
+
+        <footer th:replace="~{fragments/layout :: footer}"></footer>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobileNav(${active})}"></nav>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

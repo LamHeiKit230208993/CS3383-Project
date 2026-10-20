@@ -91,7 +91,13 @@ First run downloads all dependencies (can take a few minutes). When you see `Sta
 http://localhost:8080
 ```
 
-You should see the page render **"Hello, World!"**.
+The root redirects to the **Market Ledger UI prototype** at `/search`. All
+product, price, history, alert, and assistant content is sample data, and demo
+state resets on reload. The original Hello page is kept at
+`http://localhost:8080/hello`.
+
+See [the prototype theme and evaluation notes](Plan/ui-prototype-theme.md) for
+the screen list and checks.
 
 To stop the app, press `Ctrl+C` in the terminal.
 
