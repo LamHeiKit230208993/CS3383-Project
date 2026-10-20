@@ -2,6 +2,11 @@
 opencode.json
 .opencode/
 
-# Build output
+# Build output (Spring Boot / Maven)
 target/
 *.class
+
+# Vite + React frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
