@@ -1,0 +1,99 @@
+@startuml
+title Baseline J01-J04: domain model (records, catalogue, list)
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontSize 12
+skinparam ArrowColor #37474F
+skinparam DefaultFontColor #263238
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #1565C0
+skinparam ClassHeaderBackgroundColor #E3F2FD
+skinparam ClassFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #F9A825
+
+class LocalisedName <<record>> {
+  en : String
+  zhHant : String
+  zhHans : String
+  --
+  text(lang) : String
+}
+
+class Catalogue <<aggregate root>> {
+  importedAt : Instant
+  sourceDate : LocalDate {unknown ok}
+  sourceUrl : String
+  --
+  products : Map<String, Product>
+  replace(validated) : Result
+  find(query, lang) : List<Product>
+}
+
+class Product <<record>> {
+  code : String
+  brand : LocalisedName
+  name : LocalisedName
+  category1..3 : LocalisedName
+  --
+  compare(listings) : Comparison
+}
+
+class Listing <<record>> {
+  retailerCode : String
+  price : BigDecimal {unknown ok}
+  offer : LocalisedName {original text}
+}
+
+class Comparison <<view>> {
+  product : Product
+  cheapest : Listing
+  ties : List<Listing>
+  missing : List<String>
+}
+
+class ListItem <<record>> {
+  productCode : String
+  quantity : int
+  checked : boolean
+  addedAt : Instant
+}
+
+class ShoppingList <<aggregate root>> {
+  name : String
+  --
+  items : List<ListItem>
+  add(code, qty)
+  toggle(code, checked)
+}
+
+Catalogue "1" *-- "0..*" Product : products
+Product "1" *-- "1..*" Listing : listings
+Product ..> LocalisedName : brand / name / category
+Listing ..> LocalisedName : offer text
+Catalogue ..> Comparison : builds
+Comparison ..> Listing : ties / missing
+ShoppingList "1" *-- "0..*" ListItem : items
+ListItem ..> Product : productCode
+
+note right of Catalogue
+  Import rule (J02): validate the incoming
+  whole catalogue, then replace. On invalid
+  or empty input keep the last accepted
+  catalogue. Keyed by code, so a repeated
+  import overwrites instead of duplicating.
+end note
+
+note bottom of Listing
+  price is nullable: missing price is
+  unknown, never zero, and never wins
+  a comparison (J03).
+end note
+
+note bottom of ListItem
+  productCode only, plus quantity and
+  checked state - the list survives a
+  restart (J04) and does not copy prices.
+end note
+@enduml

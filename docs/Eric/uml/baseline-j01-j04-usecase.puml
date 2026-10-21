@@ -1,0 +1,37 @@
+@startuml
+title Baseline J01-J04: what the shopper does (use cases)
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontSize 12
+skinparam ArrowColor #37474F
+skinparam DefaultFontColor #263238
+skinparam UsecaseBackgroundColor #E3F2FD
+skinparam UsecaseBorderColor #1565C0
+skinparam RectangleBackgroundColor #FFF8E1
+skinparam RectangleBorderColor #F9A825
+
+actor "Household shopper" as Shopper
+
+rectangle "Shopping Price Helper - baseline" {
+  usecase "UC1 Import the price catalogue\n(J01, J02)" as UC1
+  usecase "UC2 Search for a product\n(J03)" as UC2
+  usecase "UC3 Compare one product's prices\nacross retailers (J03)" as UC3
+  usecase "UC4 Add a product to a shopping list\n(J04)" as UC4
+  usecase "UC5 View a saved shopping list\nwith quantities (J04)" as UC5
+  usecase "UC6 Tick an item off the list\n(J04)" as UC6
+}
+
+Shopper --> UC1
+Shopper --> UC2
+Shopper --> UC3
+Shopper --> UC4
+Shopper --> UC5
+Shopper --> UC6
+
+UC3 ..> UC2 : <<include>>
+UC4 ..> UC3 : <<include>>
+UC6 ..> UC5 : <<extend>>
+@enduml
