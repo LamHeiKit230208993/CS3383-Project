@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Desk · PriceWatch</title>
+  <link rel="stylesheet" th:href="@{/css/market-desk.css}">
+  <script th:src="@{/js/market-desk.js}" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h.01M3 12h.01M3 19h.01"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 11h8M8 15h5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="m3 3 2 2 3 12h11l2-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></symbol>
+</svg>
+<div class="workspace">
+  <aside class="sidebar">
+    <a class="wordmark" href="/" aria-label="Market Desk home"><span class="brand-mark">m<span>.</span></span><span>market desk<small>BY PRICEWATCH</small></span></a>
+    <div class="sidebar-label">YOUR SHOPPING SPACE</div>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="/" data-nav="discover" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="discover">Discover</span></a>
+      <a href="/list" data-nav="list"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="list">My list</span><span class="nav-count" data-list-count th:text="${navCount}">0</span></a>
+      <a href="/#saved" data-nav="saved"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg><span data-i18n="saved">Saved</span></a>
+      <a href="/#updates" data-nav="updates"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="updates">Updates</span><span class="nav-dot" aria-label="Sample updates available"></span></a>
+      <a href="/#assistant" data-nav="assistant"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span data-i18n="assistant">Ask</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-note"><span class="local-dot"></span><div>Your space. Your choices.<small>One local user · no sign-in</small></div></div>
+      <button class="settings-button" type="button" data-open-settings><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Display &amp; settings</button>
+      <span class="version-note">MARKET DESK / JOHN’S UI VERSION</span>
+    </div>
+  </aside>
+  <div class="workspace-body">
+    <main id="main-content" tabindex="-1">
+      <section id="scene-list" class="scene" aria-labelledby="list-heading">
+        <div class="page-heading"><div><p class="eyebrow">READY WHEN YOU ARE</p><h1 id="list-heading" tabindex="-1" data-i18n="listTitle">Your next shop, sorted.</h1><p class="intro">A simple list for a less scattered shopping trip.</p></div><a class="button primary" href="/"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add an item</a></div>
+        <p class="import-status" th:if="${listMessage}" th:text="${listMessage}"></p><div class="list-layout"><div class="panel"><div class="panel-heading"><div><h2 th:text="${listName}">Shopping list</h2><p id="list-progress" th:text="${listProgress}">0 items</p></div><span class="small-tag">Saved in H2</span></div><div id="shopping-list"><div class="shopping-row" th:classappend="${row.checked} ? 'is-checked' : ''" th:each="row : ${listRows}"><form method="post" th:action="@{/list/items/{code}/toggle(code=${row.code})}"><input type="hidden" name="checked" th:value="${!row.checked}"><button class="text-button" type="submit" th:aria-pressed="${row.checked}" th:text="${row.checked} ? 'Checked' : 'Tick off'">Tick off</button></form><span><span class="list-product-name" th:text="${row.name}">Product</span><span class="list-product-detail" th:text="${row.detail}">detail</span></span><div class="row-price"><span th:text="${row.subtotal != null ? row.subtotal : row.lowestPrice}">price</span><small th:if="${row.subtotal != null}"><span th:text="${row.lowestPrice}">each</span> × <span th:text="${row.quantity}">1</span></small><small th:unless="${row.subtotal != null}" translate="no" th:text="${row.lowestRetailer}">retailer</small><small th:if="${row.subtotal != null}" translate="no" th:text="${row.lowestRetailer}">retailer</small></div><form class="inline-quantity" method="post" th:action="@{/list/items/{code}/quantity(code=${row.code})}"><label class="sr-only" th:for="'qty-' + ${row.code}" th:text="'Quantity for ' + ${row.name}">Quantity</label><input th:id="'qty-' + ${row.code}" name="quantity" type="number" min="1" max="99" step="1" th:value="${row.quantity}" required><button class="text-button" type="submit">Update</button></form><form class="inline-remove" method="post" th:action="@{/list/items/{code}/remove(code=${row.code})}"><button class="icon-button" type="submit" th:aria-label="'Remove ' + ${row.name} + ' from the list'" th:title="'Remove ' + ${row.name}"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></form></div><div class="empty-state" th:if="${#lists.isEmpty(listRows)}"><h3>Your list is empty</h3><p>Search for a product, compare it, and add it here.</p><a class="button primary" href="/">Search products</a></div></div><div class="list-bottom-note">Checking an item only marks it in your saved list. It does not record a purchase.</div></div><aside class="panel list-summary"><p class="eyebrow">ABOUT THIS LIST</p><h2>Saved list</h2><div class="summary-row"><span>Items</span><strong th:text="${navCount}">0</strong></div><p class="helper">This list is stored in the local H2 file, so it survives a restart. List totals and budgets are a later job (J07), so no total is shown here.</p><div class="soft-callout">Reading the saved list without a connection is a later baseline job (J11).</div></aside></div>
+      </section>
+</main>
+  </div>
+</div>
+</body>
+</html>

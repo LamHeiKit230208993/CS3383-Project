@@ -10,63 +10,92 @@ skinparam ParticipantBorderColor #1565C0
 skinparam SequenceLifeLineBorderColor #90A4AE
 skinparam NoteBackgroundColor #FFF8E1
 skinparam NoteBorderColor #F9A825
+autonumber
 
 actor "Household shopper" as Shopper
 participant "Catalogue" as Catalogue
 participant "Product" as Product
 participant "Comparison" as Comparison
 participant "ShoppingList" as ShoppingList
-participant "ListItem" as ListItem
 database "H2 file store" as Store
 
-== J01/J02 import ==
+== J01 / J02 import ==
 
-Shopper -> Catalogue : import sample, then daily JSON
+Shopper -> Catalogue : import (sample, then daily JSON)
 activate Catalogue
-Catalogue -> Catalogue : parse and validate\nmoney as decimal, retrieval time
+Catalogue -> Catalogue : parse whole file\nmoney as BigDecimal
+Catalogue -> Catalogue : validate: not empty,\nunique codes, three labels each
 alt valid and not empty
-  Catalogue -> Catalogue : replace(products)\nkeyed by code
-  Catalogue -> Store : save accepted catalogue
-else invalid or empty
-  Catalogue --> Shopper : keep last accepted catalogue
+  Catalogue -> Catalogue : replace(incoming)\nkeyed by product code
+  Catalogue -> Store : save accepted catalogue\nimportedAt = now, sourceDate = null
+  Catalogue --> Shopper : ImportResult(accepted = true)
+else invalid or empty response
+  Catalogue --> Shopper : ImportResult(accepted = false)\nlast accepted catalogue kept
 end
 deactivate Catalogue
+note over Catalogue, Store
+  A repeated import replaces the same
+  product codes, so listings are not
+  duplicated.
+end note
 
 == J03 search and compare ==
 
 Shopper -> Catalogue : find(query, lang)
 activate Catalogue
-Catalogue --> Shopper : List<Product>
+Catalogue --> Shopper : List<Product>\nstated pack via code
 deactivate Catalogue
 
-Shopper -> Product : compare(listings)
+Shopper -> Product : compare()
 activate Product
-Product -> Comparison : create
+Product -> Comparison : create(product)
 activate Comparison
-Comparison -> Comparison : cheapest, ties, missing\nmissing price never wins
-Comparison --> Shopper : Comparison
+loop every listing
+  alt price is known
+    Comparison -> Comparison : track cheapest, keep ties
+  else price is null (unknown)
+    Comparison -> Comparison : add retailer to missing
+  end
+end
+Comparison --> Shopper : Comparison\ncheapest / ties / missing / importedAt
 deactivate Comparison
 deactivate Product
+note over Comparison
+  A null price is never treated as 0
+  and can never win.
+end note
 
-== J04 add to list ==
+== J04 add to list, then edit ==
 
 Shopper -> ShoppingList : add(code, qty)
 activate ShoppingList
-ShoppingList -> ListItem : create(productCode, quantity)\nchecked = false
-activate ListItem
-ListItem --> ShoppingList : item
-deactivate ListItem
+alt qty >= 1
+  ShoppingList -> Store : save shopping list
+  ShoppingList --> Shopper : updated list
+else qty invalid
+  ShoppingList --> Shopper : clear input error\nlist unchanged
+end
+deactivate ShoppingList
+
+Shopper -> ShoppingList : changeQuantity(code, qty)
+activate ShoppingList
 ShoppingList -> Store : save shopping list
+ShoppingList --> Shopper : updated list
+deactivate ShoppingList
+
+Shopper -> ShoppingList : toggle(code, checked)
+activate ShoppingList
+ShoppingList -> Store : save checked state
 ShoppingList --> Shopper : updated list
 deactivate ShoppingList
 
 == restart, then reload ==
 
-Shopper -> Store : open saved catalogue and list
-Store --> Catalogue : accepted catalogue
-Store --> ShoppingList : items with quantity, checked, addedAt
-Shopper -> ShoppingList : toggle(code, checked)
-activate ShoppingList
-ShoppingList -> Store : save shopping list
-deactivate ShoppingList
+Shopper -> Store : restart app, open saved data
+Store --> Catalogue : accepted catalogue\n(importedAt, sourceDate)
+Store --> ShoppingList : items\n(productCode, quantity, checked, addedAt)
+Shopper -> Catalogue : find(query, lang)
+Catalogue --> Shopper : same products as before restart
+Shopper -> ShoppingList : view list
+ShoppingList --> Shopper : same items, same quantities\nand checked state
 @enduml

@@ -1,5 +1,5 @@
 @startuml
-title Baseline J01-J04: domain model (records, catalogue, list)
+title Baseline J01-J04: class / domain model
 
 skinparam shadowing false
 skinparam roundcorner 8
@@ -19,6 +19,7 @@ class LocalisedName <<record>> {
   zhHans : String
   --
   text(lang) : String
+  all() : List<String>
 }
 
 class Catalogue <<aggregate root>> {
@@ -27,30 +28,47 @@ class Catalogue <<aggregate root>> {
   sourceUrl : String
   --
   products : Map<String, Product>
-  replace(validated) : Result
+  replace(incoming) : ImportResult
   find(query, lang) : List<Product>
+}
+
+class ImportResult <<view>> {
+  accepted : boolean
+  reason : String
+  replacedAt : Instant
 }
 
 class Product <<record>> {
   code : String
   brand : LocalisedName
   name : LocalisedName
-  category1..3 : LocalisedName
+  category1 : LocalisedName
+  category2 : LocalisedName
+  category3 : LocalisedName
   --
-  compare(listings) : Comparison
+  compare() : Comparison
 }
 
 class Listing <<record>> {
   retailerCode : String
-  price : BigDecimal {unknown ok}
+  price : BigDecimal {null = unknown}
   offer : LocalisedName {original text}
 }
 
 class Comparison <<view>> {
   product : Product
-  cheapest : Listing
-  ties : List<Listing>
+  cheapest : List<Listing> {ties}
   missing : List<String>
+  importedAt : Instant
+}
+
+class ShoppingList <<aggregate root>> {
+  name : String
+  --
+  items : List<ListItem>
+  add(code, qty) : Result
+  changeQuantity(code, qty)
+  toggle(code, checked)
 }
 
 class ListItem <<record>> {
@@ -60,40 +78,39 @@ class ListItem <<record>> {
   addedAt : Instant
 }
 
-class ShoppingList <<aggregate root>> {
-  name : String
-  --
-  items : List<ListItem>
-  add(code, qty)
-  toggle(code, checked)
-}
-
 Catalogue "1" *-- "0..*" Product : products
-Product "1" *-- "1..*" Listing : listings
+Product "1" *-- "0..*" Listing : listings
 Product ..> LocalisedName : brand / name / category
 Listing ..> LocalisedName : offer text
+Catalogue ..> ImportResult : replace
 Catalogue ..> Comparison : builds
-Comparison ..> Listing : ties / missing
+Comparison ..> Listing : cheapest / missing
 ShoppingList "1" *-- "0..*" ListItem : items
 ListItem ..> Product : productCode
 
-note right of Catalogue
-  Import rule (J02): validate the incoming
-  whole catalogue, then replace. On invalid
-  or empty input keep the last accepted
-  catalogue. Keyed by code, so a repeated
-  import overwrites instead of duplicating.
+note top of Catalogue
+  J02 import rule: the whole incoming file is
+  parsed and validated first, then replaces the
+  accepted catalogue in one step. On invalid or
+  empty input the accepted catalogue is kept and
+  ImportResult.accepted is false.
+  Keyed by code: a repeated import overwrites the
+  same products, so listings are not duplicated.
+  importedAt is the app's retrieval time; sourceDate
+  stays null because the file provides no date.
 end note
 
-note bottom of Listing
-  price is nullable: missing price is
-  unknown, never zero, and never wins
-  a comparison (J03).
+note right of Listing
+  price is nullable. A missing price is unknown,
+  stored as null - never 0 - and never wins a
+  comparison. offer keeps the original multi-buy
+  text; it is never divided into a unit price.
 end note
 
 note bottom of ListItem
-  productCode only, plus quantity and
-  checked state - the list survives a
-  restart (J04) and does not copy prices.
+  productCode, quantity, checked and addedAt only.
+  No price is copied into the list, so the list
+  survives a restart and no stale amount is shown
+  as a source price (J04).
 end note
 @enduml

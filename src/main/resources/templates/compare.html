@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Desk · PriceWatch</title>
+  <link rel="stylesheet" th:href="@{/css/market-desk.css}">
+  <script th:src="@{/js/market-desk.js}" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h.01M3 12h.01M3 19h.01"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 11h8M8 15h5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="m3 3 2 2 3 12h11l2-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></symbol>
+</svg>
+<div class="workspace">
+  <aside class="sidebar">
+    <a class="wordmark" href="/" aria-label="Market Desk home"><span class="brand-mark">m<span>.</span></span><span>market desk<small>BY PRICEWATCH</small></span></a>
+    <div class="sidebar-label">YOUR SHOPPING SPACE</div>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="/" data-nav="discover" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="discover">Discover</span></a>
+      <a href="/list" data-nav="list"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="list">My list</span><span class="nav-count" data-list-count th:text="${navCount}">0</span></a>
+      <a href="/#saved" data-nav="saved"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg><span data-i18n="saved">Saved</span></a>
+      <a href="/#updates" data-nav="updates"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="updates">Updates</span><span class="nav-dot" aria-label="Sample updates available"></span></a>
+      <a href="/#assistant" data-nav="assistant"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span data-i18n="assistant">Ask</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-note"><span class="local-dot"></span><div>Your space. Your choices.<small>One local user · no sign-in</small></div></div>
+      <button class="settings-button" type="button" data-open-settings><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Display &amp; settings</button>
+      <span class="version-note">MARKET DESK / JOHN’S UI VERSION</span>
+    </div>
+  </aside>
+  <div class="workspace-body">
+    <main id="main-content" tabindex="-1">
+      <section id="scene-compare" class="scene" aria-labelledby="compare-heading">
+        <a class="back-link" href="/">← Back to discover</a>
+        <div class="page-heading"><div><p class="eyebrow">ONE PRODUCT. A CLEAR COMPARISON.</p><h1 id="compare-heading" tabindex="-1">Compare listed prices</h1><p class="intro">Check the pack and offer conditions before you choose.</p></div></div>
+        <div id="comparison-content" ><div class="compare-layout"><div class="panel compare-product"><p class="product-brand" translate="no" th:text="${productBrand}">Brand</p><h2 th:text="${productName}">Product</h2><p class="helper"><span translate="no" th:text="${comparison.product.code}">code</span> · <span th:text="${productCategory}">category</span></p><form method="post" th:action="@{/list/items}"><input type="hidden" name="code" th:value="${comparison.product.code}"><label for="add-quantity">Quantity (packs)</label><input id="add-quantity" name="quantity" type="number" min="1" max="99" step="1" value="1" required><button class="button primary full" type="submit">Add to list</button></form></div><div class="panel"><div class="section-heading"><h2>Same code. Different retailers.</h2><span class="small-tag" th:text="${bestTag}">Lowest listed</span></div><table class="comparison-table"><caption class="sr-only">Stored retailer prices for this product</caption><thead><tr><th scope="col">Retailer</th><th scope="col">Offer conditions</th><th scope="col">Listed price</th></tr></thead><tbody><tr th:each="row : ${rows}" th:class="${row.lowest} ? 'best-row' : ''"><th scope="row"><span class="store-name"><span translate="no" th:text="${row.retailer}">retailer</span></span><span class="small-tag" th:if="${row.lowest}">Lowest listed</span></th><td class="offer-note" th:text="${row.offer}">offer</td><td class="comparison-price"><span th:if="${row.price}" th:text="${row.price}">0.00</span><span class="offer-note" th:unless="${row.price}">No price listed</span></td></tr></tbody></table><p class="helper" th:if="${not #lists.isEmpty(comparison.missing)}">Unknown price (never treated as 0): <span th:each="retailer, i : ${comparison.missing}" translate="no"><span th:text="${retailer}">retailer</span><span th:if="${i.last}"></span><span th:unless="${i.last}">, </span></span></p><p class="helper">Offer text is shown as published; a multi-buy amount is not a single-pack price.</p><p class="helper">Retrieved <span th:text="${#temporals.format(comparison.importedAt, 'yyyy-MM-dd HH:mm')}">time</span> · source date unknown (the file provides none).</p></div></div></div>
+        
+      </section>
+</main>
+  </div>
+</div>
+</body>
+</html>

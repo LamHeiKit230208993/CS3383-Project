@@ -91,12 +91,77 @@ First run downloads all dependencies (can take a few minutes). When you see `Sta
 http://localhost:8080
 ```
 
-You should see the **Market Desk** UI prototype. Use the navigation to try the
-sample shopping flows. All data is made up, and changes reset on reload.
+You should see the **Market Desk** app. Press **Import sample file** to load the checked
+sample catalogue, or **Fetch daily JSON** to download the current one. Search, compare,
+and add items to your list; the catalogue and the list are stored in a local H2 file.
 There is no separate frontend build or extra frontend dependency to install.
-See [the theme and evaluation notes](Plan/market-desk-theme.md) for the demo scope.
+The Saved, Updates, and Ask scenes are still sample screens (later jobs).
+See [the implementation record](implementation-baseline-j01-j04.md) for the built scope,
+and [the theme notes](Plan/market-desk-theme.md) for the visual prototype.
 
 To stop the app, press `Ctrl+C` in the terminal.
+
+---
+
+## 5. Inspect the database with the H2 Console
+
+The project can expose H2's browser-based console for local development. The
+setting is in
+[`src/main/resources/application.properties`](../src/main/resources/application.properties):
+
+```properties
+spring.h2.console.enabled=true
+```
+
+If it is set to `false`, change it to `true` and restart the application:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Open the console at:
+
+```text
+http://localhost:8080/h2-console
+```
+
+Enter the following connection details:
+
+| Field | Value |
+|---|---|
+| JDBC URL | `jdbc:h2:file:./data/pricewatch` |
+| User Name | `sa` |
+| Password | leave blank |
+
+Click **Connect**. The console should show the tables created by Hibernate,
+including `CATALOGUE`, `PRODUCT`, `LISTING`, `SHOPPING_LIST`, and `LIST_ITEM`.
+For example:
+
+```sql
+SELECT COUNT(*) AS product_count FROM PRODUCT;
+
+SELECT CODE, BRAND, CATEGORY1, CATEGORY2, CATEGORY3
+FROM PRODUCT
+LIMIT 20;
+
+SELECT * FROM SHOPPING_LIST;
+
+SELECT * FROM LIST_ITEM;
+```
+
+The database is file-based, so the console reads the same data used by the
+application. Stop the application before using another database tool against
+the same file. Do not edit `data\pricewatch.mv.db` directly.
+
+The H2 Console is an administrative tool. Keep it enabled only while working
+locally, do not expose it to the internet, and set the property back to
+`false` when you finish:
+
+```properties
+spring.h2.console.enabled=false
+```
+
+Restart the application after changing the setting.
 
 ---
 
@@ -106,6 +171,10 @@ To stop the app, press `Ctrl+C` in the terminal.
 |---------|-----|
 | `JAVA_HOME not found in your environment` | Set `JAVA_HOME` (see §2) and reopen your terminal. |
 | `java -version` shows an old version | Your terminal still has a stale PATH — reopen it, or ensure JDK 21 bin is first in the persistent PATH. |
+| First import takes a long time | The daily file is about 2.7 MB with ~2,700 products; the first replace writes them all. Wait for the page to return. |
+| Want a clean start | Stop the app and delete the `data/` folder. It holds the H2 file database. |
+| H2 Console does not open | Confirm `spring.h2.console.enabled=true`, restart the app, and use `http://localhost:8080/h2-console`. |
+| H2 Console connection fails | Use `jdbc:h2:file:./data/pricewatch`, user `sa`, and an empty password. Start the app from the repository root so `./data` resolves correctly. |
 | Port 8080 already in use | Change the port in `src/main/resources/application.properties` (`server.port=8081`) or stop the process using 8080. |
 
 ---

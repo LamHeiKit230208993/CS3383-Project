@@ -1,0 +1,149 @@
+[
+  {
+    "code": "P000000124",
+    "brand": {
+      "en": "Kowloon Dairy",
+      "zh-Hant": "九龍維記",
+      "zh-Hans": "九龙维记"
+    },
+    "name": {
+      "en": "100 %Fresh Milk 236mL",
+      "zh-Hant": "鮮牛奶 236毫升",
+      "zh-Hans": "鲜牛奶 236毫升"
+    },
+    "cat1Name": {
+      "en": "Dairy / Soy products / Eggs",
+      "zh-Hant": "奶類 / 豆製品 / 蛋",
+      "zh-Hans": "奶类 / 豆制品 / 蛋"
+    },
+    "cat2Name": {
+      "en": "Milk / Milk drinks",
+      "zh-Hant": "牛奶 / 牛奶飲品",
+      "zh-Hans": "牛奶 / 牛奶饮品"
+    },
+    "cat3Name": {
+      "en": "Chilled fresh milk/milk drinks",
+      "zh-Hant": "冷藏鮮牛奶/牛奶飲品",
+      "zh-Hans": "冷藏鲜牛奶/牛奶饮品"
+    },
+    "prices": [
+      {
+        "supermarketCode": "WELLCOME",
+        "price": "12.00"
+      },
+      {
+        "supermarketCode": "PARKNSHOP",
+        "price": "9.00"
+      },
+      {
+        "supermarketCode": "AEON",
+        "price": "7.50"
+      }
+    ],
+    "offers": [
+      {
+        "supermarketCode": "WELLCOME",
+        "en": "2 for $16.50",
+        "zh-Hant": "買2件$16.50",
+        "zh-Hans": "买2件$16.50"
+      }
+    ]
+  },
+  {
+    "code": "P000000125",
+    "brand": {
+      "en": "Kowloon Dairy",
+      "zh-Hant": "九龍維記",
+      "zh-Hans": "九龙维记"
+    },
+    "name": {
+      "en": "100 %Fresh Milk 946mL",
+      "zh-Hant": "鮮牛奶 946毫升",
+      "zh-Hans": "鲜牛奶 946毫升"
+    },
+    "cat1Name": {
+      "en": "Dairy / Soy products / Eggs",
+      "zh-Hant": "奶類 / 豆製品 / 蛋",
+      "zh-Hans": "奶类 / 豆制品 / 蛋"
+    },
+    "cat2Name": {
+      "en": "Milk / Milk drinks",
+      "zh-Hant": "牛奶 / 牛奶飲品",
+      "zh-Hans": "牛奶 / 牛奶饮品"
+    },
+    "cat3Name": {
+      "en": "Chilled fresh milk/milk drinks",
+      "zh-Hant": "冷藏鮮牛奶/牛奶飲品",
+      "zh-Hans": "冷藏鲜牛奶/牛奶饮品"
+    },
+    "prices": [
+      {
+        "supermarketCode": "WELLCOME",
+        "price": "22.00"
+      },
+      {
+        "supermarketCode": "PARKNSHOP",
+        "price": "22.00"
+      },
+      {
+        "supermarketCode": "JASONS",
+        "price": "23.50"
+      }
+    ],
+    "offers": []
+  },
+  {
+    "code": "P000000229",
+    "brand": {
+      "en": "Garden",
+      "zh-Hant": "嘉頓",
+      "zh-Hans": "嘉顿"
+    },
+    "name": {
+      "en": "Crustless Sandwich Bread 6 slices",
+      "zh-Hant": "方包 6片",
+      "zh-Hans": "方包 6片"
+    },
+    "cat1Name": {
+      "en": "Bakery / Cereals / Spreads",
+      "zh-Hant": "烘焙 / 穀物 / 醬料",
+      "zh-Hans": "烘焙 / 谷物 / 酱料"
+    },
+    "cat2Name": {
+      "en": "Breads",
+      "zh-Hant": "麵包",
+      "zh-Hans": "面包"
+    },
+    "cat3Name": {
+      "en": "Bread loaf",
+      "zh-Hant": "方包",
+      "zh-Hans": "方包"
+    },
+    "prices": [
+      {
+        "supermarketCode": "WELLCOME",
+        "price": "11.50"
+      },
+      {
+        "supermarketCode": "PARKNSHOP",
+        "price": "11.50"
+      },
+      {
+        "supermarketCode": "JASONS",
+        "price": "11.50"
+      },
+      {
+        "supermarketCode": "AEON",
+        "price": "11.50"
+      }
+    ],
+    "offers": [
+      {
+        "supermarketCode": "AEON",
+        "en": "Buy 3 at $30.00",
+        "zh-Hant": "買3件$30.00",
+        "zh-Hans": "买3件$30.00"
+      }
+    ]
+  }
+]
