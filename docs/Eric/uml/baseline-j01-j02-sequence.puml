@@ -1,0 +1,36 @@
+@startuml
+title Baseline J01/J02: import sample, then daily JSON
+
+skinparam shadowing false
+skinparam defaultFontSize 12
+skinparam ArrowColor #37474F
+skinparam DefaultFontColor #263238
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1565C0
+skinparam SequenceLifeLineBorderColor #90A4AE
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #F9A825
+autonumber
+
+actor "Household shopper" as Shopper
+participant "Catalogue" as Catalogue
+database "H2 file store" as Store
+
+Shopper -> Catalogue : import (sample, then daily JSON)
+activate Catalogue
+Catalogue -> Catalogue : parse whole file\nmoney as BigDecimal
+Catalogue -> Catalogue : validate: not empty,\nunique codes, three labels each
+alt valid and not empty
+  Catalogue -> Catalogue : replace(incoming)\nkeyed by product code
+  Catalogue -> Store : save accepted catalogue\nimportedAt = now, sourceDate = null
+  Catalogue --> Shopper : ImportResult(accepted = true)
+else invalid or empty response
+  Catalogue --> Shopper : ImportResult(accepted = false)\nlast accepted catalogue kept
+end
+deactivate Catalogue
+note over Catalogue, Store
+  A repeated import replaces the same
+  product codes, so listings are not
+  duplicated.
+end note
+@enduml

@@ -27,14 +27,14 @@
 </svg>
 <div class="workspace">
   <aside class="sidebar">
-    <a class="wordmark" href="#discover" aria-label="Market Desk home"><span class="brand-mark">m<span>.</span></span><span>market desk<small>BY PRICEWATCH</small></span></a>
+    <a class="wordmark" href="/" aria-label="Market Desk home"><span class="brand-mark">m<span>.</span></span><span>market desk<small>BY PRICEWATCH</small></span></a>
     <div class="sidebar-label">YOUR SHOPPING SPACE</div>
     <nav class="main-nav" aria-label="Main navigation">
-      <a href="#discover" data-nav="discover" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="discover">Discover</span></a>
-      <a href="#list" data-nav="list"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="list">My list</span><span class="nav-count" data-list-count>3</span></a>
-      <a href="#saved" data-nav="saved"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg><span data-i18n="saved">Saved</span></a>
-      <a href="#updates" data-nav="updates"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="updates">Updates</span><span class="nav-dot" aria-label="Sample updates available"></span></a>
-      <a href="#assistant" data-nav="assistant"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span data-i18n="assistant">Ask</span></a>
+      <a href="/" data-nav="discover" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="discover">Discover</span></a>
+      <a href="/list" data-nav="list"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="list">My list</span><span class="nav-count" data-list-count th:text="${navCount}">0</span></a>
+      <a href="/#saved" data-nav="saved"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg><span data-i18n="saved">Saved</span></a>
+      <a href="/#updates" data-nav="updates"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="updates">Updates</span><span class="nav-dot" aria-label="Sample updates available"></span></a>
+      <a href="/#assistant" data-nav="assistant"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span data-i18n="assistant">Ask</span></a>
     </nav>
     <div class="sidebar-bottom">
       <div class="local-note"><span class="local-dot"></span><div>Your space. Your choices.<small>One local user · no sign-in</small></div></div>
@@ -43,9 +43,9 @@
     </div>
   </aside>
   <div class="workspace-body">
-    <div class="prototype-banner"><span class="prototype-tag">UI prototype</span><span>Sample data · prices, dates &amp; quantities are made up</span><span class="banner-tail">Nothing is saved after reload</span></div>
+    <div class="prototype-banner"><span class="prototype-tag">Local app</span><span>Prices come from the imported catalogue · source date unknown</span><span class="banner-tail">Saved in a local H2 file</span></div>
     <header class="topbar">
-      <a class="mobile-brand" href="#discover">market desk<span>.</span></a>
+      <a class="mobile-brand" href="/">market desk<span>.</span></a>
       <div class="breadcrumb">Your workspace <span>/</span> <strong id="breadcrumb-label">Discover</strong></div>
       <div class="topbar-actions"><span class="demo-pill"><span></span>Demo workspace</span><button type="button" class="icon-button" data-open-settings aria-label="Open display and settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></button></div>
     </header>
@@ -55,32 +55,23 @@
         <div class="discovery-layout">
           <div class="discovery-main">
             <form id="search-form" class="search-box" role="search">
-              <label class="sr-only" for="product-search">Search sample products, brands, or categories</label>
+              <label class="sr-only" for="product-search">Search products, brands, categories, or retailers</label>
               <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-              <input id="product-search" name="query" type="search" autocomplete="off" placeholder="Try milk, rice, or a brand…">
-              <button type="submit" class="button primary">Search<span class="sr-only"> sample products</span></button>
+              <input id="product-search" name="q" type="search" autocomplete="off" placeholder="Try milk, bread, or a brand…" th:value="${query}">
+              <button type="submit" class="button primary">Search<span class="sr-only"> products</span></button>
             </form>
-            <div class="filter-row" role="group" aria-label="Filter sample products">
-              <button type="button" class="filter active" data-category="all" aria-pressed="true">All essentials</button><button type="button" class="filter" data-category="dairy" aria-pressed="false">Dairy &amp; eggs</button><button type="button" class="filter" data-category="pantry" aria-pressed="false">Pantry</button><button type="button" class="filter" data-category="household" aria-pressed="false">Household</button>
+            <div class="filter-row" role="group" aria-label="Catalogue status" hidden>
+              
             </div>
-            <div class="section-heading"><h2>Small things. Real-life needs.</h2><span id="result-count" aria-live="polite">6 sample products</span></div>
-            <div id="product-grid" class="product-grid"></div>
-            <div id="search-empty" class="empty-state" hidden><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><h2>No sample products found</h2><p>Try “milk”, “rice”, or “oats”, or choose another category.</p><button type="button" class="button secondary" id="clear-search">Clear search</button></div>
-            <div class="source-note"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><p><strong>Know what you are comparing.</strong> Same product, same pack. Listed prices only; delivery and stock are not included.</p></div>
+            <div class="section-heading"><h2>Imported catalogue</h2><span id="result-count" aria-live="polite" th:text="${resultCount}">0 products</span></div><p class="helper" th:text="${importNote}">No catalogue imported yet</p><div class="import-row"><form method="post" th:action="@{/import/sample}"><button class="button secondary" type="submit">Import sample file</button></form><form method="post" th:action="@{/import/daily}"><button class="button secondary" type="submit">Fetch daily JSON</button></form></div><p class="import-status" th:if="${importMessage}" th:text="${importMessage}"></p>
+            <div id="product-grid" class="product-grid"><article class="product-card" th:each="view : ${productViews}"><div class="product-details"><p class="product-brand" translate="no" th:text="${view.brand}">Brand</p><a class="product-name" th:href="@{/compare/{code}(code=${view.code})}" th:text="${view.name}">Product</a><p class="pack-label" th:text="${view.code}">code</p><p class="pack-label" th:text="${view.category}">category</p><div class="product-action-row"><div><span class="price-label">Lowest listed price</span><strong class="product-price" th:text="${view.lowestPrice}">HK$0.00</strong><p class="retailer-label" translate="no" th:text="${view.lowestRetailer}">retailer</p></div><a class="add-button" th:href="@{/compare/{code}(code=${view.code})}" aria-label="Compare and add"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></a></div></div></article></div>
+            <div id="search-empty" class="empty-state" th:if="${#lists.isEmpty(productViews) and not #strings.isEmpty(query)}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><h2>No stored products found</h2><p>Search covers the stored product names, brands, and categories. Spelling tolerance is a later check.</p><a class="button secondary" href="/">Clear search</a></div>
+            <div class="source-note"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><p><strong>Know what you are comparing.</strong> Same product code, same pack. Listed prices only; delivery and stock are not included.</p></div>
           </div>
-          <aside class="basket-preview" aria-labelledby="basket-preview-heading"><div class="preview-top"><span class="eyebrow">A LITTLE PLANNING GOES A LONG WAY</span><svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg></div><h2 id="basket-preview-heading">This week’s basket</h2><p>Your essentials, all in one place.</p><div id="basket-preview-items"></div><div class="preview-total"><span>Estimated list cost</span><strong data-basket-total>HK$147.70</strong></div><div class="budget-meter"><span>Sample weekly budget</span><strong>HK$250.00</strong><meter id="preview-budget" aria-label="Estimated list cost against sample weekly budget" min="0" max="250" value="147.7">147.70 of 250</meter><small id="budget-remaining">HK$102.30 left in your plan</small></div><a class="button primary full" href="#list">Review my list<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><p class="preview-footnote">A shopping plan, not a purchase record.</p></aside>
+          <aside class="basket-preview" aria-labelledby="basket-preview-heading"><div class="preview-top"><span class="eyebrow">A LITTLE PLANNING GOES A LONG WAY</span><svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg></div><h2 id="basket-preview-heading">This week’s basket</h2><p>Your essentials, all in one place.</p><p class="helper">Your saved list is kept by the app, not this page. Open <a href="/list">My list</a> to review it.</p><div class="preview-total"><span>Items on your list</span><strong th:text="${navCount}">0</strong></div><p class="preview-footnote">Totals and planned budgets are a later job (J07).</p><a class="button primary full" href="/list">Review my list<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><p class="preview-footnote">A shopping plan, not a purchase record.</p></aside>
         </div>
       </section>
-      <section id="scene-compare" class="scene" hidden aria-labelledby="compare-heading">
-        <a class="back-link" href="#discover">← Back to discover</a>
-        <div class="page-heading"><div><p class="eyebrow">ONE PRODUCT. A CLEAR COMPARISON.</p><h1 id="compare-heading" tabindex="-1">Compare listed prices</h1><p class="intro">Check the pack and offer conditions before you choose.</p></div></div>
-        <div id="comparison-content"></div>
-        <div class="panel history-panel"><div class="section-heading"><div><p class="eyebrow">SAMPLE TRACKING VIEW</p><h2>Price history</h2></div><label class="compact-field" for="history-period">Show<select id="history-period" name="historyPeriod"><option value="sample">7 recorded days</option><option value="empty">Not enough history</option></select></label></div><div id="history-content"></div></div>
-      </section>
-      <section id="scene-list" class="scene" hidden aria-labelledby="list-heading">
-        <div class="page-heading"><div><p class="eyebrow">READY WHEN YOU ARE</p><h1 id="list-heading" tabindex="-1" data-i18n="listTitle">Your next shop, sorted.</h1><p class="intro">A simple list for a less scattered shopping trip.</p></div><a class="button primary" href="#discover"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add an item</a></div>
-        <div class="list-layout"><div class="panel"><div class="panel-heading"><div><h2>Weekly essentials</h2><p id="list-progress">3 products · 0 checked</p></div><span class="small-tag">Sample list</span></div><div id="shopping-list"></div><div class="list-bottom-note">Checking an item changes this demo list only. It does not record a purchase.</div></div><aside class="panel list-summary"><p class="eyebrow">YOUR PLAN AT A GLANCE</p><h2>Basket summary</h2><div class="summary-row"><span>Estimated list cost</span><strong data-basket-total>HK$147.70</strong></div><div class="summary-row"><span>Sample budget</span><strong>HK$250.00</strong></div><p class="helper">Items may come from different retailers. Delivery costs and stock are not checked.</p><hr><h3>Planned cost by category</h3><div id="category-summary"></div><div class="soft-callout">Review your saved list without a connection in the later baseline. This UI prototype does not save an offline copy.</div></aside></div>
-      </section>
+
       <section id="scene-saved" class="scene" hidden aria-labelledby="saved-heading">
         <div class="page-heading"><div><p class="eyebrow">KEEP THE USEFUL THINGS CLOSE</p><h1 id="saved-heading" tabindex="-1" data-i18n="savedTitle">Saved for another day.</h1><p class="intro">Saving is a bookmark. Tracking is a separate choice.</p></div></div>
         <div class="section-heading"><h2>Your wishlist</h2><span>Sample selections</span></div><div id="saved-products" class="product-grid saved-grid"></div>
@@ -100,7 +91,7 @@
     </main>
   </div>
 </div>
-<dialog id="quantity-dialog" aria-labelledby="quantity-heading"><form id="quantity-form"><div class="dialog-heading"><div><p class="eyebrow">MAKE ROOM IN YOUR LIST</p><h2 id="quantity-heading">Add an item</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close add-item dialog"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div><div id="quantity-product" class="dialog-product"></div><label for="item-quantity">Quantity (packs)</label><input id="item-quantity" name="quantity" type="number" inputmode="numeric" autocomplete="off" min="1" max="12" step="1" value="1" required aria-describedby="quantity-help"><p id="quantity-help" class="helper">Choose 1–12 packs for this sample list. This is not an order.</p><button class="button primary full" type="submit">Add to sample list<svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></form></dialog>
+
 <dialog id="settings-dialog" aria-labelledby="settings-heading"><div class="dialog-heading"><div><p class="eyebrow">MAKE IT COMFORTABLE</p><h2 id="settings-heading">Display &amp; settings</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close settings"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div><div class="settings-form"><label for="display-language">Language preview<select id="display-language" name="language"><option value="en">English</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option></select></label><p class="helper">Preview navigation, headings, and sample product names. Other prototype text stays in English.</p><label class="check-label"><input id="high-contrast" name="highContrast" type="checkbox">High-contrast display</label><hr><h3>Your demo data</h3><p class="helper">Selections live in this page only. Reloading resets the demo. Nothing is sent, saved, or purchased.</p><button class="button secondary" type="button" id="reset-demo">Reset demo selections</button></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <noscript><p class="noscript-note">Enable JavaScript to use this sample UI. No price or AI service is connected.</p></noscript>

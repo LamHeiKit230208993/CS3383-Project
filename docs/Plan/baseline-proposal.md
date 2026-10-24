@@ -62,6 +62,6 @@ List-transfer format is not a decision needed for the first search-to-list flow.
 
 ## 6. Current evidence
 
-The code currently has a Hello page and one web test. It does not yet import prices, save lists, search products, call an AI service, or deliver alerts.
+J01-J04 are implemented: H2 file storage, sample and daily import, search, exact-product comparison, and a saved list with quantities and checked state. See [the implementation record](../implementation-baseline-j01-j04.md). The app still does not call an AI service or deliver alerts.
 
 The live JSON download and basic field counts were checked on 17 October 2026. This is source inspection, not a completed app connection or a performance result. See the [sample check](data-sample-review.md).

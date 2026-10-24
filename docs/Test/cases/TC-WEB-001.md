@@ -1,32 +1,35 @@
-# TC-WEB-001 — Root page renders Market Desk
+# TC-WEB-001 — Discover page lists the imported catalogue
 
 | Field | Details |
 |---|---|
-| Test class | `HelloControllerTest` |
-| Test method | `rootReturnsMarketDeskView()` |
-| Type | Spring MVC slice test |
-| Request | `GET /` |
-| Setup | `@WebMvcTest(HelloController.class)` with `MockMvc` |
+| Test class | `PageControllerTest` |
+| Test methods | `homeListsImportedProducts()`, `searchFindsByTraditionalChineseName()`, `searchFindsBySimplifiedChineseName()` |
+| Type | Full context test rendering the real Thymeleaf template |
+| Request | `GET /`, `GET /?q=鮮牛奶`, `GET /?q=鲜牛奶` |
+| Setup | `@SpringBootTest` with `MockMvc`; the sample is imported in `@BeforeEach` |
 
 ## Purpose
 
-Verify the root endpoint selects the Market Desk view and renders its title.
+Verify that the real page, not a mock, shows the stored products, the
+retrieval time, and the unknown source date, and that Chinese search reaches
+the page.
 
 ## Steps
 
-1. Send `GET /` through `MockMvc`.
-2. Check the response status, view, content type, and browser title.
+1. `GET /` and read the rendered HTML.
+2. Search with a Traditional Chinese name.
+3. Search with the Simplified Chinese name.
 
 ## Expected result
 
-- HTTP status is `200 OK`.
-- View name is `market-desk`.
-- Content type is compatible with `text/html`.
-- The page title is `Market Desk · PriceWatch`.
+- The page contains the bread product name and a retrieval time.
+- The page states that the source date is unknown.
+- `鮮牛奶` returns `P000000124` and does not return the bread.
+- `鲜牛奶` returns both milk codes.
 
-## Review notes
+## Limits
 
-This test does not verify full application startup, browser rendering,
-external services, persistence, or error handling.
+Checks rendered HTML strings, not layout or JavaScript. It does not exercise
+the live download.
 
-Source: [`HelloControllerTest.java`](../../../src/test/java/com/pricewatch/web/HelloControllerTest.java)
+Source: [`PageControllerTest.java`](../../../src/test/java/com/pricewatch/web/PageControllerTest.java)

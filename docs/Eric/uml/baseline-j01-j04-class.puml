@@ -1,0 +1,116 @@
+@startuml
+title Baseline J01-J04: class / domain model
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontSize 12
+skinparam ArrowColor #37474F
+skinparam DefaultFontColor #263238
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #1565C0
+skinparam ClassHeaderBackgroundColor #E3F2FD
+skinparam ClassFontStyle bold
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #F9A825
+
+class LocalisedName <<record>> {
+  en : String
+  zhHant : String
+  zhHans : String
+  --
+  text(lang) : String
+  all() : List<String>
+}
+
+class Catalogue <<aggregate root>> {
+  importedAt : Instant
+  sourceDate : LocalDate {unknown ok}
+  sourceUrl : String
+  --
+  products : Map<String, Product>
+  replace(incoming) : ImportResult
+  find(query, lang) : List<Product>
+}
+
+class ImportResult <<view>> {
+  accepted : boolean
+  reason : String
+  replacedAt : Instant
+}
+
+class Product <<record>> {
+  code : String
+  brand : LocalisedName
+  name : LocalisedName
+  category1 : LocalisedName
+  category2 : LocalisedName
+  category3 : LocalisedName
+  --
+  compare() : Comparison
+}
+
+class Listing <<record>> {
+  retailerCode : String
+  price : BigDecimal {null = unknown}
+  offer : LocalisedName {original text}
+}
+
+class Comparison <<view>> {
+  product : Product
+  cheapest : List<Listing> {ties}
+  missing : List<String>
+  importedAt : Instant
+}
+
+class ShoppingList <<aggregate root>> {
+  name : String
+  --
+  items : List<ListItem>
+  add(code, qty) : Result
+  changeQuantity(code, qty)
+  toggle(code, checked)
+}
+
+class ListItem <<record>> {
+  productCode : String
+  quantity : int
+  checked : boolean
+  addedAt : Instant
+}
+
+Catalogue "1" *-- "0..*" Product : products
+Product "1" *-- "0..*" Listing : listings
+Product ..> LocalisedName : brand / name / category
+Listing ..> LocalisedName : offer text
+Catalogue ..> ImportResult : replace
+Catalogue ..> Comparison : builds
+Comparison ..> Listing : cheapest / missing
+ShoppingList "1" *-- "0..*" ListItem : items
+ListItem ..> Product : productCode
+
+note top of Catalogue
+  J02 import rule: the whole incoming file is
+  parsed and validated first, then replaces the
+  accepted catalogue in one step. On invalid or
+  empty input the accepted catalogue is kept and
+  ImportResult.accepted is false.
+  Keyed by code: a repeated import overwrites the
+  same products, so listings are not duplicated.
+  importedAt is the app's retrieval time; sourceDate
+  stays null because the file provides no date.
+end note
+
+note right of Listing
+  price is nullable. A missing price is unknown,
+  stored as null - never 0 - and never wins a
+  comparison. offer keeps the original multi-buy
+  text; it is never divided into a unit price.
+end note
+
+note bottom of ListItem
+  productCode, quantity, checked and addedAt only.
+  No price is copied into the list, so the list
+  survives a restart and no stale amount is shown
+  as a source price (J04).
+end note
+@enduml
