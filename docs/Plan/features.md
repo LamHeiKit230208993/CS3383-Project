@@ -114,6 +114,6 @@ Use these same meanings across screens, app rules, and storage. Do not send the 
 
 Use the existing testing skill and Maven test setup for code changes. A UI picture, a successful compile, or a mock AI answer does not complete a working feature.
 
-J01-J04 are implemented; see [the implementation record](../implementation-baseline-j01-j04.md) for fields, rules, and observed test results (39 Maven tests passing, browser check against the real 2,735-product daily file on 21 October 2026). Wishlist/tracking, history, alerts, chat, totals/budgets, sharing, offline reading, and three-language UI remain planned additions. Add only the dependencies needed for the assigned job, and record observed test results.
+J01-J04 are implemented; see [the implementation record](../implementation-baseline-j01-j04.md) for fields, rules, and observed test results (39 Maven tests passing, browser check against the real 2,735-product daily file on 21 October 2026). The running build order and verified state are in [the feature log](../feature-log.md). Wishlist/tracking, history, alerts, chat, totals/budgets, sharing, offline reading, and three-language UI remain planned additions. Add only the dependencies needed for the assigned job, and record observed test results.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

@@ -1,0 +1,53 @@
+@startuml
+title Baseline J04: add to list, edit, restart and reload
+
+skinparam shadowing false
+skinparam defaultFontSize 12
+skinparam ArrowColor #37474F
+skinparam DefaultFontColor #263238
+skinparam ParticipantBackgroundColor #E3F2FD
+skinparam ParticipantBorderColor #1565C0
+skinparam SequenceLifeLineBorderColor #90A4AE
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #F9A825
+autonumber
+
+actor "Household shopper" as Shopper
+participant "Catalogue" as Catalogue
+participant "ShoppingList" as ShoppingList
+database "H2 file store" as Store
+
+== add and edit ==
+
+Shopper -> ShoppingList : add(code, qty)
+activate ShoppingList
+alt qty >= 1
+  ShoppingList -> Store : save shopping list
+  ShoppingList --> Shopper : updated list
+else qty invalid
+  ShoppingList --> Shopper : clear input error\nlist unchanged
+end
+deactivate ShoppingList
+
+Shopper -> ShoppingList : changeQuantity(code, qty)
+activate ShoppingList
+ShoppingList -> Store : save shopping list
+ShoppingList --> Shopper : updated list
+deactivate ShoppingList
+
+Shopper -> ShoppingList : toggle(code, checked)
+activate ShoppingList
+ShoppingList -> Store : save checked state
+ShoppingList --> Shopper : updated list
+deactivate ShoppingList
+
+== restart, then reload ==
+
+Shopper -> Store : restart app, open saved data
+Store --> Catalogue : accepted catalogue\n(importedAt, sourceDate)
+Store --> ShoppingList : items\n(productCode, quantity, checked, addedAt)
+Shopper -> Catalogue : find(query, lang)
+Catalogue --> Shopper : same products as before restart
+Shopper -> ShoppingList : view list
+ShoppingList --> Shopper : same items, same quantities\nand checked state
+@enduml

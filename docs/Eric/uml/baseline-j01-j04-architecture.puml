@@ -1,0 +1,228 @@
+﻿@startuml
+title Baseline J01-J04: full architecture (UI, web, import, store, domain)
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontSize 11
+skinparam ArrowColor #37474F
+skinparam DefaultFontColor #263238
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #1565C0
+skinparam ClassHeaderBackgroundColor #E3F2FD
+skinparam ClassFontStyle bold
+skinparam PackageBackgroundColor #FFFFFF
+skinparam PackageBorderColor #90A4AE
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #F9A825
+skinparam linetype ortho
+
+''  UI
+package "UI - Thymeleaf templates + static assets" as UI #FAFAFA {
+  class "market-desk.html\n(Discover)" as TDiscover <<template>>
+  class "compare.html" as TCompare <<template>>
+  class "list.html" as TList <<template>>
+  class "market-desk.css" as CSS <<stylesheet>>
+  class "market-desk.js\n(scene switch, i18n, toast)" as JS <<script>>
+}
+
+''  WEB
+package "com.pricewatch.web" as WEB #FAFAFA {
+  class PageController <<@Controller>> {
+    --
+    GET /  (q, lang)
+    GET /list  (lang)
+    GET /compare/{code}  (lang)
+    POST /import/sample
+    POST /import/daily
+    POST /list/items
+    POST /list/items/{code}/quantity
+    POST /list/items/{code}/toggle
+    POST /list/items/{code}/remove
+    --
+    common(model, lang)
+    importNote(catalogue)
+    describe(result)
+  }
+
+  class ProductView <<record / view>> {
+    code, brand, name, category
+    lowestPrice, lowestRetailer
+  }
+  class ListingRow <<record / view>> {
+    retailer, offer, price
+    lowest, missing
+  }
+  class ListRow <<record / view>> {
+    code, name, detail, quantity
+    checked, lowestPrice, lowestRetailer
+    subtotal
+  }
+  class Money <<utility>> {
+    --
+    hkd(amount, lang) : String
+  }
+}
+
+''  IMPORT
+package "com.pricewatch.importing" as IMP #FAFAFA {
+  class CatalogueImporter <<@Service>> {
+    --
+    importSample() : ImportResult
+    importDaily() : ImportResult
+    importJson(json, sourceUrl) : ImportResult
+    - label(node) : LocalisedName
+    - offer(product, retailer) : LocalisedName
+    - money(raw) : BigDecimal
+  }
+  class ImportResult <<record>> {
+    accepted : boolean
+    reason : String
+    replacedAt : Instant
+  }
+}
+
+''  STORE
+package "com.pricewatch.store" as STO #FAFAFA {
+  class CatalogueStore <<@Service>> {
+    --
+    get() : Catalogue
+    find() : Optional<Catalogue>
+    replace(incoming) : Catalogue
+  }
+  class ShoppingListStore <<@Service>> {
+    --
+    load() : ShoppingList
+    save(list) : ShoppingList
+  }
+  interface "CatalogueRepository" as CatRepo <<Spring Data JPA>> {
+    findWithProducts()
+    findFirstWithProducts()
+  }
+  interface "ShoppingListRepository" as ListRepo <<Spring Data JPA>> {
+  }
+}
+
+''  DOMAIN
+package "com.pricewatch.domain" as DOM #FAFAFA {
+  class Catalogue <<aggregate root>> {
+    importedAt : Instant
+    sourceDate : LocalDate {unknown ok}
+    sourceUrl : String
+    --
+    products : Map<String, Product>
+    replace(incoming) : ImportResult
+    find(query) : List<Product>
+    find(query, lang) : List<Product>
+    product(code) : Product
+  }
+  class Product <<record>> {
+    code : String
+    brand, name : LocalisedName
+    category1..3 : LocalisedName
+    --
+    compare(importedAt) : Comparison
+  }
+  class Listing <<record>> {
+    retailerCode : String
+    price : BigDecimal {null = unknown}
+    offer : LocalisedName
+    --
+    hasPrice() : boolean
+  }
+  class Comparison <<view>> {
+    product : Product
+    cheapest : List<Listing>
+    priced : List<Listing>
+    missing : List<String>
+    importedAt : Instant
+    --
+    hasWinner() : boolean
+    isTie() : boolean
+  }
+  class ShoppingList <<aggregate root>> {
+    name : String
+    items : List<ListItem>
+    --
+    add(code, qty, when)
+    changeQuantity(code, qty)
+    toggle(code, checked)
+    remove(code)
+    checkedCount() : int
+  }
+  class ListItem <<record>> {
+    productCode : String
+    quantity : int
+    checked : boolean
+    addedAt : Instant
+  }
+  class LocalisedName <<record>> {
+    en, zhHant, zhHans : String
+    --
+    text(lang) : String
+    all()
+  }
+}
+
+class "H2 file store" as DbStore <<database>>
+
+''  wiring
+JS ..> TDiscover : scene switch
+CSS ..> TDiscover
+TDiscover ..> PageController : form posts
+TCompare ..> PageController
+TList ..> PageController
+PageController ..> ProductView : builds
+PageController ..> ListingRow : builds
+PageController ..> ListRow : builds
+ProductView ..> Money
+ListingRow ..> Money
+ListRow ..> Money
+
+PageController --> CatalogueImporter : import
+PageController --> CatalogueStore : read / replace
+PageController --> ShoppingListStore : load / save
+PageController ..> ImportResult : flash message
+PageController ..> Catalogue : find / product
+PageController ..> Product : compare
+PageController ..> ShoppingList : add / toggle / remove
+
+CatalogueImporter --> CatalogueStore : replace
+CatalogueImporter ..> ImportResult : returns
+CatalogueImporter ..> Catalogue : builds
+CatalogueImporter ..> Product : builds
+CatalogueImporter ..> Listing : builds
+CatalogueImporter ..> LocalisedName : validates
+
+CatalogueStore ..> CatalogueRepository : uses
+ShoppingListStore ..> ShoppingListRepository : uses
+CatalogueRepository ..> Catalogue : persists
+ShoppingListRepository ..> ShoppingList : persists
+
+Catalogue "1" *-- "0..*" Product : products
+Product "1" *-- "0..*" Listing : listings
+Product ..> LocalisedName : brand / name / category
+Product ..> Comparison : compare()
+Listing ..> LocalisedName : offer
+Comparison ..> Listing : cheapest / priced / missing
+ShoppingList "1" *-- "0..*" ListItem : items
+ListItem ..> Product : productCode
+
+CatRepo ..> DbStore
+ListRepo ..> DbStore
+
+note right of PageController
+  J04: the controller is the only place
+  that turns domain objects into view
+  records (ProductView, ListingRow,
+  ListRow). Prices are formatted by Money,
+  never invented; a missing price becomes
+  null / "No listed price", not 0.
+end note
+
+note bottom of CatalogueImporter
+  J02: parse + validate the whole file
+  first, then one replace() call. On any
+  rejection ImportResult.accepted is false
+  and the stored catalogue is untouched.
+end note
+@enduml
