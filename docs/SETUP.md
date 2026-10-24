@@ -91,12 +91,45 @@ First run downloads all dependencies (can take a few minutes). When you see `Sta
 http://localhost:8080
 ```
 
-You should see the **Market Desk** UI prototype. Use the navigation to try the
-sample shopping flows. All data is made up, and changes reset on reload.
-There is no separate frontend build or extra frontend dependency to install.
-See [the theme and evaluation notes](Plan/market-desk-theme.md) for the demo scope.
+You should see **Market Desk**. Open **Data** and choose **Load checked sample**
+to try the first flow without a network connection. This imports the unchanged
+two-product excerpt checked on 17 October 2026. It is historical sample data,
+not current prices. Search for milk or bread, open one exact product, and add it
+to **My list**. Quantity and checked state now survive app restart.
+
+Choose **Refresh live prices** to download the current provider response.
+Startup does not fetch prices. A failed refresh keeps the last accepted data.
+After any catalogue has been accepted, replacing it with the two-product sample
+requires the explicit sample-replacement confirmation on Data.
+The source date stays unknown when the source does not provide one. A retrieval
+time is not a price date.
+
+Running the app needs no separate frontend build, React, Node runtime, or frontend
+dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
+Saved, Updates, and Ask are planned features. See the
+[implementation guide](implementation-baseline-j01-j04.md) for the current scope.
 
 To stop the app, press `Ctrl+C` in the terminal.
+
+### Local database
+
+Normal use stores an H2 file at `data/pricewatch.mv.db`, relative to the folder
+where you start the app. Database files are ignored by Git. Stop the app before
+copying this file for a backup. Do not run two app instances against the same
+database file.
+
+To use a different location, supply the datasource URL at launch:
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.arguments=--spring.datasource.url=jdbc:h2:file:./data/my-pricewatch'
+```
+
+Use the same working folder and URL after restart to read the same catalogue and
+list. A different folder or URL creates a different local database. Tests use
+isolated databases and do not need your normal data file.
+
+The default server binds to `127.0.0.1`. It is a local app, not a shared cloud
+service. Saved data on this computer does not by itself make a phone work offline.
 
 ---
 
@@ -125,3 +158,38 @@ To run the packaged JAR instead of `spring-boot:run`:
 .\mvnw.cmd package
 java -jar target\pricewatch-0.0.1-SNAPSHOT.jar
 ```
+
+
+## Optional browser regression checks
+
+These checks use Node.js 18 or newer and the pinned Playwright development
+package. They do not add a frontend build or change how the app runs.
+Build the current Java code first, then install and run the browser checks:
+
+```powershell
+.\mvnw.cmd package
+npm ci
+npx playwright install chromium
+npm run test:browser
+```
+
+The script starts its own app on an available loopback port. It uses an in-memory
+H2 database and a local test feed. It does not connect to your running app, saved
+shopping list, or the live price provider. `JAVA_HOME` must point to JDK 21;
+otherwise the script uses `java` from PATH.
+
+By default it uses Playwright's Chromium. To use an existing Google Chrome install
+instead, skip the browser download and run:
+
+```powershell
+$env:BROWSER_CHANNEL = 'chrome'
+npm run test:browser
+Remove-Item Env:BROWSER_CHANNEL
+```
+
+The checks cover native forms with JavaScript disabled, saved retailer choices,
+missing selected prices, exact price previews, multilingual search, category URL
+state, keyboard navigation, and four viewport widths. Synthetic source records
+exercise relevance and decimal boundaries; they are test data, not real prices.
+The script stops its own app and test server on completion or failure. It saves
+screenshots and the app log under ignored `target/browser-checks/`.

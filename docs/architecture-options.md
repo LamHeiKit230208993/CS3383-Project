@@ -1,8 +1,8 @@
 # Architecture Options
 
-Status: Spring Boot is chosen. The baseline uses one local app and an H2 file database. The interfaces below are proposed, not completed code.
+Status: Spring Boot is chosen. J01–J04 uses one local app and an H2 file database. Its implemented records and interfaces are documented in the [implementation guide](implementation-baseline-j01-j04.md). The wider architecture below includes proposals for later jobs.
 
-The [project scope](project-scope.md) defines feature decisions. This document explains how the parts could work together. Record names and interfaces below are proposals, not a completed database or API design.
+The [project scope](project-scope.md) defines feature decisions. This document explains the wider target architecture. Use the implementation guide for current Java names, web routes, and storage rules; do not treat proposed history, alert, AI, sharing, or offline interfaces as completed code.
 
 ## 1. Proposed structure
 
@@ -64,7 +64,7 @@ Keep the last valid data if retrieval or validation fails. Re-reading the same u
 
 Keep the latest catalogue for search. Save older prices only for explicitly tracked products in the first pass; keep product, pack, and retailer histories separate. The checked JSON endpoint returned a full catalogue, so selected tracking does not imply selected-product downloads.
 
-Imports and alert checks run only while the app is running. On startup, check whether an update is needed. A closed app or sleeping computer does not collect prices or deliver messages. First alerts and reminders appear inside the active app; background/cloud delivery is future work.
+J01–J04 imports run only on an explicit sample-load or live-refresh request. Startup does not fetch data. Startup freshness checks or scheduled imports are later proposals; define their behaviour and tests in the relevant job before implementation. Alert checks are later work and run only while the app is active. A closed app or sleeping computer does not collect prices or deliver messages. First alerts and reminders appear inside the active app; background/cloud delivery is future work.
 
 R21 can check a target from one current price. A drop needs an earlier comparison record. History retention and the selected comparison date remain open decisions.
 
@@ -130,6 +130,6 @@ Use an H2 file database for the baseline. PostgreSQL and a separate cache are ba
 
 ## 8. Remaining design choices
 
-Record fields, data retention, alert rules, and the exact saved-list viewing method still need work in their assigned jobs. Spring Boot, local file storage, one user, active-app notifications first, and no sign-in/cloud saving are confirmed. Product-level questions are listed in the [feasibility review](feasibility-review-simple.md#5-open-decisions). List sharing is a later baseline job; its transfer format does not block the first milestone.
+J01–J04 record fields are implemented in the baseline. Later history/alert records, data retention, alert rules, list-transfer format, and the exact offline saved-list viewing method still need work in their assigned jobs. Spring Boot, local file storage, one user, active-app notifications first, and no sign-in/cloud saving are confirmed. Product-level questions are listed in the [feasibility review](feasibility-review-simple.md#5-open-decisions). List sharing is a later baseline job; its transfer format does not block the first milestone.
 
 Choose behaviour before finalising storage or interfaces. For example, the list-transfer format affects import checks; showing actual spending requires purchase entries.

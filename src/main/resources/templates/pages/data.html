@@ -1,0 +1,51 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="data-title">
+    <div class="page-heading">
+      <p class="eyebrow">KNOW WHAT YOU ARE COMPARING</p>
+      <h1 id="data-title">Price data, made clear.</h1>
+      <p class="intro">You choose when to refresh. A failed import keeps your last accepted data.</p>
+    </div>
+    <div class="data-layout">
+      <div class="panel">
+        <h2>Accepted catalogue</h2>
+        <p th:if="${importStatus == null}" class="helper">No catalogue has been imported yet.</p>
+        <dl class="data-facts" th:if="${importStatus != null}">
+          <dt>Origin</dt>
+          <dd th:text="${importStatus.origin == 'SAMPLE' ? 'Historical sample excerpt · checked 17 Oct 2026' : 'Consumer Council live download'}"></dd>
+          <dt>Retrieved by this app</dt>
+          <dd th:text="${format.time(importStatus.retrievedAt)}"></dd>
+          <dt>Source price date</dt>
+          <dd>Unknown — not supplied by this feed</dd>
+          <dt>Records</dt>
+          <dd th:text="${importStatus.productCount + ' products · ' + importStatus.listingCount + ' listings · ' + importStatus.offerCount + ' offers'}"></dd>
+          <dt>Source</dt>
+          <dd th:text="${importStatus.sourceUrl}" class="source-url"></dd>
+        </dl>
+        <p class="source-note">A new download time does not prove a new price observation. Prices stay saved until you accept another import.</p>
+      </div>
+      <div class="import-actions">
+        <div class="panel">
+          <span class="small-tag">FIRST CHECK</span>
+          <h2>Load the checked sample</h2>
+          <p>Two original product records from 17 October 2026. Useful for checking the flow; not current shopping prices.</p>
+          <form th:action="@{/data/sample}" method="post" data-import-form>
+            <label class="check-label" th:if="${importStatus != null}">
+              <input type="checkbox" required name="confirmSample">
+              Replace the accepted catalogue with this historical excerpt.
+            </label>
+            <button class="button secondary full" type="submit">Load checked sample</button>
+          </form>
+        </div>
+        <div class="panel">
+          <span class="small-tag">CURRENT SOURCE</span>
+          <h2>Refresh live prices</h2>
+          <p>Download the daily file from the Consumer Council. Validate it before accepting any changes.</p>
+          <form th:action="@{/data/refresh}" method="post" data-import-form>
+            <button class="button primary full" type="submit">Refresh live prices</button>
+          </form>
+          <p class="helper">Needs a connection. No automatic refresh runs at startup.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</th:block>

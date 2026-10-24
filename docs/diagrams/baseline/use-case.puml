@@ -1,0 +1,75 @@
+@startuml
+skinparam RectangleBackgroundColor #f3f4f6
+skinparam RectangleBorderColor #4b5563
+skinparam RectangleFontColor #111827
+skinparam ComponentBackgroundColor #f3f4f6
+skinparam ComponentBorderColor #4b5563
+skinparam ComponentFontColor #111827
+skinparam ClassBackgroundColor #f3f4f6
+skinparam ClassBorderColor #4b5563
+skinparam ClassFontColor #111827
+skinparam UsecaseBackgroundColor #f3f4f6
+skinparam UsecaseBorderColor #4b5563
+skinparam UsecaseFontColor #111827
+skinparam DatabaseBackgroundColor #f3f4f6
+skinparam DatabaseBorderColor #4b5563
+skinparam DatabaseFontColor #111827
+skinparam NodeBackgroundColor #f3f4f6
+skinparam NodeBorderColor #4b5563
+skinparam NodeFontColor #111827
+skinparam ActorBackgroundColor #f3f4f6
+skinparam ActorBorderColor #4b5563
+skinparam ActorFontColor #111827
+skinparam StateBackgroundColor #f3f4f6
+skinparam StateBorderColor #4b5563
+skinparam StateFontColor #111827
+skinparam ArtifactBackgroundColor #f3f4f6
+skinparam ArtifactBorderColor #4b5563
+skinparam ArtifactFontColor #111827
+skinparam CloudBackgroundColor #f3f4f6
+skinparam CloudBorderColor #4b5563
+skinparam CloudFontColor #111827
+skinparam FolderBackgroundColor #f3f4f6
+skinparam FolderBorderColor #4b5563
+skinparam FolderFontColor #111827
+skinparam PackageBackgroundColor #f3f4f6
+skinparam PackageBorderColor #4b5563
+skinparam DefaultFontColor #111827
+skinparam ArrowColor #4b5563
+skinparam ArrowFontColor #111827
+skinparam NoteBackgroundColor #e5e7eb
+skinparam NoteBorderColor #4b5563
+skinparam NoteFontColor #111827
+skinparam stereotypeABackgroundColor #d4d5d8
+skinparam stereotypeABorderColor #4b5563
+skinparam stereotypeCBackgroundColor #d4d5d8
+skinparam stereotypeCBorderColor #4b5563
+skinparam stereotypeEBackgroundColor #d4d5d8
+skinparam stereotypeEBorderColor #4b5563
+skinparam stereotypeIBackgroundColor #d4d5d8
+skinparam stereotypeIBorderColor #4b5563
+!pragma layout elk
+left to right direction
+title Market Desk | J01–J04 shopper goals
+actor Shopper as shopper
+actor "Consumer Council\nprice provider" as provider
+rectangle "Local Market Desk app" {
+  usecase "Load checked\nhistorical sample" as sample
+  usecase "Refresh live\ncatalogue" as refresh
+  usecase "Search stored\nsource labels" as search
+  usecase "Compare exact product\nand retailer listings" as compare
+  usecase "Manage saved My list\nquantity and checked state" as manage
+  usecase "Read saved list\nafter app restart" as reload
+}
+shopper -- sample
+shopper -- refresh
+shopper -- search
+shopper -- compare
+shopper -- manage
+shopper -- reload
+provider -- refresh
+note bottom of manage
+  One user; no account or cloud.
+  Unknown prices stay unknown.
+end note
+@enduml

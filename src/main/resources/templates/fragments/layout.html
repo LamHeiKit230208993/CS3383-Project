@@ -1,0 +1,57 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="icon-library">
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="6.5"/>
+      <path d="m16 16 4 4"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <path d="M8 5h12M8 12h12M8 19h12M3 5h.01M3 12h.01M3 19h.01"/>
+    </symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>
+    </symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>
+    </symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24">
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z"/>
+      <path d="M8 10h8M8 14h5"/>
+    </symbol>
+    <symbol id="i-data" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5" rx="8" ry="3"/>
+      <path d="M4 5v7c0 4 16 4 16 0V5M4 12v7c0 4 16 4 16 0v-7"/>
+    </symbol>
+    <symbol id="i-pack" viewBox="0 0 24 24">
+      <path d="m12 3 9 5v9l-9 5-9-5V8Zm0 0v10m-9-5 9 5 9-5m-9 5v9M7.5 5.5l9 5"/>
+    </symbol>
+  </svg>
+</th:block>
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="source-banner">
+  <div
+    class="source-banner"
+    th:classappend="${importStatus != null and importStatus.origin == 'SAMPLE' ? ' sample-banner' : ''}"
+  >
+    <th:block th:if="${importStatus == null}">
+      <strong>No prices loaded</strong>
+      <span>Start with a checked sample or refresh the live source.</span>
+    </th:block>
+    <th:block th:if="${importStatus != null}">
+      <strong th:text="${importStatus.origin == 'SAMPLE' ? 'Historical sample · 17 Oct 2026' : 'Saved source prices'}"></strong>
+      <span th:text="${'Retrieved ' + format.time(importStatus.retrievedAt) + ' · source price date unknown'}"></span>
+    </th:block>
+    <a th:href="@{/data}">View details ↗</a>
+  </div>
+</th:block>
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="topbar">
+  <header class="topbar">
+    <a class="mobile-brand" th:href="@{/}">market desk<span>.</span></a>
+    <span class="breadcrumb">Your workspace <span>/</span><strong th:text="${title}"></strong></span>
+    <span class="local-state"><span class="local-dot"></span>Local baseline</span>
+  </header>
+</th:block>
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="page-footer">
+  <footer class="page-footer">
+    <span>Thoughtful shopping, one list at a time.</span>
+    <a th:href="@{/data}">Price data &amp; updates</a>
+  </footer>
+</th:block>

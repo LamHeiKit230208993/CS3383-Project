@@ -1,0 +1,110 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="compare-title">
+    <a class="back-link" th:href="@{/}">← Back to discover</a>
+    <div class="page-heading">
+      <p class="eyebrow">ONE PRODUCT. A CLEAR COMPARISON.</p>
+      <h1 id="compare-title">Compare listed prices</h1>
+      <p class="intro">Check the full name and pack before adding to your list.</p>
+    </div>
+    <div class="compare-layout">
+      <aside class="panel product-identity">
+        <div class="product-art">
+          <svg class="pack-icon" aria-hidden="true">
+            <use href="#i-pack"/>
+          </svg>
+        </div>
+        <p class="product-brand" th:text="${product.brand.en}" translate="no"></p>
+        <h2 th:text="${product.name.en}"></h2>
+        <p lang="zh-Hant" th:text="${product.name.zhHant}"></p>
+        <p lang="zh-Hans" th:text="${product.name.zhHans}"></p>
+        <p class="product-code" th:text="${product.code}" translate="no"></p>
+        <p class="helper">Pack details are part of the original product name.</p>
+        <p class="warning" th:unless="${product.active}">Not in the accepted catalogue. Saved identity kept; current price unknown.</p>
+        <form
+          id="add-item-form"
+          class="add-form"
+          data-estimate-form
+          th:if="${product.active}"
+          th:action="@{/list/items}"
+          method="post"
+        >
+          <input type="hidden" name="code" th:value="${product.code}">
+          <label for="quantity">Quantity <small>(packs)</small></label>
+          <input
+            id="quantity"
+            type="number"
+            name="quantity"
+            value="1"
+            min="1"
+            max="999"
+            step="1"
+            required
+            inputmode="numeric"
+            autocomplete="off"
+          >
+          <noscript><p class="helper">Choose a retailer and quantity. Your list will show the calculated estimate after saving.</p></noscript>
+          <div class="selection-estimate" aria-live="polite"><span data-selected-store>Choose a retailer in the comparison.</span><strong data-listed-estimate>—</strong><small>Listed-price estimate · offer not included</small></div>
+          <button class="button primary full" type="submit">Add to my list</button>
+        </form>
+      </aside>
+      <div class="panel">
+        <div class="section-heading">
+          <h2>Choose where to buy.</h2>
+          <span class="small-tag">Listed prices</span>
+        </div>
+        <p class="helper">Choose a retailer for your list. “Lowest listed” is a comparison guide; your choice is saved.</p>
+        <div class="table-wrap">
+          <table class="comparison-table">
+            <caption class="sr-only" th:text="${'Retailer listings for ' + product.name.en}"></caption>
+            <thead>
+              <tr>
+                <th scope="col">Retailer</th>
+                <th scope="col">Offer conditions</th>
+                <th scope="col">Listed price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                th:each="listing : ${product.listings}"
+                th:classappend="${listing.price != null and product.lowestPrice != null and listing.price.compareTo(product.lowestPrice) == 0 ? ' best-row' : ''}"
+              >
+                <th scope="row">
+                  <label class="retailer-choice">
+                    <input
+                      form="add-item-form"
+                      type="radio"
+                      name="retailerCode"
+                      th:value="${listing.retailerCode}"
+                      th:disabled="${listing.price == null or !product.active}"
+                      required
+                      th:attr="data-price=${listing.price},aria-label=${'Choose ' + listing.retailerCode}"
+                    >
+                    <span translate="no" th:text="${listing.retailerCode}"></span>
+                  </label>
+                  <span class="lowest-tag" th:if="${listing.price != null and product.lowestPrice != null and listing.price.compareTo(product.lowestPrice) == 0}">Lowest listed</span>
+                </th>
+                <td>
+                  <p class="offer-unapplied" th:unless="${listing.offers.isEmpty()}">Offer not included in estimate</p>
+                  <p th:if="${listing.offers.isEmpty()}">No offer supplied</p>
+                  <div th:each="offer : ${listing.offers}">
+                    <p th:text="${offer.en}"></p>
+                    <details>
+                      <summary>Chinese offer text</summary>
+                      <p lang="zh-Hant" th:text="${offer.zhHant}"></p>
+                      <p lang="zh-Hans" th:text="${offer.zhHans}"></p>
+                    </details>
+                  </div>
+                </td>
+                <td class="price-cell" th:text="${format.money(listing.price)}"></td>
+              </tr>
+              <tr th:if="${product.listings.isEmpty()}">
+                <td colspan="3">No current retailer listings.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="source-note">A missing listing means the current price is unknown. It does not mean the product is out of stock. No offer discount is applied to the list total.</p>
+      </div>
+    </div>
+  </section>
+</th:block>

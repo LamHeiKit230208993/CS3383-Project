@@ -1,6 +1,6 @@
 # Baseline Decisions
 
-Updated: 17 October 2026. This records the agreed build approach, not completed work.
+Updated: 24 October 2026. This records the agreed build approach. Current implementation and check evidence are recorded below.
 
 The [project scope](../project-scope.md) remains the main record of all 48 feature decisions. The [feature plan](features.md) turns those decisions into jobs. The [JSON sample check](data-sample-review.md) records what was checked.
 
@@ -11,7 +11,7 @@ The [project scope](../project-scope.md) remains the main record of all 48 featu
 | App | One local Spring Boot app for one user. No account, sign-in, or cloud saving. |
 | Screens | Start with simple pages in the existing app. Build a working search-to-list flow before full visual design. |
 | Saved data | Use an H2 file database for normal use. Memory-only storage is for tests. Lists, settings, and tracked history must survive restart. |
-| Price source | Start from the checked JSON structure. It contains names in three languages within each product. Import code still needs implementation and tests. |
+| Price source | Start from the checked JSON structure. It contains names in three languages within each product. The J01–J04 importer reads this structure; see current implementation and check evidence below. |
 | Search | Search stored language names under the same source product code. Confirm exact product and pack before comparison. |
 | History | Keep the latest catalogue for search. Save older price records only for products selected for tracking in the first pass. |
 | Offline use | Read a previously saved shopping list on the device where it was saved. No live price fetch or remote AI while offline. |
@@ -46,7 +46,7 @@ The checked endpoint returns the full file. Do not assume the provider supports 
 
 ## 4. Local and offline behaviour
 
-The local Java app must run for price imports, alert checks, and reminders. If it is closed or the computer is asleep, those jobs do not run. At the next start, check whether an update is needed. Keep the last good data if the update fails.
+The local Java app must run for price imports, alert checks, and reminders. If it is closed or the computer is asleep, those jobs do not run. In J01–J04, startup does not fetch data. The user chooses a manual live refresh. Any later scheduling must be a separate change. Keep the last good data if the update fails.
 
 The first offline feature is read-only shopping-list review. It must work on the device that saved the list. H2 on a home computer alone does not supply a phone's offline list; that use needs a saved page and list on the phone, or a readable exported copy.
 
@@ -62,6 +62,12 @@ List-transfer format is not a decision needed for the first search-to-list flow.
 
 ## 6. Current evidence
 
-The code currently has a Hello page and one web test. It does not yet import prices, save lists, search products, call an AI service, or deliver alerts.
+The independent J01–J04 code replaces the temporary UI demo with manual sample/live import, stored multilingual search, exact-product comparison, and a persisted My list. The browser uses server-rendered Thymeleaf pages and forms, with no React or separate API. See the [implementation guide](../implementation-baseline-j01-j04.md) for data and failure rules and the [test catalogue](../Test/test-case-catalog.md) for dated observed results.
+
+J01–J04 implementation checks passed on 24 October 2026. The latest full Maven run passed **43 tests**, including recovery from a database write failure during catalogue replacement. The saved Chrome suite passed **8 scenarios** against an isolated app and local test feed before the later tests-and-documentation-only rollback follow-up. See the dated test catalogue for the full sequence of runs.
+
+Historical initial-baseline evidence: 27 Maven tests, 44/44 baseline Chrome checks, and 9/9 live-data checks passed. The accepted live response contained 2,735 products, 7,812 listings, and 2,618 offers. A real stop/start preserved accepted data and the saved list. These observations do not change the dated 17 October source-inspection record. The implementation guide records the pending confirmation of the tutorial-specific UML method requested by issue #13.
+
+Later jobs remain open: there is no selected-product history, AI service, notification delivery, sharing, offline phone page, budget flow, or complete three-language UI.
 
 The live JSON download and basic field counts were checked on 17 October 2026. This is source inspection, not a completed app connection or a performance result. See the [sample check](data-sample-review.md).

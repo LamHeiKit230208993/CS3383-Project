@@ -1,0 +1,66 @@
+@startuml
+skinparam DefaultFontColor #111827
+skinparam ArrowColor #4b5563
+skinparam ArrowFontColor #111827
+skinparam ParticipantBackgroundColor #f3f4f6
+skinparam ParticipantBorderColor #4b5563
+skinparam ParticipantFontColor #111827
+skinparam SequenceLifeLineBorderColor #4b5563
+skinparam NoteBackgroundColor #e5e7eb
+skinparam NoteBorderColor #4b5563
+skinparam NoteFontColor #111827
+autonumber
+title Market Desk | import, compare, save and reopen
+actor User as shopper
+participant "Web controller" as web
+participant CatalogService as catalog
+participant ShoppingService as shopping
+participant "Price provider" as provider
+database H2 as db
+shopper -> web : POST /data/refresh
+web -> catalog : refreshLive()
+activate catalog
+catalog -> provider : bounded HTTPS GET
+provider --> catalog : JSON or fetch failure
+catalog -> catalog : parse and validate full response
+alt valid catalogue
+  catalog -> db : replace accepted catalogue in one transaction
+  db --> catalog : commit or rollback on write failure
+  catalog --> web : accepted status or unchanged-data error
+else fetch or validation failure
+  catalog --> web : error; keep last accepted catalogue
+end
+deactivate catalog
+web --> shopper : redirect with result
+shopper -> web : GET /?q=milk
+web -> catalog : searchResults(query, category)
+catalog -> db : read active products and listings
+db --> catalog : stored labels and decimal prices
+catalog --> web : Matches, Related, categories
+web --> shopper : ranked results and filter
+shopper -> web : GET /products/{code}
+web -> catalog : find(code)
+catalog --> web : exact product, ties, offers, unknown prices
+web --> shopper : comparison page
+shopper -> web : POST /list/items (code, quantity, retailer)
+web -> shopping : add(code, quantity, retailerCode)
+shopping -> db : save quantity, checked state, selected retailer
+shopping --> web : saved or quantity/retailer error
+web --> shopper : redirect to list
+note over shopper, db
+  Stop and restart the local app.
+  Startup makes no network request.
+end note
+shopper -> web : GET /list
+web -> shopping : items()
+shopping -> db : read saved items and accepted prices
+db --> shopping : same quantity, checked state, retailer choice
+shopping --> web : saved items with effective prices
+web -> web : Summary.from(items), no second list read
+web --> shopper : saved My list
+note over shopping, db
+  Null selection uses automatic lowest.
+  Missing explicit retailer price stays unknown.
+  Offers are shown, not calculated.
+end note
+@enduml

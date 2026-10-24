@@ -1,5 +1,7 @@
 # TC-WEB-002 — Root page includes prototype scenes and assets
 
+> Retired prototype case. See TC-WEB-001 for current baseline page checks.
+
 | Field | Details |
 |---|---|
 | Test class | `HelloControllerTest` |

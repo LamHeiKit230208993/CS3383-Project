@@ -1,5 +1,7 @@
 # TC-WEB-003 — Root page includes search and demo controls
 
+> Retired prototype case. See TC-WEB-001 for current baseline page checks.
+
 | Field | Details |
 |---|---|
 | Test class | `HelloControllerTest` |

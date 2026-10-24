@@ -1,0 +1,128 @@
+@startuml
+skinparam RectangleBackgroundColor #f3f4f6
+skinparam RectangleBorderColor #4b5563
+skinparam RectangleFontColor #111827
+skinparam ComponentBackgroundColor #f3f4f6
+skinparam ComponentBorderColor #4b5563
+skinparam ComponentFontColor #111827
+skinparam ClassBackgroundColor #f3f4f6
+skinparam ClassBorderColor #4b5563
+skinparam ClassFontColor #111827
+skinparam UsecaseBackgroundColor #f3f4f6
+skinparam UsecaseBorderColor #4b5563
+skinparam UsecaseFontColor #111827
+skinparam DatabaseBackgroundColor #f3f4f6
+skinparam DatabaseBorderColor #4b5563
+skinparam DatabaseFontColor #111827
+skinparam NodeBackgroundColor #f3f4f6
+skinparam NodeBorderColor #4b5563
+skinparam NodeFontColor #111827
+skinparam ActorBackgroundColor #f3f4f6
+skinparam ActorBorderColor #4b5563
+skinparam ActorFontColor #111827
+skinparam StateBackgroundColor #f3f4f6
+skinparam StateBorderColor #4b5563
+skinparam StateFontColor #111827
+skinparam ArtifactBackgroundColor #f3f4f6
+skinparam ArtifactBorderColor #4b5563
+skinparam ArtifactFontColor #111827
+skinparam CloudBackgroundColor #f3f4f6
+skinparam CloudBorderColor #4b5563
+skinparam CloudFontColor #111827
+skinparam FolderBackgroundColor #f3f4f6
+skinparam FolderBorderColor #4b5563
+skinparam FolderFontColor #111827
+skinparam PackageBackgroundColor #f3f4f6
+skinparam PackageBorderColor #4b5563
+skinparam DefaultFontColor #111827
+skinparam ArrowColor #4b5563
+skinparam ArrowFontColor #111827
+skinparam NoteBackgroundColor #e5e7eb
+skinparam NoteBorderColor #4b5563
+skinparam NoteFontColor #111827
+skinparam stereotypeABackgroundColor #d4d5d8
+skinparam stereotypeABorderColor #4b5563
+skinparam stereotypeCBackgroundColor #d4d5d8
+skinparam stereotypeCBorderColor #4b5563
+skinparam stereotypeEBackgroundColor #d4d5d8
+skinparam stereotypeEBorderColor #4b5563
+skinparam stereotypeIBackgroundColor #d4d5d8
+skinparam stereotypeIBorderColor #4b5563
+!pragma layout elk
+top to bottom direction
+title Market Desk | persisted domain and service interfaces
+class ProductEntity {
+  code: String
+  active: boolean
+}
+class LocalizedLabel <<embeddable>> {
+  en: String
+  zhHant: String
+  zhHans: String
+}
+class RetailerListingEntity {
+  retailerCode: String
+  price: BigDecimal [nullable]
+}
+class OfferEntity {
+  text: LocalizedLabel
+}
+class AcceptedImportEntity {
+  origin: String
+  retrievedAt: Instant
+  sourceDate: LocalDate [nullable]
+  checksum: String
+}
+class ShoppingListEntity {
+  name: String
+}
+class ShoppingListItemEntity {
+  quantity: int [1..999]
+  checked: boolean
+  selectedRetailerCode: String [nullable]
+}
+class CatalogService <<service>> {
+  searchResults(query, category): SearchResults
+  search(query): List<ProductView>
+  find(code): ProductView
+  status(): ImportStatus
+  importSample(): ImportStatus
+  refreshLive(): ImportStatus
+}
+class ShoppingService <<service>> {
+  items(): List<ItemView>
+  summary(): Summary
+  add(code, quantity)
+  add(code, quantity, retailerCode)
+  update(code, quantity, checked)
+  update(code, quantity, checked, retailerCode)
+  remove(code)
+}
+ProductEntity "1" *-- "5" LocalizedLabel : name, brand, categories
+ProductEntity "1" -- "0..*" RetailerListingEntity : current listings
+RetailerListingEntity "1" *-- "0..*" OfferEntity : original text
+ShoppingListEntity "1" *-- "0..*" ShoppingListItemEntity : contains
+ShoppingListItemEntity "0..*" --> "1" ProductEntity : retained reference
+CatalogService ..> ProductEntity : queries and imports
+CatalogService ..> AcceptedImportEntity : replaces singleton status
+ShoppingService ..> ShoppingListItemEntity : persists changes
+class ProductView <<read model>> {
+  from(product): ProductView
+}
+class Summary <<read model>> {
+  from(items): Summary
+}
+ShoppingService ..> ProductView : maps loaded products
+CatalogService ..> ProductView : maps loaded products
+ShoppingService ..> Summary : derives totals
+note bottom of AcceptedImportEntity
+  One latest accepted import, not history.
+  Failed import keeps accepted data.
+end note
+note bottom of ShoppingListItemEntity
+  Current UI uses one My list.
+  Checked does not mean purchased.
+  Null retailer means automatic lowest.
+  Unavailable explicit choice stays unknown.
+end note
+@enduml
