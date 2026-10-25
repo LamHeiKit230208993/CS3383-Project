@@ -8,16 +8,17 @@ in-memory H2 database and local test feed. It never uses the normal saved databa
 or a running app. The original sample records are combined with explicit synthetic
 records for search relevance and decimal boundaries.
 
-Eight scenarios cover:
+Nine scenarios cover:
 
 1. Empty start and sample import.
-2. Required retailer choice, quantity estimate, saved choice, and deliberate edits.
-3. Native forms with JavaScript disabled.
-4. Search normalization, both Chinese source labels, Related results, and category URL state.
-5. Exact four-decimal and large-price previews; invalid exponent quantities.
-6. A disappeared selected price stays unknown without retailer fallback.
-7. Five-route layouts at four widths, unclipped prices, mobile navigation, and keyboard skip link.
-8. No JavaScript or console errors in the main browser context.
+2. Card-name, price, badge, and padding clicks; selected markers, keyboard selection, accessible price/availability descriptions, and independent offer disclosures at 375/1440 px.
+3. Required retailer choice, quantity estimate, saved choice, and deliberate edits.
+4. Native card selection and forms with JavaScript disabled.
+5. Search normalization, both Chinese source labels, Related results, and category URL state.
+6. Exact four-decimal and large-price previews; invalid exponent quantities.
+7. A disappeared selected price stays unknown without retailer fallback; its card clearly reports unavailable pricing.
+8. Five-route layouts at four widths, unclipped prices, mobile navigation, and keyboard skip link.
+9. No JavaScript or console errors in the main browser context.
 
 The script stops its app and feed server on completion or failure. Artifacts go
 to ignored `target/browser-checks/`. A missing Java executable was also checked:

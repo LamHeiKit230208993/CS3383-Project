@@ -1,0 +1,140 @@
+@startuml
+title Market Desk | application classes
+
+' Layered top-to-bottom layout; hidden links only guide placement.
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classFontSize 15
+skinparam classAttributeFontSize 14
+skinparam classBackgroundColor #F3F4F6
+skinparam classBorderColor #4B5563
+skinparam classFontColor #111827
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor #FFFFFF
+skinparam packageBorderColor #E5E7EB
+skinparam packageFontColor #4B5563
+skinparam noteBackgroundColor #E5E7EB
+skinparam noteBorderColor #4B5563
+skinparam ArrowColor #4B5563
+skinparam nodesep 30
+skinparam ranksep 25
+hide circle
+hide empty methods
+
+class HelloController <<web controller>> {
+  ~ discover(...): String
+  ~ compare(code): String
+  ~ list(): String
+  ~ load(action): String
+  ~ add(...): String
+  ~ update(...): String
+  ~ remove(code): String
+}
+
+class LocalRequestGuard <<web filter>> {
+  # doFilterInternal(...): void
+  - sameOrigin(...): boolean
+}
+abstract class OncePerRequestFilter <<Spring>>
+
+class CatalogService <<catalogue service>> {
+  + searchResults(query, category): SearchResults
+  + find(code): ProductView
+  + status(): ImportStatus
+  + importSample(): ImportStatus
+  + refreshLive(): ImportStatus
+  ~ accept(...): ImportStatus
+}
+
+class ShoppingService <<shopping service>> {
+  + items(): List<ItemView>
+  + add(...): void
+  + update(...): void
+  + remove(productCode): void
+  + summary(): Summary
+}
+
+class CatalogJsonParser <<import parser>> {
+  + parse(bytes): ImportedCatalog
+}
+class ObjectMapper <<Jackson>>
+class CatalogReplacementService <<catalogue service>> {
+  + replace(...): ImportStatus
+}
+class ConsumerCouncilSourceClient <<source client>> {
+  + fetch(): byte[]
+  + sourceUrl(): String
+}
+interface PlatformTransactionManager <<Spring>>
+
+package "Catalog repositories" {
+  interface ProductRepository {
+    + findAllByActiveTrue(): List<ProductEntity>
+    + findWithListingsByCode(code): Optional<ProductEntity>
+    + deactivateAll(): int
+  }
+  interface AcceptedImportRepository
+  interface RetailerListingRepository
+  interface OfferRepository
+}
+
+package "Shopping repositories" {
+  interface ShoppingListRepository {
+    + findByName(name): Optional<ShoppingListEntity>
+  }
+  interface ShoppingListItemRepository {
+    + findAllByShoppingList_NameOrderByIdAsc(...): List<ShoppingListItemEntity>
+    + findByShoppingList_NameAndProduct_Code(...): Optional<ShoppingListItemEntity>
+    + deleteByShoppingList_NameAndProduct_Code(...): void
+  }
+}
+
+HelloController ..right.> CatalogService
+HelloController ..right.> ShoppingService
+CatalogService ..down.> ProductRepository
+CatalogService ..down.> AcceptedImportRepository
+CatalogService ..down.> CatalogJsonParser
+CatalogService ..down.> CatalogReplacementService
+CatalogService ..down.> ConsumerCouncilSourceClient
+CatalogReplacementService ..down.> ProductRepository
+CatalogReplacementService ..down.> RetailerListingRepository
+CatalogReplacementService ..down.> OfferRepository
+CatalogReplacementService ..down.> AcceptedImportRepository
+CatalogJsonParser ..right.> ObjectMapper
+ShoppingService ..down.> ShoppingListRepository
+ShoppingService ..down.> ShoppingListItemRepository
+ShoppingService ..down.> ProductRepository
+ShoppingService ..right.> PlatformTransactionManager
+LocalRequestGuard -down-|> OncePerRequestFilter
+
+' Layout hints position the layers and separate catalog from shopping persistence.
+HelloController -[hidden]right-> CatalogService
+CatalogService -[hidden]down-> ShoppingService
+CatalogService -[hidden]down-> CatalogJsonParser
+CatalogJsonParser -[hidden]right-> ObjectMapper
+CatalogJsonParser -[hidden]down-> CatalogReplacementService
+CatalogReplacementService -[hidden]right-> ConsumerCouncilSourceClient
+CatalogReplacementService -[hidden]down-> ProductRepository
+ProductRepository -[hidden]right-> AcceptedImportRepository
+ProductRepository -[hidden]down-> RetailerListingRepository
+AcceptedImportRepository -[hidden]down-> OfferRepository
+ShoppingService -[hidden]down-> ShoppingListRepository
+ShoppingListRepository -[hidden]down-> ShoppingListItemRepository
+ShoppingService -[hidden]right-> PlatformTransactionManager
+HelloController -[hidden]down-> LocalRequestGuard
+LocalRequestGuard -[hidden]right-> OncePerRequestFilter
+
+legend bottom left
+  Dashed arrows: constructor-injected collaborators.
+  Solid open triangle: inheritance.
+  Groups show responsibility areas, not exact Java packages.
+  Operation parameters and inherited CRUD are omitted or abbreviated.
+  All six repositories extend JpaRepository.
+  DTO/view types are omitted; persisted entities have a separate data-model view.
+endlegend
+@enduml

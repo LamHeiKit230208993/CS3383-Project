@@ -53,56 +53,50 @@
           <span class="small-tag">Listed prices</span>
         </div>
         <p class="helper">Choose a retailer for your list. “Lowest listed” is a comparison guide; your choice is saved.</p>
-        <div class="table-wrap">
-          <table class="comparison-table">
-            <caption class="sr-only" th:text="${'Retailer listings for ' + product.name.en}"></caption>
-            <thead>
-              <tr>
-                <th scope="col">Retailer</th>
-                <th scope="col">Offer conditions</th>
-                <th scope="col">Listed price</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                th:each="listing : ${product.listings}"
-                th:classappend="${listing.price != null and product.lowestPrice != null and listing.price.compareTo(product.lowestPrice) == 0 ? ' best-row' : ''}"
+        <fieldset class="retailer-options">
+          <legend class="sr-only">Choose a retailer for this product</legend>
+          <div class="retailer-option" th:each="listing, listingState : ${product.listings}">
+            <label class="retailer-choice">
+              <input
+                class="sr-only retailer-radio"
+                form="add-item-form"
+                type="radio"
+                name="retailerCode"
+                th:value="${listing.retailerCode}"
+                th:disabled="${listing.price == null or !product.active}"
+                required
+                th:attr="data-price=${listing.price},aria-label=${'Choose ' + listing.retailerCode},aria-describedby=${'retailer-price-' + listingState.index + ' retailer-badges-' + listingState.index + ' retailer-offer-' + listingState.index}"
               >
-                <th scope="row">
-                  <label class="retailer-choice">
-                    <input
-                      form="add-item-form"
-                      type="radio"
-                      name="retailerCode"
-                      th:value="${listing.retailerCode}"
-                      th:disabled="${listing.price == null or !product.active}"
-                      required
-                      th:attr="data-price=${listing.price},aria-label=${'Choose ' + listing.retailerCode}"
-                    >
-                    <span translate="no" th:text="${listing.retailerCode}"></span>
-                  </label>
-                  <span class="lowest-tag" th:if="${listing.price != null and product.lowestPrice != null and listing.price.compareTo(product.lowestPrice) == 0}">Lowest listed</span>
-                </th>
-                <td>
-                  <p class="offer-unapplied" th:unless="${listing.offers.isEmpty()}">Offer not included in estimate</p>
-                  <p th:if="${listing.offers.isEmpty()}">No offer supplied</p>
-                  <div th:each="offer : ${listing.offers}">
-                    <p th:text="${offer.en}"></p>
-                    <details>
-                      <summary>Chinese offer text</summary>
-                      <p lang="zh-Hant" th:text="${offer.zhHant}"></p>
-                      <p lang="zh-Hans" th:text="${offer.zhHans}"></p>
-                    </details>
-                  </div>
-                </td>
-                <td class="price-cell" th:text="${format.money(listing.price)}"></td>
-              </tr>
-              <tr th:if="${product.listings.isEmpty()}">
-                <td colspan="3">No current retailer listings.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              <span class="retailer-choice-main">
+                <span class="retailer-choice-text">
+                  <strong class="retailer-name" translate="no" th:text="${listing.retailerCode}"></strong>
+                  <span class="retailer-badges" th:id="${'retailer-badges-' + listingState.index}">
+                    <span class="lowest-tag" th:if="${listing.price != null and product.lowestPrice != null and listing.price.compareTo(product.lowestPrice) == 0}">Lowest listed</span>
+                    <span class="selected-tag" aria-hidden="true">✓ Selected</span>
+                    <span class="unavailable-tag" th:if="${listing.price == null}">No current price</span>
+                  </span>
+                </span>
+                <span class="retailer-price" th:id="${'retailer-price-' + listingState.index}">
+                  <span class="helper">Listed price</span>
+                  <strong th:text="${format.money(listing.price)}"></strong>
+                </span>
+              </span>
+              <span class="retailer-offer-copy" th:id="${'retailer-offer-' + listingState.index}">
+                <span th:if="${listing.offers.isEmpty()}" class="helper">No offer supplied</span>
+                <span th:unless="${listing.offers.isEmpty()}" class="offer-unapplied">Offer not included in estimate</span>
+                <span class="offer-text" th:each="offer : ${listing.offers}" th:text="${offer.en}"></span>
+              </span>
+            </label>
+            <details class="retailer-offer-details" th:unless="${listing.offers.isEmpty()}">
+              <summary>Chinese offer text</summary>
+              <div th:each="offer : ${listing.offers}">
+                <p lang="zh-Hant" th:text="${offer.zhHant}"></p>
+                <p lang="zh-Hans" th:text="${offer.zhHans}"></p>
+              </div>
+            </details>
+          </div>
+          <p class="helper" th:if="${product.listings.isEmpty()}">No current retailer listings.</p>
+        </fieldset>
         <p class="source-note">A missing listing means the current price is unknown. It does not mean the product is out of stock. No offer discount is applied to the list total.</p>
       </div>
     </div>

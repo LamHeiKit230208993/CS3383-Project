@@ -192,3 +192,92 @@ Node and Playwright are optional development tools for the saved browser suite.
 This follow-up changes tests and documentation. The earlier browser check record
 remains separate evidence; browser checks and live issue #13 compliance were not
 rechecked for this follow-up.
+
+
+## Store-choice cards — 25 October 2026
+
+A browser regression reproduced a missed selection when clicking the original
+Lowest listed badge outside the radio label. The comparison now uses native
+radio-backed cards with visually hidden circles. Card names, prices, badges,
+offer copy, and padding select the store. The chosen card has a coloured border,
+a tinted background, and a Selected marker. Chinese offer disclosures remain
+separate interactive controls. Missing-price cards show No current price and
+remain disabled for a new explicit choice.
+
+- Focused `HelloControllerTest`: 10 tests passed.
+- Full `.\mvnw.cmd -q test`: 43 tests passed, with no failures, errors, or skips.
+- `npm run test:browser` with Chrome: all 9 scenarios passed. Added checks cover
+  card targets at 375/1440 px, price and availability descriptions for assistive
+  technology, selected markers, arrow-key selection, separate disclosures,
+  unavailable choices, and native selection without JavaScript.
+- Packaging passed. Desktop and mobile card screenshots were inspected under
+  ignored `target/browser-checks/store-choice-{1440,375}.png`.
+
+These checks do not establish conformance across all browsers or a complete
+accessibility audit. The earlier 24 October records remain historical evidence.
+
+
+## Official PlantUML remake — 25 October 2026
+
+The class, sequence, and use-case diagrams were remade against the current Java
+code and implementation guide. This changes documentation and diagram tooling;
+it does not change the app's catalogue or shopping behavior.
+
+- Final SVG and PNG files were exported with the official PlantUML 1.2026.9 Java
+  JAR. All three sources passed Java syntax checking and the installed official
+  PlantUML MCP syntax checker, with no MCP warnings.
+- Class relationships were checked against JPA mappings, including five product
+  embedded labels, offer text, cascade/orphan ownership, retained inactive
+  products, a retailer code without a listing foreign key, and independent
+  singleton import metadata. Services are explained in the sequence view.
+- Sequence review corrected search ranking to occur in CatalogService and kept
+  automatic retailer-price resolution on list reads. Parsing precedes replacement;
+  commit/rollback are within the replacement-service transaction, while UI error
+  handling is outside it. Download failure does not proceed to parsing.
+- All three replacements were rendered and visually compared with the previous
+  exports before replacement. Editable sources, SVG, and PNG are retained.
+- The new Java export script was checked with valid sources, a path containing
+  spaces, and invalid source. Invalid syntax stopped the run without changing an
+  existing SVG. Script documentation distinguishes official Java exports, MCP
+  checks, and historical documd-compatible exports.
+- Full `.\mvnw.cmd -q test`: 43 tests passed, with no failures, errors, or skips.
+  Browser checks were not rerun for this UML-only change; the nine-scenario
+  retailer-card run above remains the relevant browser evidence.
+
+The previous local diagram set was kept in ignored
+`target/uml-remake/previous/` for comparison, then removed during cleanup on
+25 October 2026. This official renderer verification does not confirm the
+unspecified course tutorial method.
+
+
+## Separate data and application class views — 25 October 2026
+
+The persisted data model remains `class.puml`, now arranged across two landscape
+rows. Product fields explicitly show brand, name, and category1/2/3 as embedded
+LocalizedLabel slots. Language fields and JSON keys are explained. The database
+allows nullable embedded columns (`0..5` product embeddings and `0..1` offer text,
+not collections); product imports require all five labels in all three nonblank
+languages. Database mappings/constraints and parser/service rules have separate
+legend columns. Quantity limits and one-list/metadata-ID policies are not labelled
+as SQL CHECK constraints.
+
+The new `application-class.puml` is a separate landscape application view. Its
+controller, filter, services, parser/import writer/source client, six repository
+interfaces, key operations, and framework collaborator types were checked against
+current code. A code-derived check verified all 16 displayed constructor
+collaborator dependencies. The old architecture SVG was used only as a layout
+reference; its implementation content was not copied.
+
+- Official PlantUML 1.2026.9 syntax checks and SVG/PNG exports passed for all four
+  diagrams. The default render script now includes the application class view;
+  the two-class-view subset command also passed.
+- The PlantUML MCP accepted all four sources with no warnings.
+- Both class exports were visually inspected. Data model: 1219 x 675 px;
+  application classes: 1440 x 1102 px. Final exports matched reviewed candidates.
+- Full `.\mvnw.cmd -q test`: 43 passed; zero failures, errors, or skips.
+- Documentation links and `git diff --check` passed. Browser checks were not
+  rerun for this UML/documentation-only update.
+
+The pre-update set and intermediate review files under ignored
+`target/uml-layout-review/` were removed during cleanup on 25 October 2026.
+The accepted editable `.puml`, SVG, and PNG exports are kept in the UML folder.

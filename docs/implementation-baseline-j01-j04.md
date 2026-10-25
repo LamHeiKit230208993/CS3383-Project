@@ -1,6 +1,6 @@
 # Market Desk: J01–J04 implementation
 
-Updated: 24 October 2026. This is the independent implementation for issue #13. It uses the current branch and does not merge another team member's version.
+Updated: 25 October 2026. This is the independent implementation for issue #13. It uses the current branch and does not merge another team member's version.
 
 ## What the first baseline does
 
@@ -68,6 +68,14 @@ Omit `related` or set `related=false` for Matches. Use `related=true` for Relate
 
 Successful changes redirect to a normal page. There is no separate JSON API. Source labels are multilingual, but the app interface remains English. Full R46 translations and the remaining J12 work are not complete.
 
+Comparison uses clickable retailer cards. The selected card has a coloured border,
+a tinted background, and a visible Selected marker. Native radio controls are
+visually hidden but retain keyboard, screen-reader, and no-JavaScript form
+behaviour. A card's price, name, offer copy, and lowest-price badge share its
+selection target. Chinese offer details are a separate disclosure and do not
+change the selected retailer. Missing-price cards show No current price and
+remain unavailable for a new explicit choice.
+
 Desktop navigation groups working shopping pages under **Shopping**, planned alerts/chat under **Assistance**, and **Price data & updates** under **App**. Saved remains labelled planned. Data uses the same selected-row treatment as the other pages. Phone navigation uses Discover, List, Data, and More; More holds the planned features.
 
 ### Code structure
@@ -93,13 +101,13 @@ they display it. The optional browser check command is in the setup guide.
 
 ## Diagrams and verification
 
-The [UML sources and exports](diagrams/baseline/README.md) describe this milestone. Sources remain editable. They use the `documd-visuals` PlantUML-compatible renderer and one Print theme.
+The [UML sources and exports](diagrams/baseline/README.md) describe this milestone in four views: use case, landscape persisted data model, separate landscape application classes, and main-flow sequence. Sources remain editable. Final SVG/PNG exports use the official PlantUML 1.2026.9 Java JAR and one Print palette. The UML README distinguishes the Java renderer, optional MCP checks, and previous documd-compatible exports.
 
 See the [setup guide](SETUP.md) for run commands and database configuration. See the [test catalogue](Test/test-case-catalog.md) for automated scenarios and dated observed results. A source file, diagram, or successful compile alone does not prove J01–J04 complete.
 
-J01–J04 implementation checks passed on 24 October 2026. The latest full Maven run passed 43 tests, including the direct database-write rollback case. The saved Chrome suite passed 8 scenarios before the later tests-and-documentation-only rollback follow-up. The dated test catalogue separates these runs from earlier baseline, refinement, live-feed, and process-restart evidence. These changes do not complete the later J05–J12 jobs.
+J01–J04 implementation checks passed on 24 October 2026. The latest full Maven run passed 43 tests, including the direct database-write rollback case. The 25 October retailer-card run passed all 9 saved Chrome scenarios. The later UML-only remake did not rerun browser checks. The dated test catalogue separates these runs from earlier baseline, refinement, live-feed, and process-restart evidence. These changes do not complete the later J05–J12 jobs.
 
-Issue #13 also requires the method shown in the course tutorial. The class and sequence diagrams cover the requested flow, but the issue does not identify that method. Confirm the tutorial-specific method with the team before claiming that this course requirement is verified.
+Issue #13 also requires the method shown in the course tutorial. The data model, application classes, and sequence diagrams cover the implementation and requested flow, but the issue does not identify that method. Confirm the tutorial-specific method with the team before claiming that this course requirement is verified.
 
 The local web request guard permits `localhost` and loopback hostnames. It rejects
 browser writes with a different Origin or cross-site Fetch Metadata. This blocks

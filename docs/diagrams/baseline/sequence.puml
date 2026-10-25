@@ -1,66 +1,115 @@
 @startuml
-skinparam DefaultFontColor #111827
-skinparam ArrowColor #4b5563
-skinparam ArrowFontColor #111827
-skinparam ParticipantBackgroundColor #f3f4f6
-skinparam ParticipantBorderColor #4b5563
-skinparam ParticipantFontColor #111827
-skinparam SequenceLifeLineBorderColor #4b5563
-skinparam NoteBackgroundColor #e5e7eb
-skinparam NoteBorderColor #4b5563
-skinparam NoteFontColor #111827
-autonumber
-title Market Desk | import, compare, save and reopen
-actor User as shopper
-participant "Web controller" as web
-participant CatalogService as catalog
-participant ShoppingService as shopping
-participant "Price provider" as provider
-database H2 as db
-shopper -> web : POST /data/refresh
-web -> catalog : refreshLive()
-activate catalog
-catalog -> provider : bounded HTTPS GET
-provider --> catalog : JSON or fetch failure
-catalog -> catalog : parse and validate full response
-alt valid catalogue
-  catalog -> db : replace accepted catalogue in one transaction
-  db --> catalog : commit or rollback on write failure
-  catalog --> web : accepted status or unchanged-data error
-else fetch or validation failure
-  catalog --> web : error; keep last accepted catalogue
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontColor #111827
+skinparam defaultFontSize 13
+skinparam arrowColor #4b5563
+skinparam participantBackgroundColor #f3f4f6
+skinparam participantBorderColor #4b5563
+skinparam noteBackgroundColor #e5e7eb
+skinparam noteBorderColor #4b5563
+skinparam shadowing false
+title Market Desk | import, compare, save, reopen
+
+actor Shopper as shopper
+participant "HelloController" as web
+participant "CatalogService" as catalog
+participant "Consumer Council JSON\n(via source client)" as source
+participant "CatalogJsonParser" as parser
+participant "CatalogReplacementService" as replace
+participant "ShoppingService" as shopping
+database "H2 file" as db
+
+== Accept catalogue ==
+alt Load checked sample
+  shopper -> web: POST /data/sample\n(confirm when replacing accepted data)
+  web -> catalog: importSample()
+else Refresh live prices
+  shopper -> web: POST /data/refresh
+  web -> catalog: refreshLive()
+  catalog -> source: fetch()\n(fixed endpoint via source client)
+  alt Fetch fails
+    break Do not parse or replace
+      source --> catalog: HTTP, timeout, or size error
+      catalog --> web: exception
+      web --> shopper: error; prior data kept
+    end
+  else Fetch succeeds
+    source --> catalog: JSON bytes
+  end
 end
-deactivate catalog
-web --> shopper : redirect with result
-shopper -> web : GET /?q=milk
-web -> catalog : searchResults(query, category)
-catalog -> db : read active products and listings
-db --> catalog : stored labels and decimal prices
-catalog --> web : Matches, Related, categories
-web --> shopper : ranked results and filter
-shopper -> web : GET /products/{code}
-web -> catalog : find(code)
-catalog --> web : exact product, ties, offers, unknown prices
-web --> shopper : comparison page
-shopper -> web : POST /list/items (code, quantity, retailer)
-web -> shopping : add(code, quantity, retailerCode)
-shopping -> db : save quantity, checked state, selected retailer
-shopping --> web : saved or quantity/retailer error
-web --> shopper : redirect to list
+catalog -> parser: parse(bytes)
+alt Parser rejects input
+  break Do not replace invalid input
+    parser --> catalog: CatalogImportException
+    catalog --> web: exception
+    web --> shopper: import error
+  end
+else Validated input
+  parser --> catalog: ImportedCatalog
+end
+
+catalog -> replace: replace(parsed, origin, sourceUrl,\nretrievedAt, checksum)
+group Atomic replacement [@Transactional on replacement service]
+  note over replace, db: Repository and transaction-manager calls are folded into H2.
+  alt A repository write or commit fails
+    replace -> db: attempt replacement writes
+    db --> replace: persistence error
+    replace -> db: ROLLBACK (Spring)
+    db --> replace: prior accepted data retained
+  else All writes and commit succeed
+    replace -> db: replace catalogue, listings, offers,\nmetadata (sourceDate = null)
+    replace -> db: COMMIT (Spring)
+    db --> replace: committed
+  end
+end
+break Replacement failed
+  replace --> catalog: exception after rollback
+  catalog --> web: import error
+  web --> shopper: redirect; prior catalogue and list kept
+end
+replace --> catalog: ImportStatus after commit
+catalog --> web: accepted import status
+web --> shopper: success notice
+
+== Search and compare ==
+shopper -> web: GET /?q=...&category=...
+web -> catalog: searchResults(query, category)
+catalog -> db: read active catalogue
+db --> catalog: active product records
+catalog -> catalog: filter and rank source labels
+catalog --> web: Matches, Related, categories
+web --> shopper: results; Matches is default
+shopper -> web: GET /products/{code}
+web -> catalog: find(code)
+catalog -> db: fetch exact product and retailer data
+db --> catalog: product, listings, source offers
+catalog --> web: comparison with tied lowest prices
+web --> shopper: exact product; offers are not calculated
+
+== Choose and save ==
+shopper -> web: POST /list/items\n(code, quantity, retailerCode)
+web -> shopping: add(code, quantity, retailerCode)\n(blank retailerCode = Automatic lowest)
+shopping -> shopping: validate quantity
+shopping -> db: read product and saved item\n(listings for an explicit choice)
+db --> shopping: product and saved choice data
+shopping -> shopping: check product and requested choice
+shopping -> db: save quantity, checked, selectedRetailerCode
+db --> shopping: saved item
+shopping --> web: saved
+web --> shopper: redirect to My list
+
+== Restart and reload ==
 note over shopper, db
-  Stop and restart the local app.
-  Startup makes no network request.
+  Stop and restart the app. Reuse the H2 file;
+  startup makes no network request.
 end note
-shopper -> web : GET /list
-web -> shopping : items()
-shopping -> db : read saved items and accepted prices
-db --> shopping : same quantity, checked state, retailer choice
-shopping --> web : saved items with effective prices
-web -> web : Summary.from(items), no second list read
-web --> shopper : saved My list
-note over shopping, db
-  Null selection uses automatic lowest.
-  Missing explicit retailer price stays unknown.
-  Offers are shown, not calculated.
-end note
+shopper -> web: GET /list (after restart)
+web -> shopping: items()
+shopping -> db: read saved items and current prices
+db --> shopping: quantity, checked,\nselected retailer code
+shopping --> web: saved items with effective prices
+web -> web: Summary.from(items)
+web --> shopper: My list and known subtotal
+note over shopping, db: Explicit retailer choice persists; unavailable prices remain unknown.
 @enduml

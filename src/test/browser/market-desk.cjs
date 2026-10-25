@@ -98,6 +98,12 @@ async function main() {
     assert.equal(response.status(), 200, route);
   };
   const text = locator => locator.innerText();
+  const chooseRetailer = (tab, code) => tab.locator(".retailer-choice").filter({
+    has: tab.getByRole("radio", { name: `Choose ${code}`, exact: true })
+  }).click();
+  const describedText = radio => radio.evaluate(input =>
+    (input.getAttribute("aria-describedby") || "").split(/\s+/)
+      .map(id => document.getElementById(id)?.textContent || "").join(" "));
 
   await check("empty start and sample import", async () => {
     await go("/");
@@ -107,10 +113,42 @@ async function main() {
     assert.match(await text(page.locator(".source-banner")), /Historical sample/);
   });
 
+  await check("store name and lowest-price badge select the retailer", async () => {
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await go("/products/P000000124");
+      const lowestRow = page.locator(".retailer-option").filter({ hasText: "AEON" });
+      assert.match(await describedText(lowestRow.getByRole("radio")), /7\.50/);
+      await lowestRow.locator(".lowest-tag").click();
+      assert.equal(await page.getByRole("radio", { name: "Choose AEON", exact: true }).isChecked(), true,
+        `Lowest-price badge did not select AEON at ${width}px`);
+      assert.match(await text(page.locator("[data-selected-store]")), /AEON/);
+      await page.locator(".retailer-option").filter({ hasText: "PARKNSHOP" }).locator(".retailer-price").click();
+      assert.equal(await page.getByRole("radio", { name: "Choose PARKNSHOP", exact: true }).isChecked(), true);
+      const otherRow = page.locator(".retailer-option").filter({ hasText: "JASONS" });
+      await otherRow.getByText("JASONS", { exact: true }).click();
+      assert.equal(await page.getByRole("radio", { name: "Choose JASONS", exact: true }).isChecked(), true);
+      assert.match(await text(page.locator("[data-listed-estimate]")), /12\.50/);
+      await lowestRow.locator(".retailer-choice").click({ position: { x: 2, y: 2 } });
+      assert.equal(await page.getByRole("radio", { name: "Choose AEON", exact: true }).isChecked(), true,
+        `Store label padding did not select AEON at ${width}px`);
+      await page.getByRole("radio", { name: "Choose AEON", exact: true }).focus();
+      await page.keyboard.press("ArrowDown");
+      assert.equal(await page.getByRole("radio", { name: "Choose JASONS", exact: true }).isChecked(), true);
+      assert.match(await text(page.locator("[data-selected-store]")), /JASONS/);
+      assert.equal(await otherRow.locator(".selected-tag").isVisible(), true);
+      assert.equal(await lowestRow.locator(".selected-tag").isVisible(), false);
+      await otherRow.locator("details summary").click();
+      assert.equal(await otherRow.locator("details").getAttribute("open"), "");
+      assert.equal(await page.getByRole("radio", { name: "Choose JASONS", exact: true }).isChecked(), true);
+      await page.screenshot({ path: path.join(artifacts, `store-choice-${width}.png`), fullPage: true });
+    }
+  });
+
   await check("retailer selection, quantity preview, and saved choice", async () => {
     await go("/products/P000000124");
     assert.equal(await page.locator("#add-item-form").evaluate(form => form.checkValidity()), false);
-    await page.getByRole("radio", { name: "Choose JASONS", exact: true }).check();
+    await chooseRetailer(page, "JASONS");
     await page.locator("#quantity").fill("2");
     assert.match(await text(page.locator("[data-listed-estimate]")), /25\.00/);
     assert.match(await text(page.locator(".selection-estimate")), /offer not included/);
@@ -134,7 +172,9 @@ async function main() {
     try {
       const tab = await plain.newPage();
       await tab.goto(base + "/products/P000000229");
-      await tab.getByRole("radio", { name: "Choose WELLCOME", exact: true }).check();
+      await tab.locator(".retailer-option").filter({ hasText: "WELLCOME" })
+        .locator(".lowest-tag").click();
+      assert.equal(await tab.getByRole("radio", { name: "Choose WELLCOME", exact: true }).isChecked(), true);
       assert.equal(await tab.locator("#add-item-form").evaluate(form => form.checkValidity()), true);
       await tab.getByRole("button", { name: "Add to my list" }).click();
       // A first flash redirect can include Tomcat's URL session marker.
@@ -166,13 +206,13 @@ async function main() {
 
   await check("decimal preview boundaries and invalid quantities", async () => {
     await go("/products/TEST-TINY");
-    await page.getByRole("radio", { name: "Choose TEST", exact: true }).check();
+    await chooseRetailer(page, "TEST");
     await page.locator("#quantity").fill("3");
     assert.match(await text(page.locator("[data-listed-estimate]")), /0\.0003$/);
     await page.locator("#quantity").fill("1e1");
     assert.equal(await text(page.locator("[data-listed-estimate]")), "—");
     await go("/products/TEST-LARGE");
-    await page.getByRole("radio", { name: "Choose TEST", exact: true }).check();
+    await chooseRetailer(page, "TEST");
     await page.locator("#quantity").fill("999");
     assert.match(await text(page.locator("[data-listed-estimate]")), /998,999,999,999,999,999\.9001$/);
     await page.getByRole("button", { name: "Add to my list" }).click();
@@ -187,6 +227,14 @@ async function main() {
     missingRetailer = true;
     await go("/data");
     await page.getByRole("button", { name: "Refresh live prices" }).click();
+    await go("/products/P000000124");
+    const unavailable = page.locator(".retailer-option").filter({ hasText: "JASONS" });
+    assert.match(await text(unavailable), /No current price/);
+    assert.equal(await unavailable.getByRole("radio").isDisabled(), true);
+    assert.match(await describedText(unavailable.getByRole("radio")), /No current price/);
+    const unavailableBounds = await unavailable.locator(".retailer-choice").boundingBox();
+    await page.mouse.click(unavailableBounds.x + 20, unavailableBounds.y + 20);
+    assert.equal(await unavailable.getByRole("radio").isChecked(), false);
     await go("/list");
     assert.equal(await item.locator("[name=retailerCode]").inputValue(), "JASONS");
     assert.match(await text(item.locator(".line-total")), /Not listed/);
@@ -216,7 +264,7 @@ async function main() {
           true, `Clipped saved total at ${width}px`);
         }
         if (route === "/products/TEST-LARGE") {
-          await page.getByRole("radio", { name: "Choose TEST", exact: true }).check();
+          await chooseRetailer(page, "TEST");
           await page.locator("#quantity").fill("999");
           assert.equal(await page.locator("[data-listed-estimate]").evaluate(amount =>
             amount.scrollWidth <= amount.clientWidth), true, `Clipped estimate at ${width}px`);

@@ -128,15 +128,6 @@ input:not([type=checkbox]):not([type=radio]), select { background: var(--surface
 .add-form { margin-top: 24px; display: grid; gap: 10px; }
 .add-form label { font-size: 14px; font-weight: 600; }
 .add-form small { color: var(--muted); font-weight: 400; }
-.table-wrap { max-width: 100%; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; }
-th, td { padding: 20px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-thead th { font-size: 11px; font-weight: 500; color: var(--muted); }
-.best-row { background: var(--green-soft); }
-.lowest-tag { display: block; font-size: 10px; color: var(--green); margin-top: 7px; }
-.price-cell { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
-td details { font-size: 12px; color: var(--muted); }
 summary { min-height: 44px; padding-top: 10px; cursor: pointer; }
 .list-item { padding: 25px 0; border-top: 1px solid var(--line); }
 .list-item-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
@@ -174,7 +165,6 @@ dd { margin: 0; }
   .wordmark { font-size: 17px; }
   .planned-tag { font-size: 9px; }
   .compare-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 20px; }
-  .price-cell { font-size: 19px; }
 }
 @media (max-width: 1000px) {
   .discovery-layout, .list-layout, .compare-layout, .data-layout { grid-template-columns: minmax(0, 1fr); }
@@ -223,10 +213,6 @@ dd { margin: 0; }
   .product-identity > p { margin-top: 10px; }
   .product-identity .add-form { display: grid; grid-template-columns: auto 75px; }
   .add-form .button { grid-column: 1 / -1; }
-  .comparison-table th, .comparison-table td { padding: 16px 6px; font-size: 11px; }
-  .comparison-table .price-cell { font-size: 16px; }
-  .comparison-table th:first-child { width: 28%; }
-  .comparison-table th:last-child { width: 25%; }
   .list-item-heading { gap: 12px; }
   .line-total { font-size: 19px; }
   .list-edit-form { gap: 12px; }
@@ -242,10 +228,6 @@ dd { margin: 0; }
 
 /* Selection and search refinements use source records, not invented offer rules. */
 .mobile-nav { display: none; }
-.retailer-choice { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
-.retailer-choice input { width: 20px; height: 20px; accent-color: var(--blue); flex-shrink: 0; }
-.retailer-choice:has(input:disabled) { color: var(--muted); cursor: default; }
-.lowest-tag { margin-left: 30px; }
 .selection-estimate { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 8px 0; background: var(--page); }
 .selection-estimate span, .selection-estimate small { display: block; font-size: 12px; color: var(--muted); }
 .selection-estimate strong { display: block; font-size: 27px; margin: 4px 0; font-variant-numeric: tabular-nums; }
@@ -264,9 +246,6 @@ dd { margin: 0; }
 @media (max-width: 767px) {
   html { scroll-padding-bottom: 105px; }
   .product-identity .add-form { display: flex; flex-direction: column; align-items: stretch; }
-  .retailer-choice { flex-wrap: wrap; gap: 5px; }
-  .retailer-choice input { width: 19px; height: 19px; }
-  .lowest-tag { margin-left: 0; }
   .list-edit-form .retailer-edit { max-width: none; flex-basis: calc(100% - 112px); }
   .mobile-nav { display: flex; align-items: stretch; gap: 4px; position: fixed; inset: auto 0 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 20; background: var(--surface); border-top: 1px solid var(--line); }
   .mobile-nav > a, .mobile-more { flex: 1; min-width: 0; }
@@ -281,7 +260,40 @@ dd { margin: 0; }
   .more-destinations small { font-size: 11px; color: var(--muted); }
 }
 
-.comparison-table tr:has(input[type=radio]:checked) { outline: 2px solid var(--blue); outline-offset: -2px; background: var(--blue-soft); }
 
 /* Keep the full supported decimal amount visible in narrow layouts. */
 .product-price, .line-total, .selection-estimate strong, .summary-total strong { overflow-wrap: anywhere; }
+
+/* Native radio semantics with one generous card-shaped choice target. */
+.retailer-options { border: 0; padding: 0; margin: 24px 0 0; min-width: 0; display: grid; gap: 14px; }
+.retailer-option { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); transition: border-color .15s, background-color .15s, box-shadow .15s; }
+.retailer-choice { display: block; position: relative; padding: 20px; min-height: 100px; cursor: pointer; }
+.retailer-choice-main { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
+.retailer-choice-text, .retailer-price { min-width: 0; overflow-wrap: anywhere; }
+.retailer-name { display: block; font-size: 15px; }
+.retailer-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.lowest-tag, .selected-tag, .unavailable-tag { font-size: 11px; line-height: 1.5; }
+.lowest-tag { color: var(--green); }
+.selected-tag { display: none; color: var(--blue); font-weight: 650; }
+.unavailable-tag { color: var(--muted); }
+.retailer-price { max-width: 60%; text-align: right; }
+.retailer-price > span, .retailer-price > strong { display: block; }
+.retailer-price strong { font-size: 24px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.retailer-offer-copy { display: block; margin-top: 16px; font-size: 13px; }
+.retailer-offer-copy > span { display: block; }
+.retailer-offer-copy .offer-unapplied { margin-bottom: 4px; }
+.retailer-option:hover:not(:has(input:disabled)) { border-color: var(--blue); }
+.retailer-option:has(input:checked) { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); background: var(--blue-soft); }
+.retailer-option:has(input:checked) .selected-tag { display: inline; }
+.retailer-option:has(input:focus-visible) { outline: 3px solid var(--blue); outline-offset: 3px; }
+.retailer-option:has(input:disabled) { background: var(--page); }
+.retailer-choice:has(input:disabled) { cursor: default; }
+.retailer-offer-details { padding: 0 20px 12px; font-size: 12px; color: var(--muted); }
+.retailer-offer-details summary { padding-top: 8px; border-top: 1px solid var(--line); }
+.retailer-offer-details p { margin: 8px 0; }
+@media (max-width: 767px) {
+  .retailer-choice { padding: 16px; }
+  .retailer-choice-main { gap: 12px; }
+  .retailer-price strong { font-size: 21px; }
+  .retailer-offer-details { padding: 0 16px 12px; }
+}
