@@ -191,6 +191,16 @@ async function main() {
     assert.doesNotMatch(await text(page.locator(".product-grid")), /TEST-DIMSUM/);
     await page.getByRole("link", { name: /^Related categories/ }).click();
     assert.match(await text(page.locator(".product-grid")), /TEST-DIMSUM/);
+    await page.locator("#product-search").fill("milk");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    assert.equal(new URL(page.url()).searchParams.has("related"), false);
+    assert.match(await text(page.locator(".product-grid")), /P000000124/);
+    await go("/?q=NOODLE&related=true");
+    await page.locator("#product-search").fill("");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    assert.equal(await page.locator(".product-card").count(), records.length);
+    await go("/?related=true");
+    assert.equal(await page.locator(".product-card").count(), records.length);
     await go("/?q=" + encodeURIComponent(" ＮＯＯＤＬＥ "));
     assert.match(await text(page.locator(".product-grid")), /TEST-NOODLE/);
     await page.locator("#category-filter").selectOption("Instant noodles");

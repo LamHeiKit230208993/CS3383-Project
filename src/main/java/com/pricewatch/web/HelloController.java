@@ -41,6 +41,7 @@ public class HelloController {
                     @RequestParam(defaultValue = "1") int page,
                     @RequestParam(defaultValue = "") String category,
                     @RequestParam(defaultValue = "false") boolean related, Model model) {
+        related = related && !q.isBlank();
         model.addAttribute("summary", shopping.summary());
         var search = catalog.searchResults(q, category);
         var results = related ? search.related() : search.matches();

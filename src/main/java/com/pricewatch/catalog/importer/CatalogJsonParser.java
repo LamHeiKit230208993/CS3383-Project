@@ -1,6 +1,7 @@
 package com.pricewatch.catalog.importer;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pricewatch.catalog.CatalogImportException;
@@ -38,7 +39,9 @@ public class CatalogJsonParser {
         try {
             JsonNode root;
             try (JsonParser jsonParser = objectMapper.getFactory().createParser(bytes)) {
-                root = objectMapper.readTree(jsonParser);
+                // Preserve source decimals before scale and precision validation.
+                root = objectMapper.reader().with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                        .readTree(jsonParser);
                 if (jsonParser.nextToken() != null) {
                     throw new CatalogImportException("The price file must contain one JSON document only.");
                 }

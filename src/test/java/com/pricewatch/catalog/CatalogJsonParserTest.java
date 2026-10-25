@@ -94,6 +94,25 @@ class CatalogJsonParserTest {
                 () -> parser.parse(combined.getBytes(StandardCharsets.UTF_8)));
     }
 
+    @Test
+    void preservesNumericPricesWithoutFloatingPointRounding() {
+        for (String price : new String[]{"100000000000000.0001", "999999999999999.9999", "0.0001"}) {
+            String body = productJson(price).replace("\"price\":\"" + price + "\"", "\"price\":" + price);
+            assertEquals(new java.math.BigDecimal(price).setScale(4),
+                    parser.parse(body.getBytes(StandardCharsets.UTF_8))
+                            .products().getFirst().listings().getFirst().price());
+        }
+    }
+
+    @Test
+    void rejectsNumericPricesWhoseExtraDigitsWouldBeLostAsDoubles() {
+        for (String price : new String[]{"100000000000000.00001", "999999999999999.99991"}) {
+            String body = productJson(price).replace("\"price\":\"" + price + "\"", "\"price\":" + price);
+            assertThrows(CatalogImportException.class,
+                    () -> parser.parse(body.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
     private String objectFromArray(String json) {
         return json.substring(json.indexOf('[') + 1, json.lastIndexOf(']')).trim();
     }

@@ -34,3 +34,9 @@ and label original offers as not calculated. These describe expected current
 behaviour; final run results belong in the dated catalogue record.
 - Cross-origin browser writes and non-loopback hostnames are rejected before
   controllers run. Same-origin form submissions still work.
+
+Search-mode regressions load the checked sample and open `Bakery` in Related.
+The search form must not carry a hidden Related parameter into a new query.
+A new `milk` query returns Best matches. Empty and whitespace-only queries with
+a stale `related=true` URL must show both catalogue products with Related mode
+disabled. Explicit Related links for nonblank queries still work.

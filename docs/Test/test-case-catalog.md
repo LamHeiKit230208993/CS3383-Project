@@ -44,9 +44,9 @@ The 17 October results remain historical evidence, not results for the new code.
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
-| [TC-WEB-001](cases/TC-WEB-001.md) | Real pages and forms | Empty state, sample import, multilingual search, list edits, validation, escaping, and planned screens use real services | `HelloControllerTest` |
+| [TC-WEB-001](cases/TC-WEB-001.md) | Real pages and forms | Empty state, sample import, multilingual search, new-query/blank-query mode reset, list edits, validation, escaping, and planned screens use real services | `HelloControllerTest` |
 | [TC-DATA-001](cases/TC-DATA-001.md) | File storage | Products, quantity, and checked state survive database reopen | `CatalogPersistenceTest` |
-| [TC-DATA-002](cases/TC-DATA-002.md) | Source parser | Checked sample labels/offers survive; unknown price remains null; invalid records are rejected | `CatalogJsonParserTest` |
+| [TC-DATA-002](cases/TC-DATA-002.md) | Source parser | Checked sample labels/offers survive; numeric decimals retain exact precision; unknown price remains null; invalid records are rejected | `CatalogJsonParserTest` |
 | [TC-DATA-003](cases/TC-DATA-003.md) | HTTP source client | Successful bytes are returned; failed HTTP status and oversized responses are rejected | `ConsumerCouncilSourceClientTest` |
 | [TC-CATALOG-001](cases/TC-CATALOG-001.md) | Import and comparison | Repeated import has no duplicates; three source names find one code; packs stay separate; ties and missing prices are correct; database-write failure rolls back catalogue, metadata, and list | `CatalogServiceIntegrationTest` |
 | [TC-LIST-001](cases/TC-LIST-001.md) | Shopping rules | Quantity and checked state persist; incomplete totals and vanished products stay clear; failed import preserves list | `ShoppingServiceTest` |
@@ -281,3 +281,23 @@ reference; its implementation content was not copied.
 The pre-update set and intermediate review files under ignored
 `target/uml-layout-review/` were removed during cleanup on 25 October 2026.
 The accepted editable `.puml`, SVG, and PNG exports are kept in the UML folder.
+
+## PR #15 review regressions — 25 October 2026
+
+Both automated review findings were reproduced before their fixes. Numeric JSON
+`100000000000000.0001` lost its final digit, excess fractional digits could be
+accepted, and stale Related mode hid catalogue products after clearing a query.
+
+- TC-DATA-002 now checks exact numeric-token amounts and rejection of unsupported
+  fractional precision. The parser uses a decimal-preserving reader without
+  changing the shared ObjectMapper configuration.
+- TC-WEB-001 checks that new search forms omit Related mode and blank queries
+  ignore stale `related=true` parameters. Explicit Related links remain supported.
+- TC-BROWSER-001 exercises changing and clearing queries from Related, plus a
+  direct stale blank Related URL, within its existing search scenario.
+- Focused parser/controller checks passed all 21 tests.
+- Full Maven `package` passed all 47 tests with no failures, errors, or skips.
+  The existing Byte Buddy agent was supplied through command-line `argLine`;
+  local HTTP tests ran outside the sandbox to permit loopback networking.
+- `npm run test:browser` with Chrome passed all 9 scenarios against the rebuilt
+  JAR and an isolated database/feed.

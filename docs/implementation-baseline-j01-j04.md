@@ -20,7 +20,7 @@ This milestone does not add accounts, cloud saving, AI, tracking history, notifi
 | Accepted import | Origin, source URL, retrieval time, nullable source date, checksum, and counts |
 | Shopping list item | Product, whole quantity from 1–999, checked state, and nullable selected retailer in the single My list |
 
-Money uses `BigDecimal`. An absent price is unknown, never zero. Offer text is not a calculated per-pack price. Product names retain source pack text. Similar labels with different source codes stay separate.
+Money uses `BigDecimal`. Numeric JSON prices are read as decimal values before validation, so they follow the same exact scale/precision rules as string prices without a double conversion. An absent price is unknown, never zero. Offer text is not a calculated per-pack price. Product names retain source pack text. Similar labels with different source codes stay separate.
 
 The 24 October 2026 live response contained 2,735 products and one numeric product code, `173520`. The importer accepts a nonnegative integral JSON number as its exact canonical decimal identifier string. Source string codes remain strings without numeric rewriting. Negative and fractional numeric codes are rejected. Duplicate checks run after this normalization, so numeric `173520` and string `"173520"` cannot conceal conflicting records. The full live response is not committed. The unchanged 17 October sample and its source-inspection notes remain separate evidence.
 
@@ -65,6 +65,9 @@ Retrieval time means when this app obtained the response. It is not the source p
 | `POST /list/items/{code}/remove` | Remove a list item |
 
 Omit `related` or set `related=false` for Matches. Use `related=true` for Related results.
+Submitting a new search or category filter returns to Matches. Pagination keeps
+the selected result group. Blank queries ignore `related=true` and show the
+accepted catalogue, subject to the selected category filter.
 
 Successful changes redirect to a normal page. There is no separate JSON API. Source labels are multilingual, but the app interface remains English. Full R46 translations and the remaining J12 work are not complete.
 

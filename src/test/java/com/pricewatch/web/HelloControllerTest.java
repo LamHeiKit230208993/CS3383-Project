@@ -116,8 +116,32 @@ class HelloControllerTest {
                 .andExpect(content().string(not(containsString("P000000229"))))
                 .andExpect(content().string(containsString("category-filter")));
         mvc.perform(get("/").param("q", "food").param("related", "true"))
-                .andExpect(status().isOk()).andExpect(content().string(containsString("name=\"related\"")));
+                .andExpect(status().isOk()).andExpect(model().attribute("related", true));
     }
+    @Test void newSearchDoesNotCarryRelatedModeFromThePreviousQuery() throws Exception {
+        catalog.importSample();
+        mvc.perform(get("/").param("q", "Bakery").param("related", "true"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("related", true))
+                .andExpect(content().string(containsString("P000000229")))
+                .andExpect(content().string(not(containsString("name=\"related\""))));
+        mvc.perform(get("/").param("q", "milk"))
+                .andExpect(model().attribute("related", false))
+                .andExpect(content().string(containsString("P000000124")));
+    }
+
+    @Test void blankQueryShowsCatalogueEvenWithAStaleRelatedParameter() throws Exception {
+        catalog.importSample();
+        for (String query : new String[]{"", "   "}) {
+            mvc.perform(get("/").param("q", query).param("related", "true"))
+                    .andExpect(status().isOk())
+                    .andExpect(model().attribute("related", false))
+                    .andExpect(model().attribute("resultCount", 2))
+                    .andExpect(content().string(containsString("P000000124")))
+                    .andExpect(content().string(containsString("P000000229")));
+        }
+    }
+
     @Test void laterFeaturesAreClearlyUnavailable() throws Exception {
         for (String feature : new String[]{"saved", "updates", "ask"}) {
             mvc.perform(get("/planned/" + feature)).andExpect(status().isOk())

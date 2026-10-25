@@ -14,7 +14,7 @@ Nine scenarios cover:
 2. Card-name, price, badge, and padding clicks; selected markers, keyboard selection, accessible price/availability descriptions, and independent offer disclosures at 375/1440 px.
 3. Required retailer choice, quantity estimate, saved choice, and deliberate edits.
 4. Native card selection and forms with JavaScript disabled.
-5. Search normalization, both Chinese source labels, Related results, and category URL state.
+5. Search normalization, both Chinese source labels, Related results, and category URL state. A new query from Related returns to Best matches; clearing it restores the catalogue, including when opening a stale blank Related URL.
 6. Exact four-decimal and large-price previews; invalid exponent quantities.
 7. A disappeared selected price stays unknown without retailer fallback; its card clearly reports unavailable pricing.
 8. Five-route layouts at four widths, unclipped prices, mobile navigation, and keyboard skip link.
