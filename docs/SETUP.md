@@ -118,6 +118,13 @@ where you start the app. Database files are ignored by Git. Stop the app before
 copying this file for a backup. Do not run two app instances against the same
 database file.
 
+Flyway manages the schema. On first run it either applies
+`src/main/resources/db/migration/V1__baseline.sql` to an empty database or marks
+an existing J01–J04 schema as the version 1 baseline; Hibernate only validates
+it. **Back up `data/pricewatch.mv.db` before the first run of this version** and
+before any later migration. Later jobs add `V2__…` files rather than editing the
+baseline. See the [extension foundation guide](extension-foundation.md#migration-policy).
+
 To use a different location, supply the datasource URL at launch:
 
 ```powershell

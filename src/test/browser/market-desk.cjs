@@ -47,7 +47,7 @@ async function startApp(sourceUrl) {
     : "java";
   child = spawn(java, ["-jar", jar, "--server.port=0", "--server.address=127.0.0.1",
     "--spring.datasource.url=jdbc:h2:mem:browser-checks;DB_CLOSE_DELAY=-1",
-    "--spring.jpa.hibernate.ddl-auto=create-drop", `--pricewatch.source-url=${sourceUrl}`],
+    `--pricewatch.source-url=${sourceUrl}`],
   { cwd: root, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error("App startup timed out; see app.log")), 45000);

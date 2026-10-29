@@ -301,3 +301,35 @@ accepted, and stale Related mode hid catalogue products after clearing a query.
   local HTTP tests ran outside the sandbox to permit loopback networking.
 - `npm run test:browser` with Chrome passed all 9 scenarios against the rebuilt
   JAR and an isolated database/feed.
+
+## Extensibility foundation — 29 October 2026
+
+This change prepares the shared foundations for J05–J12 without adding user-facing
+features. It adds Flyway schema management, an injected `Clock`/`ZoneId`, an
+after-commit import event, and shared web model attributes/formatting. It also
+adds the CI workflow and the [extension foundation guide](../extension-foundation.md).
+
+| ID | Area | Expected result | Source |
+|---|---|---|---|
+| [TC-DATA-004](cases/TC-DATA-004.md) | Schema management | Flyway applies the version 1 baseline; Hibernate validates it; an existing schema is baselined without losing data | `MigrationTest`, `MigrationLegacyBaselineTest`, `CatalogPersistenceTest` |
+| [TC-ARCH-001](cases/TC-ARCH-001.md) | Import event | A committed import publishes exactly one event; a rolled-back import publishes none | `CatalogueEventTest` |
+| [TC-TIME-001](cases/TC-TIME-001.md) | Deterministic time | An injected fixed clock controls the accepted retrieval time | `CatalogClockTest` |
+| [TC-STRUCTURE-002](cases/TC-STRUCTURE-002.md) | Shared web contract | Every screen receives `importStatus` and `format` from one advice; money, time, and missing-price formatting are unchanged | `HelloControllerTest`, `HelloControllerModelTest`, `ViewFormatTest` |
+
+Observed results:
+
+- Full command: `./mvnw -B test`, exit status 0. **53 tests passed**, with no
+  failures, errors, or skipped tests.
+- The suite includes the new foundation tests above and all prior J01–J04
+  regression tests. `CatalogPersistenceTest` and the browser harness no longer
+  use `ddl-auto=update`/`create-drop`; Flyway creates the schema and Hibernate
+  validates it.
+- Flyway logged a non-failing warning that H2 2.3.232 is newer than its tested
+  ceiling (2.2.224). The baseline and validation both succeeded on H2 2.3.232.
+- Browser checks: `npm run test:browser` passed all **9 scenarios** using Chrome
+  Headless Shell 145 against the packaged JAR, an isolated in-memory database,
+  and the local synthetic feed. The harness now relies on Flyway instead of
+  `ddl-auto=create-drop`; scenario coverage is unchanged.
+- The legacy-database check uses a generated temporary file database, not a
+  copy of a personal `data/pricewatch.mv.db`. Back up real local data before the
+  first run of this version.

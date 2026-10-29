@@ -1,7 +1,6 @@
 package com.pricewatch.web;
 
 import com.pricewatch.catalog.CatalogService;
-import com.pricewatch.catalog.ProductView;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
 import org.springframework.http.HttpStatus;
@@ -11,13 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Currency;
-import java.util.Locale;
 import java.util.Map;
 
 @Controller
@@ -30,11 +22,6 @@ public class HelloController {
     public HelloController(CatalogService catalog, ShoppingService shopping) {
         this.catalog = catalog;
         this.shopping = shopping;
-    }
-    @ModelAttribute
-    void common(Model model) {
-        model.addAttribute("importStatus", catalog.status());
-        model.addAttribute("format", this);
     }
     @GetMapping("/")
     String discover(@RequestParam(defaultValue = "") String q,
@@ -133,21 +120,5 @@ public class HelloController {
         model.addAttribute("scene", scene);
         model.addAttribute("title", title);
         return "market-desk";
-    }
-    public boolean hasListingPrice(ProductView product, String retailerCode) {
-        return product.listings().stream().anyMatch(listing ->
-                listing.retailerCode().equals(retailerCode) && listing.price() != null);
-    }
-
-    public String money(BigDecimal value) {
-        if (value == null) return "Not listed";
-        var format = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-HK"));
-        format.setCurrency(Currency.getInstance("HKD"));
-        format.setMaximumFractionDigits(Math.max(2, value.stripTrailingZeros().scale()));
-        return format.format(value);
-    }
-    public String time(Instant value) {
-        return DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm 'HKT'", Locale.ENGLISH)
-                .withZone(ZoneId.of("Asia/Hong_Kong")).format(value);
     }
 }
