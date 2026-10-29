@@ -155,6 +155,25 @@ class CatalogueImporterTest {
     }
 
     @Test
+    void nonArrayPricesKeepsLastAcceptedCatalogue() {
+        importer.importSample();
+        String json = """
+                [{"code":"P1","brand":{"en":"B","zh-Hant":"b","zh-Hans":"b"},
+                  "name":{"en":"N","zh-Hant":"n","zh-Hans":"n"},
+                  "cat1Name":{"en":"c","zh-Hant":"c","zh-Hans":"c"},
+                  "cat2Name":{"en":"c","zh-Hant":"c","zh-Hans":"c"},
+                  "cat3Name":{"en":"c","zh-Hant":"c","zh-Hans":"c"},
+                  "prices":"oops","offers":[]}]
+                """;
+
+        ImportResult result = importer.importJson(json.getBytes(StandardCharsets.UTF_8), "test://bad-prices");
+
+        assertThat(result.accepted()).isFalse();
+        assertThat(result.reason()).contains("prices is not an array");
+        assertThat(store.get().getProducts()).hasSize(3);
+    }
+
+    @Test
     void unparseablePriceStaysUnknownNotZero() {
         String json = """
                 [{"code":"P1","brand":{"en":"B","zh-Hant":"b","zh-Hans":"b"},

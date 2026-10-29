@@ -68,4 +68,12 @@ class CatalogueSearchTest {
     void unknownCodeReturnsNull() {
         assertThat(sample().product("NOPE")).isNull();
     }
+
+    @Test
+    void searchMatchesRetailers() {
+        Catalogue catalogue = sample();
+
+        assertThat(catalogue.find("AEON")).hasSize(2);
+        assertThat(catalogue.find("wellcome")).extracting(Product::getCode).containsExactly("P3");
+    }
 }

@@ -137,4 +137,30 @@ class PageControllerTest {
                 .andExpect(content().string(containsString("/list/items/P000000229/remove")))
                 .andExpect(content().string(containsString("Remove Crustless Sandwich Bread 6 slices from the list")));
     }
+
+    @Test
+    void savedItemStaysVisibleWhenCatalogueNoLongerHasIt() throws Exception {
+        listStore.save(new com.pricewatch.domain.ShoppingList(
+                com.pricewatch.domain.ShoppingList.DEFAULT_NAME, java.util.List.of()));
+        var list = listStore.load();
+        list.add("P000000229", 2, java.time.Instant.now());
+        listStore.save(list);
+        catalogueStore.replace(new com.pricewatch.domain.Catalogue(java.time.Instant.now(), null, "test://x",
+                java.util.List.of()));
+
+        mockMvc.perform(get("/list"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("P000000229")))
+                .andExpect(content().string(containsString("Unavailable")))
+                .andExpect(content().string(containsString("/list/items/P000000229/remove")))
+                .andExpect(content().string(not(containsString("Your list is empty"))));
+    }
+
+    @Test
+    void settingsDialogIsOnListAndComparePages() throws Exception {
+        mockMvc.perform(get("/list"))
+                .andExpect(content().string(containsString("id=\"settings-dialog\"")));
+        mockMvc.perform(get("/compare/P000000229"))
+                .andExpect(content().string(containsString("id=\"settings-dialog\"")));
+    }
 }

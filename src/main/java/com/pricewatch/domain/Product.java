@@ -117,6 +117,10 @@ public class Product {
         text.addAll(category1.all());
         text.addAll(category2.all());
         text.addAll(category3.all());
+        for (Listing listing : listings) {
+            text.add(listing.getRetailerCode());
+            text.addAll(listing.getOffer().all());
+        }
         return text;
     }
 

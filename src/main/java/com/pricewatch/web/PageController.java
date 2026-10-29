@@ -72,6 +72,7 @@ public class PageController {
         for (ListItem item : list.getItems()) {
             Product product = catalogue == null ? null : catalogue.product(item.getProductCode());
             if (product == null) {
+                rows.add(ListRow.unavailable(item));
                 continue;
             }
             rows.add(new ListRow(item, product, product.compare(catalogue.getImportedAt()), lang));
@@ -230,7 +231,7 @@ public class PageController {
     }
 
     public record ListRow(String code, String name, String detail, int quantity, boolean checked,
-                          String lowestPrice, String lowestRetailer, String subtotal) {
+                          String lowestPrice, String lowestRetailer, String subtotal, boolean unavailable) {
         ListRow(ListItem item, Product product, Comparison comparison, String lang) {
             this(product.getCode(), product.getName().text(lang),
                     product.getCategory1().text(lang) + " \u00b7 " + item.getQuantity()
@@ -241,7 +242,16 @@ public class PageController {
                     comparison.hasWinner()
                             ? Money.hkd(comparison.getCheapest().get(0).getPrice()
                                     .multiply(java.math.BigDecimal.valueOf(item.getQuantity())), lang)
-                            : null);
+                            : null,
+                    false);
+        }
+
+        static ListRow unavailable(ListItem item) {
+            return new ListRow(item.getProductCode(), item.getProductCode(),
+                    "No longer in the stored catalogue \u00b7 " + item.getQuantity()
+                            + (item.getQuantity() == 1 ? " pack" : " packs"),
+                    item.getQuantity(), item.isChecked(),
+                    "Unavailable", "\u2014", null, true);
         }
     }
 }

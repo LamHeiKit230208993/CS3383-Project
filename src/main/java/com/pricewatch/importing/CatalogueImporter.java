@@ -111,6 +111,10 @@ public class CatalogueImporter {
                 return ImportResult.rejected("Product " + code + " is missing a category label");
             }
 
+            JsonNode prices = node.get("prices");
+            if (prices != null && !prices.isNull() && !prices.isArray()) {
+                return ImportResult.rejected("Product " + code + " prices is not an array");
+            }
             List<Listing> listings = new ArrayList<>();
             Set<String> retailers = new HashSet<>();
             for (JsonNode price : node.path("prices")) {

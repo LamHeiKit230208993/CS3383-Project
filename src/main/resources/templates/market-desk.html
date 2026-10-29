@@ -92,8 +92,8 @@
   </div>
 </div>
 
-<dialog id="settings-dialog" aria-labelledby="settings-heading"><div class="dialog-heading"><div><p class="eyebrow">MAKE IT COMFORTABLE</p><h2 id="settings-heading">Display &amp; settings</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close settings"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div><div class="settings-form"><label for="display-language">Language preview<select id="display-language" name="language"><option value="en">English</option><option value="zh-Hant">繁體中文</option><option value="zh-Hans">简体中文</option></select></label><p class="helper">Preview navigation, headings, and sample product names. Other prototype text stays in English.</p><label class="check-label"><input id="high-contrast" name="highContrast" type="checkbox">High-contrast display</label><hr><h3>Your demo data</h3><p class="helper">Selections live in this page only. Reloading resets the demo. Nothing is sent, saved, or purchased.</p><button class="button secondary" type="button" id="reset-demo">Reset demo selections</button></div></dialog>
-<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<dialog th:replace="~{fragments :: settings}"></dialog>
+<div th:replace="~{fragments :: toast}"></div>
 <noscript><p class="noscript-note">Enable JavaScript to use this sample UI. No price or AI service is connected.</p></noscript>
 </body>
 </html>
