@@ -1,6 +1,7 @@
 package com.pricewatch.catalog.importer;
 
 import com.pricewatch.catalog.ImportStatus;
+import com.pricewatch.catalog.event.CatalogueReplacedEvent;
 import com.pricewatch.catalog.persistence.AcceptedImportEntity;
 import com.pricewatch.catalog.persistence.LocalizedLabel;
 import com.pricewatch.catalog.persistence.OfferEntity;
@@ -10,6 +11,7 @@ import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.OfferRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.catalog.repository.RetailerListingRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,15 +27,18 @@ public class CatalogReplacementService {
     private final RetailerListingRepository listingRepository;
     private final OfferRepository offerRepository;
     private final AcceptedImportRepository importRepository;
+    private final ApplicationEventPublisher events;
 
     public CatalogReplacementService(ProductRepository productRepository,
                                      RetailerListingRepository listingRepository,
                                      OfferRepository offerRepository,
-                                     AcceptedImportRepository importRepository) {
+                                     AcceptedImportRepository importRepository,
+                                     ApplicationEventPublisher events) {
         this.productRepository = productRepository;
         this.listingRepository = listingRepository;
         this.offerRepository = offerRepository;
         this.importRepository = importRepository;
+        this.events = events;
     }
 
     @Transactional
@@ -78,8 +83,10 @@ public class CatalogReplacementService {
         AcceptedImportEntity accepted = new AcceptedImportEntity(origin, sourceUrl, retrievedAt,
                 null, checksum, catalog.products().size(), catalog.listingCount(), catalog.offerCount());
         importRepository.save(accepted);
-        return new ImportStatus(origin, sourceUrl, retrievedAt, null, checksum,
+        ImportStatus status = new ImportStatus(origin, sourceUrl, retrievedAt, null, checksum,
                 catalog.products().size(), catalog.listingCount(), catalog.offerCount());
+        events.publishEvent(new CatalogueReplacedEvent(status));
+        return status;
     }
 
     private LocalizedLabel toLabel(com.pricewatch.catalog.LocalizedText text) {

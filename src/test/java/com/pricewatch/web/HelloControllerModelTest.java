@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.View;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -26,7 +27,9 @@ class HelloControllerModelTest {
     @BeforeEach
     void setUp() {
         View emptyView = (model, request, response) -> {};
+        ViewFormat format = new ViewFormat(ZoneId.of("Asia/Hong_Kong"));
         mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping))
+                .setControllerAdvice(new GlobalModelAttributes(catalog, format))
                 .setViewResolvers((name, locale) -> emptyView)
                 .build();
     }

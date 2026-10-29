@@ -64,7 +64,7 @@ class CatalogPersistenceTest {
                 .run("--spring.datasource.url=" + jdbcUrl,
                         "--spring.datasource.username=sa",
                         "--spring.datasource.password=",
-                        "--spring.jpa.hibernate.ddl-auto=update",
+                        "--spring.jpa.hibernate.ddl-auto=validate",
                         "--spring.main.banner-mode=off",
                         "--logging.level.root=ERROR");
     }

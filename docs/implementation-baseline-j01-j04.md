@@ -108,6 +108,8 @@ The [UML sources and exports](diagrams/baseline/README.md) describe this milesto
 
 See the [setup guide](SETUP.md) for run commands and database configuration. See the [test catalogue](Test/test-case-catalog.md) for automated scenarios and dated observed results. A source file, diagram, or successful compile alone does not prove J01–J04 complete.
 
+The [extension foundation guide](extension-foundation.md) records the shared package boundaries, migration policy, clock rule, and import-event contract that later jobs must follow. These foundations preserve the J01–J04 behaviour described above.
+
 J01–J04 implementation checks passed on 24 October 2026. The latest full Maven run passed 43 tests, including the direct database-write rollback case. The 25 October retailer-card run passed all 9 saved Chrome scenarios. The later UML-only remake did not rerun browser checks. The dated test catalogue separates these runs from earlier baseline, refinement, live-feed, and process-restart evidence. These changes do not complete the later J05–J12 jobs.
 
 Issue #13 also requires the method shown in the course tutorial. The data model, application classes, and sequence diagrams cover the implementation and requested flow, but the issue does not identify that method. Confirm the tutorial-specific method with the team before claiming that this course requirement is verified.

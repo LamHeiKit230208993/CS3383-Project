@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -38,17 +39,20 @@ public class CatalogService {
     private final CatalogJsonParser parser;
     private final CatalogReplacementService replacementService;
     private final ConsumerCouncilSourceClient sourceClient;
+    private final Clock clock;
 
     public CatalogService(ProductRepository productRepository,
                           AcceptedImportRepository importRepository,
                           CatalogJsonParser parser,
                           CatalogReplacementService replacementService,
-                          ConsumerCouncilSourceClient sourceClient) {
+                          ConsumerCouncilSourceClient sourceClient,
+                          Clock clock) {
         this.productRepository = productRepository;
         this.importRepository = importRepository;
         this.parser = parser;
         this.replacementService = replacementService;
         this.sourceClient = sourceClient;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -131,7 +135,7 @@ public class CatalogService {
 
     ImportStatus accept(byte[] bytes, String origin, String sourceUrl) {
         ImportedCatalog parsed = parser.parse(bytes);
-        Instant retrievedAt = Instant.now();
+        Instant retrievedAt = clock.instant();
         String checksum = sha256(bytes);
         return replacementService.replace(parsed, origin, sourceUrl, retrievedAt, checksum);
     }

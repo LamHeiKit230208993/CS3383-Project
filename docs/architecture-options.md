@@ -133,3 +133,5 @@ Use an H2 file database for the baseline. PostgreSQL and a separate cache are ba
 J01–J04 record fields are implemented in the baseline. Later history/alert records, data retention, alert rules, list-transfer format, and the exact offline saved-list viewing method still need work in their assigned jobs. Spring Boot, local file storage, one user, active-app notifications first, and no sign-in/cloud saving are confirmed. Product-level questions are listed in the [feasibility review](feasibility-review-simple.md#5-open-decisions). List sharing is a later baseline job; its transfer format does not block the first milestone.
 
 Choose behaviour before finalising storage or interfaces. For example, the list-transfer format affects import checks; showing actual spending requires purchase entries.
+
+The shared foundations for the later jobs — package boundaries, the cross-feature dependency rule, Flyway migrations, injected time, and the after-commit import event — are recorded in the [extension foundation guide](extension-foundation.md).
