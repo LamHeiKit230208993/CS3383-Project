@@ -1,6 +1,6 @@
 # Baseline Feature and Job Plan
 
-Updated: 17 October 2026.
+Updated: 24 October 2026.
 
 Read the [project scope](../project-scope.md), [baseline decisions](baseline-proposal.md), and [JSON sample check](data-sample-review.md) first. The scope decides what is included. This file sets the build order and completion checks. A plan entry is not evidence that a feature works.
 
@@ -64,9 +64,9 @@ This table replaces the old difficulty rankings and separate feature legend.
 
 R03, R05, R07-R09, R12-R13, R17, R33, and R41 remain excluded. R25 and R42 remain future work. Other conditional rows remain in the scope, not silently excluded by this table.
 
-## 4. Jobs we can assign now
+## 4. First-milestone jobs (J01–J04)
 
-These are build jobs, not completed work. Assign one job with its inputs, outputs, and checks. Agree shared field names before two people build connected parts.
+These rows define the first-milestone jobs. Their implementation checks passed on 24 October 2026; see section 7 for evidence and remaining acceptance limits. When assigning connected work, agree shared field names, inputs, outputs, and checks first.
 
 | Job | Work and inputs | Required result | Completion check | Depends on |
 |---|---|---|---|---|
@@ -114,6 +114,14 @@ Use these same meanings across screens, app rules, and storage. Do not send the 
 
 Use the existing testing skill and Maven test setup for code changes. A UI picture, a successful compile, or a mock AI answer does not complete a working feature.
 
-The repo currently has a Hello page and one web test. H2, price import, lists, search, history, chat, and alerts are planned additions. Add only the dependencies needed for the assigned job, and record observed test results.
+The independent J01–J04 implementation now replaces the temporary Market Desk interactions with a persisted search-to-list flow. It uses Spring Data JPA and an H2 file database, explicit sample/live imports, multilingual source-label search, exact-product comparison, and one saved My list. See the [implementation guide](../implementation-baseline-j01-j04.md) and [test catalogue](../Test/test-case-catalog.md) for the implementation contract and observed checks.
+
+**J01–J04: implementation checks passed on 24 October 2026.** The latest full Maven run passed all **43 tests**, including direct database-write rollback. The saved Chrome regression suite passed all **8 scenarios** before the later tests-and-documentation-only rollback follow-up. It uses an isolated app and local test feed. See the dated test catalogue for each run and its limits. These results do not complete every scope requirement under the related F/R references.
+
+Historical initial-baseline evidence: 27 Maven tests, 44/44 baseline Chrome checks, and 9/9 separate live-data checks passed. That live import accepted 2,735 products, 7,812 listings, and 2,618 offers. A real process stop/start kept the same catalogue, retrieval timestamp, and list item with quantity 3, checked state true, and line total HK$22.50. These counts describe that dated response, not the current provider file.
+
+J04 includes the minimum per-item lowest-price subtotal needed to review the list. J07 still owns planned budgets and category totals. Wishlist, tracking history, alerts, reminders, AI chat, list transfer, offline reopening, and full UI translation remain J05–J12 work. Planned screens do not complete those jobs.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.
+
+Refinement, 24 October 2026: J03 now ranks matches and separates broad-category-only results; Discover also offers a source-category filter. J04 saves an explicit retailer choice or retains automatic lowest mode for legacy items. Offers remain uncalculated text. These refinements do not complete spelling tolerance or conditional cross-code matching. The refinement run had 38 passing tests; this is historical evidence. Later cleanup and rollback checks brought the full suite to 43 tests. The implementation guide records the remaining confirmation of the tutorial-specific UML method requested by issue #13.

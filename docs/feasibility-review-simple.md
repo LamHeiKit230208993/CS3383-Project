@@ -1,8 +1,8 @@
 # Data and Feasibility Review
 
-Updated: 17 October 2026.
+Updated: 24 October 2026. The source-inspection observations below remain dated 17 October 2026.
 
-Status: One live JSON download and basic field checks completed on 17 October 2026. App implementation checks remain incomplete.
+Status: Source inspection was completed on 17 October 2026. J01–J04 implementation checks have since passed; see the [test catalogue](Test/test-case-catalog.md) for dated evidence. The wider app scope and later jobs remain incomplete.
 
 The [project scope](project-scope.md) is the main record of team decisions. This file explains feasibility; it does not add, remove, or defer selected features.
 
@@ -94,7 +94,7 @@ Open decisions do not make planned features optional. They define the remaining 
 
 ## 6. Evidence needed before stronger claims
 
-The live JSON was retrieved and inspected as described above. Next, test an actual app import and compare its stored results with the saved source examples. Check cross-day code stability, exact pack matches, malformed responses, and offer handling. Check historical downloads separately. Confirm source credit and usage terms before release.
+Actual sample/live app imports and saved-data reopening have passed the J01–J04 checks. Automated tests cover stored source labels, separate pack codes, malformed input, original offer text, and rollback after a database write failure. See the [test catalogue](Test/test-case-catalog.md) for observed results. Cross-day source-code stability and cross-code product matching remain unverified. Check historical downloads separately, validate rules before calculating any offer, and confirm source credit and usage terms before release.
 
 Measure AI answer correctness, response time, notification delivery, and operating cost with the selected services. Record observed values; do not replace missing measurements with estimates presented as facts.
 

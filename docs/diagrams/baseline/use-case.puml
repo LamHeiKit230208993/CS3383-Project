@@ -1,0 +1,45 @@
+@startuml
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontColor #111827
+skinparam arrowColor #4b5563
+skinparam arrowFontColor #111827
+skinparam rectangleBackgroundColor #f3f4f6
+skinparam rectangleBorderColor #4b5563
+skinparam rectangleFontColor #111827
+skinparam usecaseBackgroundColor #ffffff
+skinparam usecaseBorderColor #4b5563
+skinparam usecaseFontColor #111827
+skinparam actorBackgroundColor #f3f4f6
+skinparam actorBorderColor #4b5563
+skinparam actorFontColor #111827
+skinparam shadowing false
+left to right direction
+
+title Market Desk | implemented shopper goals
+
+actor Shopper as shopper
+actor "Consumer Council\nprice feed" as provider
+
+rectangle "Local Market Desk\n(one user; H2 file)" {
+  usecase "Load checked\nhistorical sample" as sample
+  usecase "Refresh live\nprice data" as refresh
+  usecase "Search accepted\nproducts" as search
+  usecase "Filter results\nby category" as filter
+  usecase "Compare one product\nacross retailers" as compare
+  usecase "Choose retailer or automatic\nlowest for a list item" as choose
+  usecase "Manage My list\n(add, remove, quantity,\nchecked state)" as manage
+  usecase "View saved My list\nafter restart and see\nthe known subtotal" as view
+}
+
+shopper -- sample
+shopper -- refresh
+shopper -- search
+shopper -- filter
+shopper -- compare
+shopper -- choose
+shopper -- manage
+shopper -- view
+' Supporting actor on the right; association remains undirected.
+refresh -- provider
+@enduml

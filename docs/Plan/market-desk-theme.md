@@ -1,5 +1,11 @@
 # Market Desk UI prototype
 
+> Historical note — 17 October 2026. The J01–J04 baseline now replaces this
+> prototype's temporary behaviour. See the
+> [implementation guide](../implementation-baseline-j01-j04.md) for the current
+> screens, accepted data, saved-list behaviour, and limits. The demo features
+> described below are not completed baseline features.
+
 This version is built on `dev/john` for comparison with the other team designs.
 It is a screen prototype for issue #7. It does not complete J01–J04 or prove
 that the product features work with real data.

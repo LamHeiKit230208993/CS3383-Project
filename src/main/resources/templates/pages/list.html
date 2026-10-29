@@ -1,0 +1,81 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="list-title">
+    <div class="page-heading heading-with-action">
+      <div>
+        <p class="eyebrow">READY WHEN YOU ARE</p>
+        <h1 id="list-title">Your next shop, sorted.</h1>
+        <p class="intro">Quantities and checked items stay saved after restart.</p>
+      </div>
+      <a class="button primary" th:href="@{/}">Find an item +</a>
+    </div>
+    <div class="list-layout">
+      <div class="panel">
+        <div class="section-heading">
+          <h2>My list</h2>
+          <span th:text="${items.size() + ' products'}"></span>
+        </div>
+        <div class="empty-state" th:if="${items.isEmpty()}">
+          <h2>A fresh start for your next shop.</h2>
+          <p>Find a product and choose how many packs you need.</p>
+          <a class="button secondary" th:href="@{/}">Browse products</a>
+        </div>
+        <article class="list-item" th:each="item : ${items}" th:classappend="${item.checked ? ' is-checked' : ''}">
+          <div class="list-item-heading">
+            <div>
+              <h3><a th:href="@{/products/{code}(code=${item.product.code})}" th:text="${item.product.name.en}"></a></h3>
+              <p class="helper" th:text="${item.product.brand.en + ' · ' + item.product.code}"></p>
+            </div>
+            <strong class="line-total" th:text="${format.money(item.lineTotal)}"></strong>
+          </div>
+          <p class="selection-mode" th:text="${item.selectedRetailerCode == null ? 'Automatic lowest listed price' : 'Your retailer: ' + item.selectedRetailerCode}"></p>
+          <p class="helper" th:text="${item.unitPrice == null ? 'No current price. Kept in your list.' : format.money(item.unitPrice) + ' per pack · ' + item.retailerCode}"></p>
+          <form class="list-edit-form" th:action="@{/list/items/{code}/update(code=${item.product.code})}" method="post">
+            <label th:for="${'qty-' + item.product.code}">
+              Packs
+              <input
+                th:id="${'qty-' + item.product.code}"
+                type="number"
+                name="quantity"
+                th:value="${item.quantity}"
+                min="1"
+                max="999"
+                step="1"
+                required
+                inputmode="numeric"
+                autocomplete="off"
+              >
+            </label>
+            <label class="retailer-edit" th:for="${'store-' + item.product.code}">
+              Retailer
+              <select name="retailerCode" th:id="${'store-' + item.product.code}">
+                <option value="" th:selected="${item.selectedRetailerCode == null}">Lowest listed (automatic)</option>
+                <option th:if="${item.selectedRetailerCode != null and !format.hasListingPrice(item.product, item.selectedRetailerCode)}" th:value="${item.selectedRetailerCode}" selected th:text="${item.selectedRetailerCode + ' · unavailable (kept)'}"></option>
+                <option th:each="choice : ${item.product.listings}" th:if="${choice.price != null}" th:value="${choice.retailerCode}" th:selected="${choice.retailerCode == item.selectedRetailerCode}" th:text="${choice.retailerCode + ' · ' + format.money(choice.price)}"></option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input type="checkbox" name="checked" value="true" th:checked="${item.checked}"> Checked
+            </label>
+            <button class="button secondary" type="submit" th:attr="aria-label=${'Save changes for ' + item.product.name.en}">Save changes</button>
+          </form>
+          <details class="remove-item">
+            <summary>Remove item…</summary>
+            <form th:action="@{/list/items/{code}/remove(code=${item.product.code})}" method="post">
+              <p>Remove this product from your list?</p>
+              <button class="button danger" type="submit" th:attr="aria-label=${'Confirm remove ' + item.product.name.en}">Confirm removal</button>
+            </form>
+          </details>
+        </article>
+        <p class="source-note">Checking an item does not record a purchase. Checked items remain included in the estimated list cost.</p>
+      </div>
+      <aside class="panel basket-preview">
+        <p class="eyebrow">YOUR PLAN AT A GLANCE</p>
+        <h2>List summary</h2>
+        <div class="summary-total"><span th:text="${summary.unknownItemCount > 0 ? 'Known subtotal' : 'Estimated list cost'}"></span><strong th:text="${format.money(summary.knownSubtotal)}"></strong></div>
+        <p class="warning" th:if="${summary.unknownItemCount > 0}" th:text="${summary.unknownItemCount + ' items have no current price. Total is incomplete.'}"></p>
+        <p class="helper">Uses your saved retailer choices. Automatic items use the current lowest listing. A missing selected price stays unknown; we do not switch your retailer.</p>
+        <p class="source-note">Delivery, stock, and multi-buy offers are not included. This is not actual spending.</p>
+      </aside>
+    </div>
+  </section>
+</th:block>

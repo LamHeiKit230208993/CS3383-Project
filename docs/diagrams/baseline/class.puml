@@ -1,0 +1,92 @@
+@startuml
+' Official PlantUML; Print palette. Layout hints do not add model relationships.
+top to bottom direction
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 15
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #f3f4f6
+skinparam classBorderColor #4b5563
+skinparam arrowColor #4b5563
+skinparam noteBackgroundColor #e5e7eb
+skinparam noteBorderColor #4b5563
+skinparam nodesep 35
+skinparam ranksep 65
+hide circle
+hide empty methods
+
+title Market Desk | persisted data model (J01-J04)
+
+class ShoppingListEntity <<entity>> {
+  - id: Long {PK}
+  - name: String {unique, not null}
+}
+class ShoppingListItemEntity <<entity>> {
+  - id: Long {PK}
+  - quantity: int {not null}
+  - checked: boolean {not null}
+  - selectedRetailerCode: String {nullable}
+}
+class ProductEntity <<entity>> {
+  - code: String {PK}
+  - brand: LocalizedLabel {nullable}
+  - name: LocalizedLabel {nullable}
+  - category1: LocalizedLabel {nullable}
+  - category2: LocalizedLabel {nullable}
+  - category3: LocalizedLabel {nullable}
+  - active: boolean {not null}
+}
+class RetailerListingEntity <<entity>> {
+  - id: Long {PK}
+  - retailerCode: String {not null}
+  - price: BigDecimal {nullable}
+}
+class OfferEntity <<entity>> {
+  - id: Long {PK}
+  - text: LocalizedLabel {nullable}
+}
+class AcceptedImportEntity <<entity>> {
+  - id: Long {PK}
+  - origin: String {not null}
+  - sourceUrl: String {not null}
+  - retrievedAt: Instant {not null}
+  - sourceDate: LocalDate {nullable}
+  - checksum: String {not null}
+  - productCount: int {not null}
+  - listingCount: int {not null}
+  - offerCount: int {not null}
+}
+class LocalizedLabel <<embedded value>> {
+  - en: String {DB nullable}
+  - zhHant: String {DB nullable}
+  - zhHans: String {DB nullable}
+  -- Language / JSON mapping --
+  en = English
+  zhHant = Traditional Chinese
+  zhHans = Simplified Chinese
+  JSON: en / zh-Hant / zh-Hans
+}
+
+ShoppingListEntity "1" *-right- "0..*" ShoppingListItemEntity : items
+ShoppingListItemEntity "0..*" -right-> "1" ProductEntity : product
+ProductEntity "1" -right- "0..*" RetailerListingEntity : listings
+ProductEntity "1" *-down- "0..5" LocalizedLabel : embeds
+RetailerListingEntity "1" *-down- "0..*" OfferEntity : offers
+OfferEntity "1" *-left- "0..1" LocalizedLabel
+
+' Arrange the independent metadata record below the list; no foreign key implied.
+ShoppingListEntity -[hidden]down-> AcceptedImportEntity
+AcceptedImportEntity -[hidden]right-> LocalizedLabel
+
+legend bottom left
+  |= Database constraints / persistence mapping |= Parser and service rules (not DB CHECK constraints) |
+  | PKs and required list/product/listing foreign keys. | Quantity must be 1..999; checked state is not a purchase. |
+  | Unique: list name; (list, product); (product, retailer). | One My list is used; accepted-import writes use ID 1. |
+  | Price column: DECIMAL(19,4), nullable. | Reject negative prices and inputs needing decimal rounding. |
+  | selectedRetailerCode is nullable and has no FK. | Null = lowest priced listing, if available; keep unavailable explicit choices. |
+  | Language fields: nullable embedded columns, not a separate table. | Require all five product labels in three languages; offers may be blank. |
+  | Diamonds: JPA-owned children or embedded values. | Keep inactive products for saved references; offers remain text. |
+endlegend
+@enduml

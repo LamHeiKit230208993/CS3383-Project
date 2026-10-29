@@ -1,32 +1,42 @@
-# TC-WEB-001 — Root page renders Market Desk
+# TC-WEB-001 — Baseline pages and forms
 
-| Field | Details |
-|---|---|
-| Test class | `HelloControllerTest` |
-| Test method | `rootReturnsMarketDeskView()` |
-| Type | Spring MVC slice test |
-| Request | `GET /` |
-| Setup | `@WebMvcTest(HelloController.class)` with `MockMvc` |
+Source: [`HelloControllerTest`](../../../src/test/java/com/pricewatch/web/HelloControllerTest.java).
+The existing class name is retained. This suite now loads the application,
+services, an isolated H2 database, and MockMvc instead of a controller-only
+prototype slice. Individual tests roll back their database changes.
 
-## Purpose
+Scenarios:
 
-Verify the root endpoint selects the Market Desk view and renders its title.
+- An empty start shows no loaded prices and no invented product.
+- The sample-import form redirects to Data. Search in each source language
+  finds the same product code. Comparison shows original offers and prices.
+- Ordinary POST forms add, change quantity, check, and remove a list item.
+  The rendered amount agrees with the service result without JavaScript.
+- Invalid whole quantities do not write records; fractional quantities produce
+  a clear bad-input page. Unknown products and planned routes return 404.
+- Saved, Updates, and Ask display a planned/unavailable message. Data states
+  that startup does not refresh automatically.
+- Search input is HTML-escaped. Very large and negative page requests do not
+  cause an invalid results slice.
+- Replacing an accepted catalogue with the historical sample requires explicit
+  confirmation checked by the server, not only a browser prompt.
 
-## Steps
+These are server-rendering and application-integration checks. They do not
+replace browser layout/keyboard checks, a real process restart, or live-provider
+verification. The earlier three-case UI-prototype suite is retired; its dated
+results remain in the catalogue as history.
 
-1. Send `GET /` through `MockMvc`.
-2. Check the response status, view, content type, and browser title.
+Refinement checks add ranked Matches/Related tabs and an exact source-category
+filter, including URL state. Retailer forms must submit the explicit or automatic
+choice and render the selected price on My list. They must retain the saved
+choice after refresh makes its price unavailable, show an incomplete subtotal,
+and label original offers as not calculated. These describe expected current
+behaviour; final run results belong in the dated catalogue record.
+- Cross-origin browser writes and non-loopback hostnames are rejected before
+  controllers run. Same-origin form submissions still work.
 
-## Expected result
-
-- HTTP status is `200 OK`.
-- View name is `market-desk`.
-- Content type is compatible with `text/html`.
-- The page title is `Market Desk · PriceWatch`.
-
-## Review notes
-
-This test does not verify full application startup, browser rendering,
-external services, persistence, or error handling.
-
-Source: [`HelloControllerTest.java`](../../../src/test/java/com/pricewatch/web/HelloControllerTest.java)
+Search-mode regressions load the checked sample and open `Bakery` in Related.
+The search form must not carry a hidden Related parameter into a new query.
+A new `milk` query returns Best matches. Empty and whitespace-only queries with
+a stale `related=true` URL must show both catalogue products with Related mode
+disabled. Explicit Related links for nonblank queries still work.

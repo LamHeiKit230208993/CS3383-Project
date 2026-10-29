@@ -4,7 +4,7 @@ Checked: 17 October 2026. This is one source download, not a completed app featu
 
 Source: [Consumer Council JSON](https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch.json), linked from the [official dataset page](https://data.gov.hk/en-data/dataset/cc-pricewatch-pricewatch). The official page describes daily updates.
 
-Two unchanged product records from the download are saved in [samples/pricewatch-products.json](samples/pricewatch-products.json). This small file is an example for field checks, not the full catalogue or current prices for users.
+Two unchanged product records from the download are saved in the [shared sample](../../src/main/resources/samples/pricewatch-products.json). The documentation, application, and tests use this same file. This small file is an example for field checks, not the full catalogue or current prices for users.
 
 ## 1. Observed counts
 

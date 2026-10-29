@@ -1,0 +1,34 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="sidebar">
+  <aside class="sidebar">
+    <a class="wordmark" th:href="@{/}" aria-label="Market Desk home"><span class="brand-mark">m.</span><span>market desk<small>BY PRICEWATCH</small></span></a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <p class="sidebar-label">SHOPPING</p>
+      <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Discover</a>
+      <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>My list</a>
+      <a th:href="@{/planned/saved}" th:attr="aria-current=${scene == 'planned' and feature == 'saved' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg>Saved<span class="planned-tag">Planned</span></a>
+      <p class="sidebar-label">ASSISTANCE</p>
+      <a th:href="@{/planned/updates}" th:attr="aria-current=${scene == 'planned' and feature == 'updates' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Alerts<span class="planned-tag">Planned</span></a>
+      <a th:href="@{/planned/ask}" th:attr="aria-current=${scene == 'planned' and feature == 'ask' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>Ask<span class="planned-tag">Planned</span></a>
+      <p class="sidebar-label">APP</p>
+      <a class="data-nav-link" th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span>Price data &amp; updates</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <p><span class="local-dot"></span>One local user<small>No account · saved on this device</small></p>
+    </div>
+  </aside>
+</th:block>
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="mobile-navigation">
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Discover</a>
+    <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>My list</a>
+    <a th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg>Price data</a>
+    <details class="mobile-more">
+      <summary th:classappend="${scene == 'planned' ? ' current' : ''}"><span aria-hidden="true">•••</span>More</summary>
+      <div class="more-destinations">
+        <a th:href="@{/planned/saved}">Saved <small>Planned</small></a>
+        <a th:href="@{/planned/updates}">Alerts <small>Planned</small></a>
+        <a th:href="@{/planned/ask}">Ask <small>Planned</small></a>
+      </div>
+    </details>
+  </nav>
+</th:block>
