@@ -4,6 +4,11 @@ Status: Spring Boot is chosen. J01–J04 uses one local app and an H2 file datab
 
 The [project scope](project-scope.md) defines feature decisions. This document explains the wider target architecture. Use the implementation guide for current Java names, web routes, and storage rules; do not treat proposed history, alert, AI, sharing, or offline interfaces as completed code.
 
+For J05–J08 work, read the [milestone execution plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md)
+before designing shared records or interfaces. It defines the agreed batch,
+dependencies, open decisions, and acceptance checks; the wider proposals below
+do not resolve those decisions.
+
 ## 1. Proposed structure
 
 Start with one app service and one database. Keep the parts below separate in the code so they can be understood and checked on their own.
@@ -55,7 +60,7 @@ This flow supports R01–R02, R15, and R18. Conditional matching under R04 still
 
 1. Retrieve the source file and record its retrieval time and source date, if available.
 2. Check the file format, required fields, prices, product keys, and duplicate or conflicting rows.
-3. Prepare accepted records separately from the data users currently see. Define when to reject a file or set aside individual rows.
+3. Validate the complete catalogue before replacement. The implemented baseline rejects an invalid file as a whole; it does not silently set aside individual rows. A change to that policy needs its own decision and tests.
 4. Save accepted records and make the new version available only after the required checks succeed.
 5. Run target-price and price-drop checks for tracked items. Apply quiet hours and snooze settings.
 6. Record each alert event and delivery result. Retrying an import or delivery must not create repeated alerts unintentionally.
@@ -83,7 +88,7 @@ R21 can check a target from one current price. A drop needs an earlier compariso
 | Reminder | Item, interval or use-rate input, next date, snooze state | Supports clear, snooze, and add-to-list actions in the active app |
 | Alert event | Tracked item, triggering price record, rule, event time, delivery state | Supports repeat prevention and delivery checks |
 
-These describe logical records; they do not require one database table each. Wishlist and tracked-item records may share a design only after the team agrees what each action means.
+These describe wider target records, not the current entity schema; they do not require one database table each. In J01–J04, retailers are listing codes, accepted-import metadata describes the whole catalogue, and historical price records do not yet exist. Use the implementation guide and persisted-data UML for actual mappings. Wishlist and tracked-item records may share a design only after the team agrees what each action means.
 
 Price records and personal choices are stored locally. The ! mark limits feature behaviour; it does not require an account system.
 
@@ -115,18 +120,12 @@ The first offline feature is read-only shopping-list review. Save the page and l
 
 Daily imports, external notifications, and remote AI calls need a network connection. A device being offline must not be shown as a successful remote update.
 
-## 7. Chosen build and backup options
+## 7. Chosen build
 
-| Option from the earlier proposal | Potential benefit | Main cost or question |
-|---|---|---|
-| Java with Spring Boot: chosen | Existing components can cover common web and data-access tasks | Continue the current app; use simple pages for the first working flow |
-| Java with embedded Jetty: backup only | More direct control over how requests reach app code | Do not switch frameworks as part of an ordinary feature job |
-
-Both options still need the same product rules and data checks. Neither makes AI answers, list imports, or price calculations correct automatically.
-
-The current build and setup guide record the Java and Spring Boot versions. No framework upgrade is requested by this plan. There is no measured basis here for fixed completion times or costs.
-
-Use an H2 file database for the baseline. PostgreSQL and a separate cache are backup options, not current requirements. Add them only for a clear need and team review.
+Continue Spring Boot with an H2 file database. Build versions and commands belong
+in the build file and setup guide. Jetty, PostgreSQL, and a separate cache remain
+backup options under the [baseline decisions](Plan/baseline-proposal.md), not
+dependencies for an ordinary feature job. No framework upgrade is requested.
 
 ## 8. Remaining design choices
 

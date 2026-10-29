@@ -125,30 +125,20 @@ Check Java/Graphviz availability with the JAR's `--version` and
 this repository. Rendering uses local files and local tools, not a public diagram
 server. The sources contain no remote includes.
 
-## Renderer distinction and verification
+## Verification and limits
 
-The previous exports used documd's PlantUML-compatible renderer. The replacements
-use official PlantUML syntax and Java-renderer exports. `documd-visuals` remains
-the source of palette/design guidance; it does not generate these final images.
-The optional official PlantUML MCP uses a JavaScript/WASM pipeline. Its syntax
-checks provide another check, but its SVG layout is not the Java JAR layout.
+The accepted sources and exports describe implemented J01–J04. Future milestone
+records and operations belong in the milestone plan until implemented.
 
-On 25 October 2026, all four diagram sources passed the official Java syntax
-check, exported as SVG and PNG, and were visually compared with the previous set.
-Their types, relationships, and flow were reviewed against current code. The MCP
-also accepted all four sources. Script checks covered a path containing spaces
-and rejection of invalid source without overwriting an existing SVG.
+On 25 October 2026, all four sources passed official Java and optional MCP syntax
+checks. Java SVG/PNG exports were visually reviewed against code. The export
+script was checked with paths containing spaces and invalid-source rejection.
+Detailed dated results are in the [test history](../../Test/history.md).
 
-Pre-remake sources, exports, and script were copied to ignored
-`target/uml-remake/previous/` for comparison before replacement. That temporary
-backup was removed during cleanup on 25 October 2026. The prior committed set
-remains in Git history.
-The issue's tutorial-specific method still needs team confirmation: an official
-renderer alone does not establish that course requirement.
+The Java renderer produces the final exports. The optional MCP uses a different
+layout pipeline; its output need not match the Java renderer. Earlier renderer
+outputs and temporary comparison backups were retired. Prior committed versions
+remain in Git history.
 
-
-Before the landscape/class-view update, the diagram set was also copied to
-ignored `target/uml-layout-review/previous/` for comparison. That temporary backup
-and the intermediate review files were removed during the same cleanup. This
-folder contains the accepted UML set, including landscape data-model and
-application-class PNGs, editable sources, and SVG exports.
+The issue's tutorial-specific method still needs team confirmation: successful
+rendering alone does not establish that course requirement.

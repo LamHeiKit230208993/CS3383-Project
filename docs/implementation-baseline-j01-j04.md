@@ -1,6 +1,6 @@
 # Market Desk: J01–J04 implementation
 
-Updated: 25 October 2026. This is the independent implementation for issue #13. It uses the current branch and does not merge another team member's version.
+Updated: 29 October 2026. This records the J01–J04 implementation for issue #13, merged through PR #15. It describes the implemented baseline. The [J05–J08 milestone plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md) describes the next work; its proposed records and operations are not implemented interfaces.
 
 ## What the first baseline does
 
@@ -108,7 +108,7 @@ The [UML sources and exports](diagrams/baseline/README.md) describe this milesto
 
 See the [setup guide](SETUP.md) for run commands and database configuration. See the [test catalogue](Test/test-case-catalog.md) for automated scenarios and dated observed results. A source file, diagram, or successful compile alone does not prove J01–J04 complete.
 
-J01–J04 implementation checks passed on 24 October 2026. The latest full Maven run passed 43 tests, including the direct database-write rollback case. The 25 October retailer-card run passed all 9 saved Chrome scenarios. The later UML-only remake did not rerun browser checks. The dated test catalogue separates these runs from earlier baseline, refinement, live-feed, and process-restart evidence. These changes do not complete the later J05–J12 jobs.
+J01–J04 implementation checks first passed on 24 October 2026. PR #15 includes the subsequent search-mode and numeric-price-precision fixes. The latest recorded full Maven package run on 25 October passed 47 tests, including the direct database-write rollback case. All 9 saved Chrome scenarios passed against the rebuilt JAR after those fixes. The dated test catalogue separates these runs from earlier baseline, refinement, live-feed, and process-restart evidence. This 29 October documentation update adds no test results. J05–J08 are the agreed next milestone; J05–J12 remain unimplemented work.
 
 Issue #13 also requires the method shown in the course tutorial. The data model, application classes, and sequence diagrams cover the implementation and requested flow, but the issue does not identify that method. Confirm the tutorial-specific method with the team before claiming that this course requirement is verified.
 

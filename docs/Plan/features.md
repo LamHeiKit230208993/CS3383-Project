@@ -1,6 +1,6 @@
 # Baseline Feature and Job Plan
 
-Updated: 24 October 2026.
+Updated: 29 October 2026.
 
 Read the [project scope](../project-scope.md), [baseline decisions](baseline-proposal.md), and [JSON sample check](data-sample-review.md) first. The scope decides what is included. This file sets the build order and completion checks. A plan entry is not evidence that a feature works.
 
@@ -79,6 +79,13 @@ J04 completes the first milestone. UI work can start as a small sketch while J01
 
 ## 5. Following baseline jobs
 
+**Next milestone: J05–J08 in one shared issue.** Read the
+[milestone execution plan](tracking-alerts-budgets-reminders-j05-j08.md) before
+assigning or implementing any of these jobs. It defines workstreams, shared
+contracts, unresolved decisions, and the combined completion checks. The issue
+can use separate linked PRs; grouping jobs does not remove their dependencies.
+J09–J12 remain later work. Conditional scope rows keep their existing conditions.
+
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
 | J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; removal stops new collection | J01-J04 |
@@ -90,25 +97,24 @@ J04 completes the first milestone. UI work can start as a small sketch while J01
 | J11 | Read-only saved-list view without a connection | Save on the viewing device, disconnect, and reopen the list; no fresh-price or remote-chat claim; saved amounts show their age | J04 |
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
-J05 can start after product selection works so history begins early. J09 does not need to wait for history. J10's transfer format is chosen when that job starts; it does not block J01-J04.
+Within the next milestone, J05 and J07 can proceed in parallel after their own
+decision gates are resolved. J06 follows J05; J08 uses the saved list and J06's
+agreed notification behaviour. Integrate and check the four jobs together before
+closing the issue. J09 does not need history, but is outside this milestone.
+J10's transfer format remains a later decision.
 
 Before J05, set history retention, re-addition, and recording-date rules. Before J06, set the target boundary, earlier-price rule, first-check alert, repeat reset, summary time, and quiet-hours behaviour. These decisions are listed in the [feasibility review](../feasibility-review-simple.md#5-open-decisions). Agents must not each choose different rules.
 
 Background device/cloud notifications, offline editing, and price prediction are not part of these jobs.
 
-## 6. Shared input and result fields
+## 6. Implementation contracts
 
-These are logical fields to agree in J01, not fixed web routes or finished code.
-
-| Operation | Input | Result |
-|---|---|---|
-| Search | Text and optional language/filter | Product codes and stored labels, with enough pack information to select |
-| Compare | Selected product code and retailer filter | Retailer amounts, ties, missing listings, original offers, source/retrieval details |
-| Add to list | Product code and quantity | Saved list item or a clear input error |
-| Track | Selected product and tracking choices | Saved tracking state; separate from wishlist |
-| Explain | Question and checked comparison result | Explanation of those facts or a failure state |
-
-Use these same meanings across screens, app rules, and storage. Do not send the full catalogue to the LLM for each price question. Let app code search and calculate first.
+For existing record fields, operations, routes, money, and failure behaviour,
+use the [J01–J04 implementation guide](../implementation-baseline-j01-j04.md).
+For J05–J08 records and proposed operations, use the
+[milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#shared-records-and-operations)
+after its relevant decisions are resolved. J09 chat contracts remain later work.
+App code must search and calculate before sending checked facts to an LLM.
 
 ## 7. Checks and current state
 
@@ -116,12 +122,9 @@ Use the existing testing skill and Maven test setup for code changes. A UI pictu
 
 The independent J01–J04 implementation now replaces the temporary Market Desk interactions with a persisted search-to-list flow. It uses Spring Data JPA and an H2 file database, explicit sample/live imports, multilingual source-label search, exact-product comparison, and one saved My list. See the [implementation guide](../implementation-baseline-j01-j04.md) and [test catalogue](../Test/test-case-catalog.md) for the implementation contract and observed checks.
 
-**J01–J04: implementation checks passed on 24 October 2026.** The latest full Maven run passed all **43 tests**, including direct database-write rollback. The saved Chrome regression suite passed all **8 scenarios** before the later tests-and-documentation-only rollback follow-up. It uses an isolated app and local test feed. See the dated test catalogue for each run and its limits. These results do not complete every scope requirement under the related F/R references.
+**J01–J04: PR #15 is merged**, including the search-mode and numeric-price-precision fixes. The latest recorded full Maven package run on 25 October passed all **47 tests**, including direct database-write rollback; all **9 Chrome scenarios** also passed against an isolated app and local feed. See the [dated test history](../Test/history.md#pr-15-review-regressions--25-october-2026) for evidence and limits. No new tests were run for this planning update. These results do not complete every scope requirement under the related F/R references.
 
-Historical initial-baseline evidence: 27 Maven tests, 44/44 baseline Chrome checks, and 9/9 separate live-data checks passed. That live import accepted 2,735 products, 7,812 listings, and 2,618 offers. A real process stop/start kept the same catalogue, retrieval timestamp, and list item with quantity 3, checked state true, and line total HK$22.50. These counts describe that dated response, not the current provider file.
 
 J04 includes the minimum per-item lowest-price subtotal needed to review the list. J07 still owns planned budgets and category totals. Wishlist, tracking history, alerts, reminders, AI chat, list transfer, offline reopening, and full UI translation remain J05–J12 work. Planned screens do not complete those jobs.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.
-
-Refinement, 24 October 2026: J03 now ranks matches and separates broad-category-only results; Discover also offers a source-category filter. J04 saves an explicit retailer choice or retains automatic lowest mode for legacy items. Offers remain uncalculated text. These refinements do not complete spelling tolerance or conditional cross-code matching. The refinement run had 38 passing tests; this is historical evidence. Later cleanup and rollback checks brought the full suite to 43 tests. The implementation guide records the remaining confirmation of the tutorial-specific UML method requested by issue #13.

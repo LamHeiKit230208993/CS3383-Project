@@ -2,7 +2,7 @@
 
 Source: [`SearchRelevanceTest`](../../../src/test/java/com/pricewatch/catalog/SearchRelevanceTest.java).
 
-Three constructed-data scenarios check:
+Constructed-data scenarios check:
 
 - Product-name hits rank before brand and narrower category hits. Broad level-1
   category matches are returned in Related, separately from Matches.

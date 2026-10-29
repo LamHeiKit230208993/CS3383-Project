@@ -1,7 +1,7 @@
 # TC-LIST-001 — Saved list rules
 
-Retailer-selection refinements expand this class to ten scenarios. Their final
-execution result is recorded separately from the initial baseline run.
+This case covers saved-list and retailer-selection rules. Dated execution
+results are recorded separately in the test history.
 
 Source: [`ShoppingServiceTest`](../../../src/test/java/com/pricewatch/catalog/ShoppingServiceTest.java).
 

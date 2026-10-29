@@ -4,13 +4,45 @@ A group project that uses Hong Kong price data to help people compare products, 
 
 The original idea was a price-comparison app with a chat helper. The team has since selected household lists, budgets, reminders, language support, and offline use as well. Their exact decisions are recorded in the scope.
 
-## Read in this order
+## Find the right document
 
-1. [Product description](docs/product-description.md): purpose, user needs, terms, and main actions.
-2. [Project scope](docs/project-scope.md): team choices, feature IDs, and required behaviour.
-3. [Data and feasibility](docs/feasibility-review-simple.md): evidence, limits, and open questions.
-4. [Architecture options](docs/architecture-options.md): proposed parts, data flow, records, and build options.
-5. [Baseline jobs](docs/Plan/features.md): build the first search-to-saved-list flow, then the remaining baseline jobs. Read the linked decisions and checked JSON sample before implementation.
+| Task | Start here |
+|---|---|
+| Run the app or its checks | [Setup guide](docs/SETUP.md) |
+| Understand the product and requirements | [Product description](docs/product-description.md), then [project scope](docs/project-scope.md) |
+| Check agreed technical safeguards | [Baseline decisions](docs/Plan/baseline-proposal.md) |
+| Understand the implemented baseline | [J01–J04 implementation](docs/implementation-baseline-j01-j04.md) and [accepted UML](docs/diagrams/baseline/README.md) |
+| Assign jobs or check dependencies | [Job plan](docs/Plan/features.md) |
+| Build J05–J08 | [Milestone execution plan](docs/Plan/tracking-alerts-budgets-reminders-j05-j08.md); resolve the relevant decision gates first |
+| Check data limits and wider design proposals | [Feasibility review](docs/feasibility-review-simple.md), [source inspection](docs/Plan/data-sample-review.md), and [architecture](docs/architecture-options.md) |
+| Review test coverage or past results | [Current catalogue](docs/Test/test-case-catalog.md) and [dated history](docs/Test/history.md) |
+
+The [original requirements archive](docs/Eric/archive/README.md) is historical
+evidence, not current implementation guidance.
+
+## Current milestone
+
+PR #15 is merged. J01–J04 provide the local import, search, comparison, and saved-list baseline. The latest recorded checks passed 47 Java tests and 9 browser scenarios; see the [test history](docs/Test/history.md#pr-15-review-regressions--25-october-2026). These are recorded results, not a new run on 29 October.
+
+The team has grouped **J05–J08 into the next milestone issue**. Its implementation is planned, not complete. The milestone plan is the execution reference; the project scope remains the authority for feature decisions.
+
+## Share the plan with teammates
+
+Publish the reviewed plan on `origin/docs/john`. That branch includes the merged
+application baseline as well as documentation. Use it as the shared planning
+reference until a documentation PR merges the changes into `main`.
+
+Link the [milestone plan](docs/Plan/tracking-alerts-budgets-reminders-j05-j08.md)
+from the J05–J08 issue. Keep the issue's checklist and ownership there; keep
+contracts, decision answers, and acceptance rules in the document. Record
+decisions through reviewed commits so teammates and agents read the same rules.
+
+To obtain the shared branch, teammates can run `git fetch origin`, then inspect
+`origin/docs/john`. To bring it into their own working branch, commit or stash
+local edits and run `git merge origin/docs/john`. Review and resolve any conflicts.
+Do not reset or replace a teammate's feature branch. Use `main` for the same flow
+after the documentation PR merges. Implementation agents should read the linked
+milestone plan from the checked-out commit, not an older copied prompt.
 
 The four [user-needs files](docs/product-description.md#user-needs) explain requests and their reasons. They include needs that the team has excluded or left for the future.
 

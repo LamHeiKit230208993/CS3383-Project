@@ -1,6 +1,6 @@
 # Data and Feasibility Review
 
-Updated: 24 October 2026. The source-inspection observations below remain dated 17 October 2026.
+Updated: 29 October 2026. The source-inspection observations below remain dated 17 October 2026.
 
 Status: Source inspection was completed on 17 October 2026. J01–J04 implementation checks have since passed; see the [test catalogue](Test/test-case-catalog.md) for dated evidence. The wider app scope and later jobs remain incomplete.
 
@@ -71,7 +71,7 @@ These corrections explain technical limits. They do not change the team's Build,
 | Tracked items | Apply ! only to explicitly tracked items | Define the effect of adding, removing, and re-adding an item |
 | List sharing | Export and import a separate local copy | Preserve items, quantities, and checked state; reject invalid input; leave existing lists unchanged; later edits do not sync |
 | Local storage | Preserve saved records across app restarts | Save a list and settings, restart the normal app, and read them again |
-| Active-app jobs | Run scheduled work only while the local app runs | A closed app does not claim to have collected history or delivered an alert; startup checks whether an update is needed |
+| Active-app jobs | Run any agreed scheduled work only while the local app runs | A closed app does not claim collection or delivery. Current imports are manual; startup checks and scheduling remain proposed until milestone decision D05 is resolved |
 | Offline use | Read a previously saved list on the viewing device; show saved-data age | Disconnect and reopen the saved list; price refresh and remote chat remain off |
 
 These are acceptance checks, not results from completed tests. Made-up data may test a rule, but it does not verify live data access.
@@ -79,6 +79,11 @@ These are acceptance checks, not results from completed tests. Made-up data may 
 ## 5. Open decisions
 
 Open decisions do not make planned features optional. They define the remaining detail needed to build them consistently.
+
+For the agreed J05–J08 milestone, use the decision register in the
+[execution plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work).
+Record agreed answers there and link them from this overview. A milestone issue
+does not by itself resolve the questions below or approve conditional features.
 
 | Topic | Decision still needed | Related scope |
 |---|---|---|
