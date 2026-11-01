@@ -91,10 +91,12 @@ remain source text; no multi-buy calculation is implied.
 
 ## Regenerate final exports
 
-The app does not need any diagram tool. Exporting this set needs Java, the
-**official 1.2026.9 JAR**, and a working Graphviz backend for class/use-case layout.
-The verified local backend reports Graphviz 2.44.1. Node, Chrome, and the MCP
-server are not required by this export script.
+The app does not need any diagram tool. Historical exports used the **official
+1.2026.9 JAR** with a working Graphviz backend (verified Graphviz 2.44.1). The
+J05–J08 milestone decision (31 October 2026) is to render with the **VS Code
+PlantUML extension JAR (1.2024.3)** available locally; it ships a bundled Smetana
+layout, so no system Graphviz is needed. Node, Chrome, and the MCP server are not
+required by this export script.
 
 From the repository root on Windows:
 
@@ -102,9 +104,10 @@ From the repository root on Windows:
 .\docs\diagrams\baseline\render.ps1
 ```
 
-The default JAR location is
-`$env:USERPROFILE\.codex\tools\plantuml\1.2026.9\plantuml-1.2026.9.jar`.
-Use your own installed official JAR and Java paths when needed:
+The default JAR location is now the VS Code extension:
+`$env:USERPROFILE\.vscode\extensions\jebbs.plantuml-2.18.1\plantuml.jar`.
+The script accepts any working official PlantUML 1.x JAR and prints a warning
+when the version is not 2026. Use your own JAR and Java paths when needed:
 
 ```powershell
 .\docs\diagrams\baseline\render.ps1 `
@@ -120,9 +123,10 @@ failure and regenerate all selected diagrams. Review all outputs after source,
 font, Graphviz, or renderer changes; the same PlantUML version can have different
 layouts across those environments.
 
-Check Java/Graphviz availability with the JAR's `--version` and
-`--check-graphviz` options. The JAR is a local development tool, not bundled in
-this repository. Rendering uses local files and local tools, not a public diagram
+The Java renderer writes with the `-o <dir> -t<format>` flags. The long
+`--output-dir ... --format ...` form produced no files with the local JAR, so the
+script uses `-o`. The JAR is a local development tool, not bundled in this
+repository. Rendering uses local files and local tools, not a public diagram
 server. The sources contain no remote includes.
 
 ## Verification and limits

@@ -106,8 +106,18 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Updates, and Ask are planned features. See the
-[implementation guide](implementation-baseline-j01-j04.md) for the current scope.
+
+J05–J08 are implemented: Saved (wishlist + tracking), Alerts, Reminders, and the
+planned-budget panel on My list. Only Ask remains a planned page. See the
+[implementation guide](implementation-baseline-j01-j04.md) and the
+[J05–J08 milestone plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md) for scope.
+
+Alerts, budgets, and reminders use one application `Clock` bean
+(`com.pricewatch.config.ClockConfig`, zone `Asia/Hong_Kong`). There is no
+background scheduler: reminders and held alerts are evaluated when you open the
+app's pages, so a closed app collects and delivers nothing. Tests replace the
+`Clock` with a controllable one (`MutableClockConfig`) for date/threshold cases.
+Saved prices and reminders live in the same H2 file as the rest of the app.
 
 To stop the app, press `Ctrl+C` in the terminal.
 

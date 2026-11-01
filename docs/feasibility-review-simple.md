@@ -80,10 +80,12 @@ These are acceptance checks, not results from completed tests. Made-up data may 
 
 Open decisions do not make planned features optional. They define the remaining detail needed to build them consistently.
 
-For the agreed J05–J08 milestone, use the decision register in the
-[execution plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work).
-Record agreed answers there and link them from this overview. A milestone issue
-does not by itself resolve the questions below or approve conditional features.
+For the agreed J05–J08 milestone, the decision register in the
+[execution plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
+was resolved on **31 October 2026** (D01–D07). Those answers are binding for the
+J05–J08 code, tests, and UML. The remaining questions below are wider-project
+topics (J09–J12 and conditional scope rows), not J05–J08 blockers. A milestone
+issue does not by itself approve conditional features.
 
 | Topic | Decision still needed | Related scope |
 |---|---|---|

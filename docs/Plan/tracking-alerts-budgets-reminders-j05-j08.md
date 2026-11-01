@@ -2,9 +2,9 @@
 
 Updated: 29 October 2026.
 
-Status: The team agreed to group J05–J08 in one milestone issue. Implementation
-has not started in this baseline. This plan does not claim that an issue has
-already been created. Add its number here when it exists.
+Status: The team agreed to group J05–J08 in one milestone issue (issue #17).
+The D01–D07 decisions below were agreed on 31 October 2026 and recorded before
+dependent implementation. Implementation progress is tracked in that issue.
 
 Read the [project scope](../project-scope.md), [job plan](features.md), and
 [implemented J01–J04 contract](../implementation-baseline-j01-j04.md) first.
@@ -89,23 +89,22 @@ must not be reported as having collected data or delivered a notification.
 
 ## Decisions before dependent work
 
-All rows below are **open**. Record the chosen rule, examples, decision date,
-and affected acceptance checks here before implementing the dependent behaviour.
-Agents must not choose separate defaults. Unaffected work can continue.
+All rows below were **decided on 31 October 2026**, recorded before dependent
+implementation. The chosen rule and examples are binding for the J05–J08 code,
+tests, and UML. Do not introduce separate defaults.
 
-| ID | Decision needed | Blocks |
+| ID | Decision | Chosen rule (31 Oct 2026) |
 |---|---|---|
-| D01 | Which retailer(s) are tracked? Is enabling tracking seeded from the accepted catalogue? | J05 tracking contract |
-| D02 | Retention, stopping/re-enabling tracking, deleting history, and handling missing/inactive products | J05 lifecycle |
-| D03 | Observation identity and duplicate rule; unchanged/repeated files, unknown prices, and unknown source dates | J05 recording; J06 comparisons |
-| D04 | Target boundary; earlier comparison observation; first-check alert; repeat reset; any conditional amount/percentage thresholds | J06 evaluation |
-| D05 | Time zone, quiet-hour boundaries, snooze duration, summary content/time, missed-run/restart behaviour, and refresh/check scheduling | J06 delivery; shared J08 timing |
-| D06 | How one current list estimate relates to weekly/monthly budgets; reset/rollover, warning boundary, category level/fallback, and missing-price warnings | J07 budget rules |
-| D07 | Reminder interval/use input, initial due time, clear versus snooze, next-date calculation, and whether adding to the list changes reminder state | J08 lifecycle |
+| D01 | Which retailer(s) are tracked? Seeded from catalogue? | Enabling tracking tracks **all retailers currently listed** for that exact accepted product. The seed is taken from the accepted catalogue at enable time: one tracking row per (product, retailer). Later catalogue additions for the same product are not auto-tracked until tracking is re-enabled. Example: enabling tracking on `P000000124` (JASONS, WELLCOME, AEON, …) stores one enabled choice per retailer then listed. |
+| D02 | Retention, stop/re-enable, delete history, missing products | History is kept until tracking is turned off; stopping **keeps** existing observations but **stops** new collection. Re-enabling starts a **new tracking period** (new `periodId`); observations carry their period. Deleting history is not offered in this batch. A product that leaves the catalogue keeps its history and stops receiving new observations (no new listing to observe). Example: track → import A → stop → import B (not observed) → re-enable (period 2) → import C (observed in period 2). |
+| D03 | Observation identity, duplicates, unknown prices, unknown dates | Observation identity = (product, retailer, import checksum, tracking period). A repeated identical import (same checksum) adds no new observation. An unknown price is stored as an explicit unknown observation (`price = null`, `known = false`) **for provenance only**: it is excluded from target/drop comparisons, trend/gap hints, repeat-reset, and budget arithmetic, and is never stored as `0` or interpolated. Source date stays unknown (the feed supplies none); retrieval time is recorded separately. Example: two identical sample imports produce no second observation; a null price is recorded but cannot fire a drop. |
+| D04 | Target boundary, earlier comparison, first-check alert, repeat reset | Target fires when the current **known** price is **at or below** (≤) the target amount. A price-drop alert compares the new observation against the **latest prior known** observation for the **same product/retailer**; an unknown value can be the current state (no drop) but can never be the earlier comparison. If the target is already met when the rule is created, it alerts on the next successful evaluation. Repeat reset happens only when a new distinct **known** observation arrives for that pair. No amount/percentage thresholds (R22) in this batch. Example: target 10.00, price 9.95 → fires; price 9.95 then 9.95 (same import) → no second event. |
+| D05 | Time zone, quiet hours, snooze, summary, missed runs, scheduling | Clock = injected `Clock` bean, zone `Asia/Hong_Kong`. Quiet hours **22:00–07:00 HKT**: alerts are suppressed (not delivered, not marked visible) during that window. Snooze = **24 hours** from the action time. Morning summary appears in-app on the **first page visit at or after 07:00** that day and covers audible alerts for the day. A period while the app was closed is shown as "while the app was closed", never as delivered. Evaluation runs on page load/refresh (no background scheduler); a closed app collects and delivers nothing. Example: alert generated at 23:10 is held and shown at/after 07:00 with the summary; snoozing at 09:00 hides it until 09:00 the next day. |
+| D06 | Budget estimate vs weekly/monthly budget; reset, warning, category level, missing prices | The budget applies to the **whole My list estimate** (J04 lowest-price logic). Weekly vs monthly is a **label** plus the reset boundary for "period-to-date" display; the estimate itself is the current list. Warning when the **known subtotal exceeds** the planned limit. Category breakdown uses **category2**, with unmatched items in **"Other"**; category amounts sum to the known subtotal. Unknown prices keep the estimate **"incomplete"** (existing `unknownItemCount`) and the warning is shown only on the known part. Estimates are never labelled actual spending. Example: limit 100, known subtotal 112 → warning; one unpriced item → "incomplete", known categories still reconcile. |
+| D07 | Reminder interval/use input, initial due, clear vs snooze, next date, add-to-list effect | A reminder stores a **user-set interval in days** (whole number ≥ 1). Initial due = creation time + interval. **Clear** deletes the reminder. **Snooze** moves the due time to now + 24h. Adding to the list (via `ShoppingService.add`, reusing its 1–999 and retailer-conflict rules) clears the reminder and sets the next due = now + interval. Product and quantity are preserved across actions and restart. Example: interval 7 days, created day 0 → due day 7; snoozed on day 7 → due day 8; added to list on day 8 → cleared, next due day 15. |
 
 The [feasibility overview](../feasibility-review-simple.md#5-open-decisions)
-retains wider-project questions. Agree this milestone's answers here and link
-them from that overview. Scope changes must also update the scope and job plan.
+retains wider-project questions; this milestone's answers are recorded above.
 
 ## Acceptance and issue closure
 
@@ -140,3 +139,28 @@ UML when the new behaviour exists. The accepted diagrams in
 Close the shared issue when J05–J08 meet the agreed checks, their PRs are merged,
 and the integrated evidence is recorded. A planned screen or this document alone
 does not complete a job.
+
+## Implementation notes and known risks (31 October 2026)
+
+These were accepted for this milestone and recorded here rather than fixed:
+
+- **Import transaction boundary.** Observations and alert evaluation run in
+  `PostImportProcessor` after `CatalogReplacementService.replace` has committed.
+  A failure there does not roll back the accepted import, matching this plan's
+  rule (lines 78-83). Trade-off: if post-import work throws, the import is kept
+  but observations/alerts may be missing until the next import. A retry/backoff
+  policy is future work.
+- **No trend prediction.** J05-J08 keep dated observations and show gaps only.
+  R10 charts and R35 buy/wait advice remain out of scope; no interpolation is
+  performed (see D03). Unknown prices never affect target/drop, repeat-reset, or
+  budget arithmetic.
+- **Scheduling.** No background scheduler. Reminders and held alerts are
+  evaluated on page load/refresh against the injected Clock, so a closed app
+  collects and delivers nothing (D05/D07).
+- **UML renderer.** Exports use the local VS Code PlantUML 1.2024.3 JAR via
+  `-o <dir> -t<format>` (the long `--output-dir --format` form produced no files
+  locally). The baseline 1.2026.9 exports under `docs/diagrams/baseline/` are
+  unchanged; the J05-J08 exports live in `docs/diagrams/j05-j08/`.
+- **Browser checks.** Playwright headless-shell was not downloaded on this
+  machine; the run used the installed Chrome channel (set `BROWSER_CHANNEL=chrome`).
+  CI should run `npx playwright install chromium` or set the channel explicitly.

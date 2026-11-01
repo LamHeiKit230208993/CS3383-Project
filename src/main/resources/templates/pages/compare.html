@@ -20,6 +20,37 @@
         <p class="product-code" th:text="${product.code}" translate="no"></p>
         <p class="helper">Pack details are part of the original product name.</p>
         <p class="warning" th:unless="${product.active}">Not in the accepted catalogue. Saved identity kept; current price unknown.</p>
+        <div class="list-edit-form">
+          <form th:if="${!saved}" th:action="@{/saved/{code}/save(code=${product.code})}" method="post">
+            <input type="hidden" name="back" th:value="${'/products/' + product.code}">
+            <button class="button secondary" type="submit">Save to wishlist</button>
+          </form>
+          <form th:if="${saved}" th:action="@{/saved/{code}/unsave(code=${product.code})}" method="post">
+            <input type="hidden" name="back" th:value="${'/products/' + product.code}">
+            <button class="button secondary" type="submit">Saved — remove</button>
+          </form>
+          <form th:if="${product.active and !tracked}" th:action="@{/saved/{code}/track(code=${product.code})}" method="post">
+            <input type="hidden" name="back" th:value="${'/products/' + product.code}">
+            <button class="button secondary" type="submit">Track older prices</button>
+          </form>
+          <form th:if="${product.active and tracked}" th:action="@{/saved/{code}/untrack(code=${product.code})}" method="post">
+            <input type="hidden" name="back" th:value="${'/products/' + product.code}">
+            <button class="button secondary" type="submit">Tracking — stop</button>
+          </form>
+        </div>
+        <form
+          id="reminder-form"
+          class="add-form"
+          th:if="${product.active}"
+          th:action="@{/reminders/{code}/create(code=${product.code})}"
+          method="post"
+        >
+          <input type="hidden" name="quantity" value="1">
+          <label for="reminder-interval">Restock reminder every <small>(days)</small></label>
+          <input id="reminder-interval" type="number" name="intervalDays" min="1" max="365" step="1"
+                 value="7" required inputmode="numeric" autocomplete="off">
+          <button class="button secondary full" type="submit">Set reminder</button>
+        </form>
         <form
           id="add-item-form"
           class="add-form"

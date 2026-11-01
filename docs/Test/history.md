@@ -1,4 +1,4 @@
-# Test History
+﻿﻿# Test History
 
 Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
@@ -40,6 +40,32 @@ The 17 October results remain historical evidence, not results for the new code.
 - Limits: the browser checks used Chrome only. Scripted checks are not a full
   accessibility audit. These results do not prove real data import, saved
   storage, AI calls, or notifications; those are outside this UI prototype.
+
+## J05-J08 implementation - 31 October 2026
+- UML: added docs/diagrams/j05-j08/ (use-case, class, application-class, sequence) with the new records, services, and flows; regenerated SVG/PNG with the VS Code PlantUML 1.2024.3 JAR via 
+\render.ps1 -o <dir> -t<format>. The 1.2026.9 baseline exports remain under docs/diagrams/baseline/.
+
+Issue #17 milestone: wishlist/tracking (J05), in-app alerts (J06), planned
+budgets (J07), and replenishment reminders (J08), with decisions D01-D07
+recorded in the [milestone plan](../Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work).
+
+- Full Maven suite: **70 tests passed** (0 failures, 0 errors, 0 skipped), including the new
+  TrackingServiceTest, AlertServiceTest, BudgetServiceTest, ReminderServiceTest, and
+  CombinedFlowTest.
+- Packaging: .\mvnw.cmd package succeeded (online; a corrupt local plexus-archiver required a
+  network fetch).
+- Chrome browser checks: **13 scenarios passed** ($env:BROWSER_CHANNEL='chrome'; npm run test:browser),
+  including saved-vs-tracking, target alert + snooze, budget panel, and reminder add-to-list.
+- New records are stored in separate tables with copied product/retailer codes (no FK to deleted
+  listing rows); observations survive catalogue replacement.
+- Import hook: observations and alert evaluation run after the catalogue commit in separate work,
+  so a post-commit failure does not roll back an accepted import.
+
+Limits: the browser run used the installed Chrome channel (Playwright headless-shell was not
+downloaded). UML exports for this milestone use the VS Code PlantUML 1.2024.3 JAR (see the
+diagram README); no system Graphviz was required. Alert and reminder time behaviour uses an
+injected Clock; the running app uses Asia/Hong_Kong system time. History charts/prediction
+remain later work.
 
 ## Initial baseline check record — 24 October 2026
 

@@ -75,6 +75,37 @@
         <p class="warning" th:if="${summary.unknownItemCount > 0}" th:text="${summary.unknownItemCount + ' items have no current price. Total is incomplete.'}"></p>
         <p class="helper">Uses your saved retailer choices. Automatic items use the current lowest listing. A missing selected price stays unknown; we do not switch your retailer.</p>
         <p class="source-note">Delivery, stock, and multi-buy offers are not included. This is not actual spending.</p>
+        <div class="summary-total">
+          <span th:text="${budget.period.name() + ' planned budget'}"></span>
+          <strong th:text="${budget.plannedLimit == null ? 'Not set' : format.money(budget.plannedLimit)}"></strong>
+        </div>
+        <p class="warning" th:if="${budget.overBudget}">The known estimate is above your planned budget.</p>
+        <p class="warning" th:if="${budget.incomplete}">Estimate is incomplete: some items have no current price.</p>
+        <p class="helper">This is a planned estimate, not actual spending. Set a weekly or monthly limit below.</p>
+        <form class="list-edit-form" th:action="@{/list/budget}" method="post">
+          <label>
+            Period
+            <select name="period">
+              <option value="WEEKLY" th:selected="${budget.period.name() == 'WEEKLY'}">Weekly</option>
+              <option value="MONTHLY" th:selected="${budget.period.name() == 'MONTHLY'}">Monthly</option>
+            </select>
+          </label>
+          <label>
+            Planned limit
+            <input type="number" name="plannedLimit" min="0" step="0.01"
+                   th:value="${budget.plannedLimit}" inputmode="decimal" autocomplete="off" required>
+          </label>
+          <button class="button secondary" type="submit">Save budget</button>
+        </form>
+        <div class="budget-categories" th:unless="${budget.categories.isEmpty()}">
+          <h3>Planned cost by category</h3>
+          <ul class="tracked-list">
+            <li th:each="cat : ${budget.categories}">
+              <strong th:text="${cat.category}"></strong>
+              <span th:text="${format.money(cat.knownSubtotal) + ' · ' + cat.itemCount + ' item(s)'}"></span>
+            </li>
+          </ul>
+        </div>
       </aside>
     </div>
   </section>

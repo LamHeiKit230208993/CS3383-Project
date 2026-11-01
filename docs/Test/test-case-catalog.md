@@ -1,16 +1,17 @@
-# Test Case Catalog
+﻿# Test Case Catalog
 
 This index describes maintained checks. Detailed steps and limits belong in
 `cases/`; dated results belong in [test history](history.md).
 
 ## Latest recorded validation
 
-The 25 October 2026 PR #15 review-fix run passed **47 Java tests**, packaging,
-and **9 Chrome scenarios**. See the [run record](history.md#pr-15-review-regressions--25-october-2026).
-These are recorded results, not a new run for the 29 October documentation cleanup.
-J05–J08 checks must be added with their implementation.
+The 31 October 2026 J05-J08 implementation run passed **70 Java tests**, packaging,
+and **13 Chrome scenarios**. See the
+[run record](history.md#j05j08-implementation--31-october-2026). The earlier
+25 October PR #15 run (47 tests, 9 Chrome scenarios) remains historical evidence
+for the J01-J04 baseline.
 
-## J01–J04 baseline scenarios
+## J01â€“J04 baseline scenarios
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
@@ -27,3 +28,13 @@ J05–J08 checks must be added with their implementation.
 Case descriptions state expected behaviour; they do not prove a later build passed.
 The retired prototype cases and their original source links are preserved in
 [history](history.md#tc-web-002--retired-prototype-scenes-and-assets).
+
+## J05-J08 milestone scenarios (implemented 31 October 2026)
+
+| ID | Area | Expected result | Source |
+|---|---|---|---|
+| [TC-TRACK-001](cases/TC-TRACK-001.md) | Wishlist and tracking | Save is not tracking; enabling tracks all listed retailers; observations record only on successful import; stop/re-enable lifecycle; unknown price is provenance-only | TrackingServiceTest |
+| [TC-ALERT-001](cases/TC-ALERT-001.md) | In-app alerts | Target from one known price; drop needs a valid earlier known pair; unknown never fires; repeat import no duplicate; quiet hours hold; snooze | AlertServiceTest |
+| [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget and categories | Quantity/retailer change estimate; unknown marks incomplete; categories reconcile; checked items keep J04 totals | BudgetServiceTest |
+| [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Reminders | Due only on controlled clock; add-to-list reuses ShoppingService rules; clear/snooze set next due; interval validated | ReminderServiceTest |
+| [TC-FLOW-001](cases/TC-FLOW-001.md) | Combined flow | Tracked price update creates alert, updates budget estimate, and a reminder adds the intended item | CombinedFlowTest |
