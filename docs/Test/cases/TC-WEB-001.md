@@ -14,7 +14,8 @@ Scenarios:
   The rendered amount agrees with the service result without JavaScript.
 - Invalid whole quantities do not write records; fractional quantities produce
   a clear bad-input page. Unknown products and planned routes return 404.
-- Saved, Updates, and Ask display a planned/unavailable message. Data states
+- Old Saved/Updates placeholder URLs redirect to Saved/Alerts. Ask still displays
+  a planned/unavailable message. Data states
   that startup does not refresh automatically.
 - Search input is HTML-escaped. Very large and negative page requests do not
   cause an invalid results slice.

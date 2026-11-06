@@ -1,0 +1,158 @@
+@startuml
+top to bottom direction
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #f3f4f6
+skinparam classBorderColor #4b5563
+skinparam arrowColor #4b5563
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor #ffffff
+skinparam packageBorderColor #e5e7eb
+skinparam noteBackgroundColor #e5e7eb
+skinparam noteBorderColor #4b5563
+skinparam nodesep 30
+skinparam ranksep 35
+hide circle
+hide empty methods
+
+title Market Desk | application classes through J08
+
+package "Web entry points" {
+  class HelloController <<controller>> {
+    discover(...), compare(code), list()
+    load(action), add(...), update(...), remove(code)
+  }
+  class TrackingController <<controller>> {
+    saved(...), alerts(...)
+    startTracking(...), target(...), settings(...)
+  }
+  class BudgetController <<controller>> {
+    view(...), save(...)
+  }
+  class ReminderController <<controller>> {
+    view(...), create(...), clear(id)
+    snooze(id), addToList(id), delete(id)
+  }
+}
+package "Catalogue import" {
+  class CatalogService <<service>> {
+    - productRepository: ProductRepository
+    - importRepository: AcceptedImportRepository
+    --
+    searchResults(query, category): SearchResults
+    find(code): ProductView
+    importSample(), refreshLive(): ImportStatus
+  }
+  class CatalogJsonParser <<parser>> {
+    parse(bytes): ImportedCatalog
+  }
+  class ConsumerCouncilSourceClient <<HTTP client>> {
+    fetch(): byte[]
+    sourceUrl(): String
+  }
+  class CatalogReplacementService <<service>> {
+    - productRepository: ProductRepository
+    - listingRepository: RetailerListingRepository
+    - offerRepository: OfferRepository
+    - importRepository: AcceptedImportRepository
+    --
+    replace(...): ImportStatus {transactional}
+  }
+}
+package "Tracking and notifications" {
+  class TrackingService <<service>> {
+    - savedRepository: SavedProductRepository
+    - trackingRepository: TrackingRepository
+    - observationRepository: PriceObservationRepository
+    - alertEventRepository: AlertEventRepository
+    - productRepository: ProductRepository
+    - acceptedImportRepository: AcceptedImportRepository
+    --
+    save(code), removeSaved(code)
+    start(code, retailer): TrackingView
+    stop(id), deleteHistory(id)
+    configureTarget(...), configureDrop(...)
+    recordLiveImport(...)
+  }
+  class AlertService <<service>> {
+    - eventRepository: AlertEventRepository
+    --
+    evaluateNewObservation(...), evaluateTarget(...)
+    evaluateCurrentTarget(...)
+    processDue(now), events(now)
+    markRead(id), snooze(id)
+  }
+  class NotificationPolicy <<service>> {
+    - repository: NotificationSettingsRepository
+    --
+    isQuiet(instant): boolean
+    nextAllowed(instant): Instant
+    settings(), update(...): Settings
+  }
+  class NotificationScheduler <<scheduled component>> {
+    processDueEvents() {every 60 seconds}
+  }
+}
+package "Shopping plan" {
+  class ShoppingService <<service>> {
+    - listRepository: ShoppingListRepository
+    - itemRepository: ShoppingListItemRepository
+    - productRepository: ProductRepository
+    --
+    items(): List<ItemView>
+    summary(): Summary
+    add(...), update(...), remove(code)
+  }
+  class BudgetService <<service>> {
+    - settingsRepository: BudgetSettingsRepository
+    --
+    view(): BudgetView
+    save(period, amount): BudgetPeriod
+  }
+  class ReminderService <<service>> {
+    - reminders: ReminderRepository
+    - products: ProductRepository
+    --
+    overview(): ReminderOverview
+    candidate(code): ProductView
+    create(code, quantity, intervalDays, retailer)
+    clear(id), snooze(id), addToList(id), delete(id)
+  }
+}
+
+HelloController ..> CatalogService
+HelloController ..> ShoppingService
+TrackingController ..> TrackingService
+TrackingController ..> AlertService
+TrackingController ..> NotificationPolicy
+BudgetController ..> BudgetService
+ReminderController ..> ReminderService
+CatalogService ..> CatalogJsonParser
+CatalogService ..> ConsumerCouncilSourceClient
+CatalogService ..> CatalogReplacementService
+CatalogReplacementService ..> TrackingService : same transaction
+TrackingService ..> AlertService
+AlertService ..> NotificationPolicy
+NotificationScheduler ..> AlertService
+BudgetService ..> ShoppingService : list estimate
+ReminderService ..> ShoppingService : explicit add
+ReminderService ..> NotificationPolicy
+
+legend bottom left
+  **Dependency notation**
+  Dashed arrows show service calls. Typed private fields show repository dependencies;
+  these fields are real constructor-injected collaborators, not persisted entity fields.
+  Repository interfaces extend Spring Data JpaRepository; their inherited CRUD is omitted.
+
+  Controllers also read CatalogService status and use HelloController formatting helpers.
+  Key operations are abbreviated. DTOs, framework filter/advice, Jackson, Clock and
+  transaction-manager plumbing are omitted. Packages group responsibility areas.
+  AppClockConfiguration supplies the shared Clock; NotificationPolicy uses Asia/Hong_Kong.
+  Catalogue replacement / observations / price rules share one transaction.
+  ShoppingService owns its mutation transaction; ReminderService.addToList does not wrap it.
+endlegend
+@enduml

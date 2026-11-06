@@ -1,4 +1,16 @@
 "use strict";
+// Refresh due state while the page is visible, without discarding form edits.
+if (document.querySelector('[data-timed-page="true"]')) {
+  let edited = false;
+  document.addEventListener("input", event => { if (event.target.closest("form")) edited = true; });
+  document.addEventListener("change", event => { if (event.target.closest("form")) edited = true; });
+  window.setInterval(() => {
+    if (document.visibilityState === "visible" && !edited &&
+        !document.activeElement?.closest("form") && !document.querySelector("details[open]")) {
+      window.location.reload();
+    }
+  }, 60000);
+}
 // Forms work without JavaScript; this only prevents repeated import clicks.
 document.querySelectorAll("[data-import-form]").forEach(form => {
   form.addEventListener("submit", () => {

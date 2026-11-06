@@ -1,0 +1,108 @@
+@startuml
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam arrowColor #4b5563
+skinparam sequenceParticipantBackgroundColor #f3f4f6
+skinparam sequenceParticipantBorderColor #4b5563
+skinparam sequenceLifeLineBorderColor #4b5563
+skinparam sequenceGroupBorderColor #4b5563
+skinparam sequenceGroupBackgroundColor #ffffff
+skinparam noteBackgroundColor #e5e7eb
+skinparam noteBorderColor #4b5563
+skinparam maxMessageSize 180
+hide footbox
+autonumber
+title Market Desk | live import and independent reminder action
+
+participant "Web controller" as Web
+participant CatalogService as Catalog
+participant "CatalogReplacement\nService" as Replace
+participant "TrackingService /\nAlertService" as Tracking
+participant ReminderService as Reminder
+participant ShoppingService as Shopping
+database "H2 repositories" as DB
+
+== Manual live refresh: HelloController ==
+[-> Web: POST /data/refresh
+Web -> Catalog: refreshLive()
+Catalog -> Catalog: sourceClient.fetch(); parser.parse(bytes)
+alt download or validation fails
+  Catalog --> Web: failure; no replacement
+  [<-- Web: error; accepted data unchanged
+else valid input
+  Catalog -> Replace: replace(catalogue, LIVE, URL, retrievedAt, checksum)
+  group One Spring transaction
+    Replace -> DB: replace listings / offers; preserve product references
+    Replace -> Tracking: recordLiveImport(...)
+    Tracking -> DB: lock active periods; prune expired observations
+    loop Each enabled exact-product / retailer period
+      alt changed value or unknown transition
+        Tracking -> DB: save observation and deduplication state
+        Tracking -> Tracking: evaluateNewObservation(...)
+        Tracking -> DB: save qualifying event + repeat state
+      else unchanged value
+        Tracking -> Tracking: evaluateCurrentTarget(period, price, retrievedAt, generatedAt)
+        Tracking -> DB: save qualifying target + armed state; no new history
+      end
+    end
+    Replace -> DB: save accepted-import metadata
+    alt any database write fails
+      note over Replace,DB
+        Spring rolls back catalogue, observations and price events together.
+      end note
+    else all writes succeed
+      note over Replace,DB: Spring commits before the caller receives success.
+    end
+  end
+  Replace --> Catalog: ImportStatus, or propagated failure
+  Catalog --> Web: accepted status, or error
+  [<-- Web: show outcome after transaction completes
+end
+note over Replace,Tracking
+  SAMPLE replacement skips tracking and live alerts.
+  Unchanged values add no history; an armed target may still evaluate
+  the fresh LIVE price without a retained observation.
+  Unknown gaps, expired history and new periods cannot support a drop.
+  Drop events snapshot both prices and their retrieval times.
+end note
+
+== Daily summary: GET /alerts or scheduler while app runs ==
+Web -> Tracking: AlertService.processDue(now)
+Tracking -> DB: store at most one eligible summary per Hong Kong date
+note over Tracking,DB
+  Include unread, unsummarized, currently eligible price events.
+  Quiet hours and snooze delay availability.
+  A catch-up summary uses its actual generation time.
+end note
+
+== Explicit reminder action: ReminderController ==
+[-> Web: POST /reminders/{id}/add
+Web -> Reminder: addToList(id), with no outer transaction
+Reminder -> DB: read product, quantity and saved retailer choice
+Reminder -> Shopping: add(productCode, quantity, selectedRetailerCode)
+Shopping -> DB: validate / merge item in its own mutation transaction
+alt quantity / retailer conflict / unavailable product
+  Shopping --> Reminder: validation error; no list change
+  Reminder --> Web: error
+else valid request
+  DB --> Shopping: list change commits
+  Shopping --> Reminder: success
+  Reminder --> Web: success
+end
+[<-- Web: show outcome; reminder due state is unchanged
+note over Reminder,Shopping
+  Quiet hours do not block a manual add.
+  Only clear / snooze changes the reminder schedule.
+end note
+
+legend bottom left
+  Grouped Tracking / Alert lifeline represents two actual services.
+  CatalogService delegates input to ConsumerCouncilSourceClient and CatalogJsonParser.
+  NotificationScheduler is the alternative caller for the daily summary check.
+  Retrieval time and alert generation time differ; source price date is unknown.
+  A closed app collects no prices and delivers no notifications.
+endlegend
+@enduml

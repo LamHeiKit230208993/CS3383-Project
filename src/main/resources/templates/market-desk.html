@@ -20,7 +20,7 @@
       <div class="workspace-body">
         <th:block th:replace="~{fragments/layout :: source-banner}"></th:block>
         <th:block th:replace="~{fragments/layout :: topbar}"></th:block>
-        <main id="main-content" tabindex="-1">
+        <main id="main-content" tabindex="-1" th:attr="data-timed-page=${scene == 'alerts' or scene == 'reminders' ? 'true' : null}">
           <div class="notice" role="status" th:if="${notice}" th:text="${notice}"></div>
           <div class="notice error" role="alert" th:if="${error}" th:text="${error}"></div>
           <th:block th:if="${scene == 'discover'}">
@@ -37,6 +37,18 @@
           </th:block>
           <th:block th:if="${scene == 'planned'}">
             <th:block th:replace="~{pages/planned :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'saved'}">
+            <th:block th:replace="~{pages/saved :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'alerts'}">
+            <th:block th:replace="~{pages/alerts :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'budget'}">
+            <th:block th:replace="~{pages/budget :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'reminders'}">
+            <th:block th:replace="~{pages/reminders :: content}"></th:block>
           </th:block>
           <th:block th:if="${scene == 'error'}">
             <th:block th:replace="~{pages/error :: content}"></th:block>

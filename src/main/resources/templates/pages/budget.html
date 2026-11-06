@@ -1,0 +1,69 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <header class="page-heading">
+    <p class="eyebrow">PLAN YOUR SHOP</p>
+    <h1>Budget</h1>
+    <p class="intro">Set a weekly or monthly limit, then compare it with your current My list estimate.</p>
+  </header>
+  <div class="data-layout">
+    <section class="panel">
+      <h2>Your planned limit</h2>
+      <p>Choose a period and an amount. This is a plan for the current list, not a record of past spending.</p>
+      <form class="add-form" th:action="@{/budget}" method="post">
+        <label for="budget-period">Plan period</label>
+        <select id="budget-period" name="period" required>
+          <option value="WEEKLY" th:selected="${budgetFormPeriod == 'WEEKLY'}">Weekly</option>
+          <option value="MONTHLY" th:selected="${budgetFormPeriod == 'MONTHLY'}">Monthly</option>
+        </select>
+        <label for="budget-limit">Planned limit (HKD)</label>
+        <input id="budget-limit" name="limit" type="number" min="0" max="999999999999999.9999" step="0.0001"
+               inputmode="decimal" autocomplete="off" required th:value="${budgetFormLimit}">
+        <p class="helper">Changing the period does not add past totals or roll unused amounts forward.</p>
+        <button class="button primary" type="submit">Save budget</button>
+      </form>
+    </section>
+
+    <aside class="panel basket-preview">
+      <p class="eyebrow">CURRENT LIST ESTIMATE</p>
+      <h2 th:text="${budget.limitAmount == null ? 'Set a limit to compare' : budget.period.label() + ' plan'}"></h2>
+      <div class="summary-total">
+        <span th:text="${budget.unknownItemCount > 0 ? 'Known subtotal' : 'Estimated list cost'}"></span>
+        <strong th:text="${format.money(budget.knownSubtotal)}"></strong>
+      </div>
+      <p th:if="${budget.limitAmount != null}" class="helper">
+        Planned limit: <strong th:text="${format.money(budget.limitAmount)}"></strong>
+      </p>
+      <p class="warning" th:if="${budget.state.name() == 'OVER_LIMIT'}">
+        The known subtotal is already above your limit.
+      </p>
+      <p class="helper" th:if="${budget.state.name() == 'OVER_LIMIT' and budget.unknownItemCount > 0}"
+         th:text="${budget.unknownItemCount + ' items still have unknown prices. The full total may be higher.'}"></p>
+      <p class="helper" th:if="${budget.state.name() == 'UNKNOWN_TOTAL'}">
+        At least this subtotal is known. The full list total is unknown, so we cannot confirm that it is within budget.
+      </p>
+      <p class="helper" th:if="${budget.state.name() == 'WITHIN_LIMIT'}">
+        The current list estimate is within your planned limit.
+      </p>
+      <p class="helper" th:if="${budget.state.name() == 'NOT_SET'}">
+        Save a planned limit to compare it with your list estimate.
+      </p>
+      <p class="warning" th:if="${budget.unknownItemCount > 0 and budget.state.name() != 'OVER_LIMIT'}"
+         th:text="${budget.unknownItemCount + ' list items have no current selected price. The estimate is incomplete.'}"></p>
+      <p class="source-note">Uses saved retailer choices and includes checked items. Offers, delivery, and stock are not included. This is not actual spending.</p>
+    </aside>
+  </div>
+
+  <section class="panel" style="margin-top: 26px">
+    <div class="section-heading">
+      <h2>Known estimate by category</h2>
+      <span>Level 2 English categories</span>
+    </div>
+    <p class="helper" th:if="${budget.categoryTotals.isEmpty()}">No priced list items to group yet.</p>
+    <dl class="data-facts" th:unless="${budget.categoryTotals.isEmpty()}">
+      <th:block th:each="category : ${budget.categoryTotals}">
+        <dt th:text="${category.category}"></dt>
+        <dd th:text="${format.money(category.amount)}"></dd>
+      </th:block>
+    </dl>
+    <p class="source-note">Category totals include only known line prices. They add up to the known subtotal above.</p>
+  </section>
+</th:block>

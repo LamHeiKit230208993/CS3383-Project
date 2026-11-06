@@ -10,6 +10,7 @@ import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.OfferRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.catalog.repository.RetailerListingRepository;
+import com.pricewatch.tracking.TrackingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,15 +26,18 @@ public class CatalogReplacementService {
     private final RetailerListingRepository listingRepository;
     private final OfferRepository offerRepository;
     private final AcceptedImportRepository importRepository;
+    private final TrackingService trackingService;
 
     public CatalogReplacementService(ProductRepository productRepository,
                                      RetailerListingRepository listingRepository,
                                      OfferRepository offerRepository,
-                                     AcceptedImportRepository importRepository) {
+                                     AcceptedImportRepository importRepository,
+                                     TrackingService trackingService) {
         this.productRepository = productRepository;
         this.listingRepository = listingRepository;
         this.offerRepository = offerRepository;
         this.importRepository = importRepository;
+        this.trackingService = trackingService;
     }
 
     @Transactional
@@ -74,6 +78,10 @@ public class CatalogReplacementService {
             }
         }
         listingRepository.saveAllAndFlush(listings);
+
+        if ("LIVE".equals(origin)) {
+            trackingService.recordLiveImport(catalog, retrievedAt, sourceUrl, checksum);
+        }
 
         AcceptedImportEntity accepted = new AcceptedImportEntity(origin, sourceUrl, retrievedAt,
                 null, checksum, catalog.products().size(), catalog.listingCount(), catalog.offerCount());

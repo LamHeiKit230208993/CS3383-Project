@@ -1,0 +1,124 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="alerts-title"
+           th:with="visibleEvents=${alertEvents.?[available]}, pendingCount=${alertEvents.?[!available].size()}">
+    <div class="page-heading">
+      <p class="eyebrow">IN THIS APP</p>
+      <h1 id="alerts-title">Price alerts, on your schedule.</h1>
+      <p class="intro">Alerts use recorded prices for the exact product and retailer you chose.</p>
+    </div>
+
+    <section class="panel" aria-labelledby="events-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="events-title">Recent alerts</h2>
+          <p class="helper">Saved on this device. If the app was closed, a summary appears when you return after its scheduled time.</p>
+        </div>
+        <span th:text="${visibleEvents.size() + ' available'}">0 available</span>
+      </div>
+      <div class="notice" role="status" th:if="${pendingCount > 0}"
+           th:text="${pendingCount + (pendingCount == 1 ? ' alert is waiting for quiet hours or snooze to end.' : ' alerts are waiting for quiet hours or snooze to end.')}">
+        Alerts are waiting for quiet hours or snooze to end.
+      </div>
+      <div class="empty-state" th:if="${visibleEvents.isEmpty()}">
+        <h3 th:text="${pendingCount > 0 ? 'No alerts available right now.' : 'No price alerts yet.'}">No price alerts yet.</h3>
+        <p th:if="${pendingCount == 0}">Set a target or enable price drops for one of your tracked products.</p>
+        <p th:if="${pendingCount > 0}">Available alert details will appear when their wait ends.</p>
+      </div>
+      <article class="list-item" th:each="event : ${alertEvents}"
+               th:if="${event.available}" th:classappend="${event.read ? ' is-read' : ''}">
+        <div class="list-item-heading">
+          <div>
+            <p class="eyebrow" th:text="${event.type == 'SUMMARY' ? 'DAILY SUMMARY' : event.type == 'TARGET' ? 'TARGET PRICE' : 'PRICE DROP'}">PRICE ALERT</p>
+            <h3 th:text="${event.message}">Alert message</h3>
+          </div>
+          <strong th:if="${event.price != null}" th:text="${format.money(event.price)}">Price</strong>
+        </div>
+        <p class="helper" th:text="${'Alert generated ' + format.time(event.createdAt)}"></p>
+        <div class="event-evidence" th:if="${event.type == 'DROP'}">
+          <p class="helper" th:text="${'Previous: ' + format.money(event.previousPrice) + ' · retrieved ' + format.time(event.previousObservedAt)}"></p>
+          <p class="helper" th:text="${'Current: ' + format.money(event.price) + ' · retrieved ' + format.time(event.observedAt)}"></p>
+        </div>
+        <p class="helper" th:if="${event.type == 'TARGET'}"
+           th:text="${'Listed price retrieved ' + format.time(event.observedAt)}"></p>
+        <p class="helper" th:if="${!event.available}"
+           th:text="${'Available after ' + format.time(event.availableAt)}"></p>
+        <p class="helper" th:if="${event.read}">Read</p>
+        <div class="inline-actions">
+          <form th:if="${!event.read}" th:action="@{/alerts/events/{id}/read(id=${event.id})}" method="post">
+            <button class="button secondary" type="submit">Mark read</button>
+          </form>
+          <form th:if="${event.type != 'SUMMARY'}" th:action="@{/alerts/events/{id}/snooze(id=${event.id})}" method="post">
+            <button class="button secondary" type="submit">Snooze 24 hours</button>
+          </form>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel" aria-labelledby="timing-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="timing-title">Quiet hours and daily summary</h2>
+          <p class="helper">Times use Hong Kong time. Alerts and summaries wait until quiet hours end. Set the same start and end time to turn quiet hours off.</p>
+        </div>
+      </div>
+      <form class="stack-form" th:action="@{/alerts/settings}" method="post">
+        <label>Quiet hours start
+          <input type="time" name="quietStart" required th:value="${notificationSettings.quietStart}">
+        </label>
+        <label>Quiet hours end
+          <input type="time" name="quietEnd" required th:value="${notificationSettings.quietEnd}">
+        </label>
+        <label>Daily summary time
+          <input type="time" name="summaryTime" required th:value="${notificationSettings.summaryTime}">
+        </label>
+        <button class="button primary" type="submit">Save timing</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="rules-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="rules-title">Your alert rules</h2>
+          <p class="helper">A target alerts when a new known price is at or below your amount. A drop needs two adjacent known observations.</p>
+        </div>
+      </div>
+      <div class="empty-state" th:if="${trackingPeriods.isEmpty()}">
+        <h3>Choose a product and retailer to track.</h3>
+        <p>Saving a product to your wishlist does not start price tracking.</p>
+        <a class="button secondary" th:href="@{/}">Browse products</a>
+      </div>
+      <article class="list-item" th:each="period : ${trackingPeriods}">
+        <div class="list-item-heading">
+          <div>
+            <h3 th:text="${period.productName}">Product</h3>
+            <p class="helper" th:text="${period.retailerCode + ' · ' + period.productCode}">Retailer</p>
+          </div>
+          <a class="button secondary" th:href="@{/saved}">View history</a>
+        </div>
+        <div class="milestone-grid">
+          <form class="stack-form" th:action="@{/alerts/target}" method="post">
+            <input type="hidden" name="trackingId" th:value="${period.id}">
+            <label th:for="${'target-' + period.id}">Target price (HK$)
+              <input type="number" min="0" max="999999999999999.9999" step="0.0001"
+                     name="targetPrice" th:id="${'target-' + period.id}"
+                     th:value="${period.targetPrice}" placeholder="Leave blank to remove"
+                     inputmode="decimal" autocomplete="off">
+            </label>
+            <button class="button secondary" type="submit">Save target</button>
+          </form>
+          <form class="stack-form" th:action="@{/alerts/drop}" method="post">
+            <input type="hidden" name="trackingId" th:value="${period.id}">
+            <label class="check-label">
+              <input type="checkbox" name="enabled" value="true" th:checked="${period.dropEnabled}">
+              Alert after a lower consecutive price
+            </label>
+            <button class="button secondary" type="submit">Save drop rule</button>
+          </form>
+        </div>
+      </article>
+      <p class="source-note">No percentage threshold, multi-buy calculation, or buy/wait advice is applied.</p>
+    </section>
+
+
+  </section>
+</th:block>

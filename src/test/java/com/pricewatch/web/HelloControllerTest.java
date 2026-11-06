@@ -143,13 +143,17 @@ class HelloControllerTest {
     }
 
     @Test void laterFeaturesAreClearlyUnavailable() throws Exception {
-        for (String feature : new String[]{"saved", "updates", "ask"}) {
+        for (String feature : new String[]{"ask"}) {
             mvc.perform(get("/planned/" + feature)).andExpect(status().isOk())
                     .andExpect(content().string(containsString("PLANNED · NOT AVAILABLE YET")))
                     .andExpect(content().string(not(containsString("chat-form"))));
         }
         mvc.perform(get("/data")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("No automatic refresh runs at startup")));
+    }
+    @Test void oldPlannedLinksLeadToWorkingMilestonePages() throws Exception {
+        mvc.perform(get("/planned/saved")).andExpect(redirectedUrl("/saved"));
+        mvc.perform(get("/planned/updates")).andExpect(redirectedUrl("/alerts"));
     }
     @Test void sourceTextIsEscapedAndSearchPaginationIsBounded() throws Exception {
         catalog.importSample();
