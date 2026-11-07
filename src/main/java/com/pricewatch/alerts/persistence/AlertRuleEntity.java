@@ -12,9 +12,11 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 
 /**
- * J06: an alert rule for one tracked (product, retailer) pair. TARGET fires when
- * the current known price is at or below {@code targetAmount} (D04). DROP fires
- * when a new known observation is lower than the latest prior known observation.
+ * J06: an alert rule for one tracked product, independent of retailer. TARGET
+ * fires when the lowest current known price across the product's tracked
+ * retailers is at or below {@code targetAmount} (D04). DROP fires when any
+ * retailer's new known observation is lower than its latest prior known
+ * observation.
  */
 @Entity
 @Table(name = "alert_rules")
@@ -27,9 +29,6 @@ public class AlertRuleEntity {
 
     @Column(name = "product_code", length = 80, nullable = false)
     private String productCode;
-
-    @Column(name = "retailer_code", length = 80, nullable = false)
-    private String retailerCode;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
@@ -44,9 +43,8 @@ public class AlertRuleEntity {
     protected AlertRuleEntity() {
     }
 
-    public AlertRuleEntity(String productCode, String retailerCode, Type type, BigDecimal targetAmount) {
+    public AlertRuleEntity(String productCode, Type type, BigDecimal targetAmount) {
         this.productCode = productCode;
-        this.retailerCode = retailerCode;
         this.type = type;
         this.targetAmount = targetAmount;
         this.enabled = true;
@@ -55,9 +53,13 @@ public class AlertRuleEntity {
     public void disable() { this.enabled = false; }
     public void enable() { this.enabled = true; }
 
+    public void update(Type type, BigDecimal targetAmount) {
+        this.type = type;
+        this.targetAmount = type == Type.TARGET ? targetAmount : null;
+    }
+
     public Long getId() { return id; }
     public String getProductCode() { return productCode; }
-    public String getRetailerCode() { return retailerCode; }
     public Type getType() { return type; }
     public BigDecimal getTargetAmount() { return targetAmount; }
     public boolean isEnabled() { return enabled; }

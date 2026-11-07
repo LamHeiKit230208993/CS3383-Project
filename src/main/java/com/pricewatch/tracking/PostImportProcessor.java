@@ -27,8 +27,8 @@ public class PostImportProcessor {
         String checksum = accepted == null ? "" : accepted.checksum();
         int recorded = tracking.recordObservations(checksum, retrievedAt);
         int events = 0;
-        for (var choice : tracking.activeChoices()) {
-            events += alerts.evaluate(choice.getProductCode(), choice.getRetailerCode());
+        for (String productCode : tracking.trackedProductCodes()) {
+            events += alerts.evaluate(productCode);
         }
         return recorded + events;
     }

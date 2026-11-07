@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Currency;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -85,6 +86,7 @@ public class HelloController {
         catch (IllegalArgumentException exception) { throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"); }
         model.addAttribute("saved", tracking.isSaved(code));
         model.addAttribute("tracked", tracking.isTracked(code));
+        model.addAttribute("alertRules", alerts.rulesForProduct(code));
         return screen(model, "compare", "Compare listed prices");
     }
 
@@ -119,11 +121,16 @@ public class HelloController {
 
     @GetMapping("/alerts")
     String alerts(Model model) {
-        model.addAttribute("events", alerts.allEvents());
+        var views = alerts.eventViews();
+        var summary = alerts.morningSummary();
+        model.addAttribute("events", views);
         model.addAttribute("held", alerts.heldEvents().size());
-        model.addAttribute("summary", alerts.morningSummary());
+        model.addAttribute("summary", summary);
         model.addAttribute("quiet", alerts.inQuietHours());
-        model.addAttribute("rules", tracking.activeChoices());
+        var codes = new java.util.ArrayList<String>();
+        views.forEach(view -> codes.add(view.event().getProductCode()));
+        summary.forEach(event -> codes.add(event.getProductCode()));
+        model.addAttribute("names", productNames(codes));
         return screen(model, "alerts", "Alerts");
     }
 
@@ -136,7 +143,22 @@ public class HelloController {
         model.addAttribute("reminders", all);
         model.addAttribute("dueCodes", dueCodes);
         model.addAttribute("dueCount", dueCodes.size());
+        model.addAttribute("names", productNames(all.stream()
+                .map(com.pricewatch.reminder.persistence.ReminderEntity::getProductCode).toList()));
         return screen(model, "reminders", "Reminders");
+    }
+
+    /** Map each product code to its English name, falling back to the code if it is no longer in the catalogue. */
+    private Map<String, String> productNames(List<String> codes) {
+        Map<String, String> names = new LinkedHashMap<>();
+        for (String code : codes) {
+            if (names.containsKey(code)) continue;
+            String name;
+            try { name = catalog.find(code).name().en(); }
+            catch (IllegalArgumentException exception) { name = code; }
+            names.put(code, name == null || name.isBlank() ? code : name);
+        }
+        return names;
     }
 
     @GetMapping("/data")
@@ -245,17 +267,16 @@ public class HelloController {
 
     // --- J06: alerts ---
 
-    @PostMapping("/alerts/rules")
-    String createAlertRule(@RequestParam String rule, @RequestParam Type type,
+    @PostMapping("/products/{code}/alerts")
+    String createAlertRule(@PathVariable String code,
+                           @RequestParam Type type,
                            @RequestParam(required = false) BigDecimal targetAmount,
                            RedirectAttributes redirect) {
         try {
-            String[] parts = rule.split("\\|", 2);
-            if (parts.length != 2) throw new IllegalArgumentException("Choose a tracked product and retailer.");
-            alerts.createRule(parts[0], parts[1], type, targetAmount);
+            alerts.createRule(code, type, targetAmount);
             redirect.addFlashAttribute("notice", "Alert rule added. It is checked after a successful import.");
         } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
-        return "redirect:/alerts";
+        return "redirect:/products/" + code;
     }
 
     @PostMapping("/alerts/{id}/snooze")
@@ -263,6 +284,25 @@ public class HelloController {
         alerts.snooze(id);
         redirect.addFlashAttribute("notice", "Alert snoozed for 24 hours.");
         return "redirect:/alerts";
+    }
+
+    @PostMapping("/products/{code}/alerts/{id}/update")
+    String updateAlertRule(@PathVariable String code, @PathVariable Long id,
+                           @RequestParam Type type,
+                           @RequestParam(required = false) BigDecimal targetAmount,
+                           RedirectAttributes redirect) {
+        try {
+            alerts.updateRule(id, type, targetAmount);
+            redirect.addFlashAttribute("notice", "Alert rule updated.");
+        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
+        return "redirect:/products/" + code;
+    }
+
+    @PostMapping("/products/{code}/alerts/{id}/disable")
+    String disableAlertRule(@PathVariable String code, @PathVariable Long id, RedirectAttributes redirect) {
+        alerts.disableRule(id);
+        redirect.addFlashAttribute("notice", "Alert rule removed.");
+        return "redirect:/products/" + code;
     }
 
     @PostMapping("/alerts/show")

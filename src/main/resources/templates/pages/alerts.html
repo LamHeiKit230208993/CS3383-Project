@@ -13,33 +13,9 @@
     <p class="warning" th:if="${quiet}">Quiet hours are active (22:00–07:00 HKT). New alerts are held and shown after 07:00.</p>
 
     <div class="panel">
-      <p class="eyebrow">NEW RULE</p>
-      <h2>Add an alert rule for a tracked product</h2>
-      <div class="empty-state" th:if="${rules.isEmpty()}">
-        <p>Track a product on the Saved page first, then add a target or drop rule here.</p>
-        <a class="button secondary" th:href="@{/saved}">Go to Saved</a>
-      </div>
-      <form class="list-edit-form" th:unless="${rules.isEmpty()}" th:action="@{/alerts/rules}" method="post">
-        <label>
-          Product &amp; retailer
-          <select name="rule">
-            <option th:each="rule : ${rules}" th:value="${rule.productCode + '|' + rule.retailerCode}"
-                    th:text="${rule.productCode + ' · ' + rule.retailerCode}"></option>
-          </select>
-        </label>
-        <label>
-          Type
-          <select name="type">
-            <option value="TARGET">Target (at or below)</option>
-            <option value="DROP">Price drop</option>
-          </select>
-        </label>
-        <label>
-          Target amount
-          <input type="number" name="targetAmount" min="0" step="0.01" inputmode="decimal" autocomplete="off">
-        </label>
-        <button class="button secondary" type="submit">Add rule</button>
-      </form>
+      <p class="eyebrow">SET A RULE</p>
+      <h2>Add alert rules from a product page</h2>
+      <p class="helper">Open a product and use "Add alert rule" to set a target or price-drop rule for one of its retailers.</p>
     </div>
 
     <aside class="panel" th:unless="${summary.isEmpty()}">
@@ -47,7 +23,7 @@
       <h2 th:text="${summary.size() + ' alert(s) since 07:00'}"></h2>
       <ul class="tracked-list">
         <li th:each="event : ${summary}">
-          <strong th:text="${event.productCode}"></strong>
+          <strong th:text="${names.get(event.productCode)}"></strong>
           <span th:text="${format.alertType(event.type.name()) + ' · ' + event.retailerCode + ' · ' + format.money(event.price)}"></span>
         </li>
       </ul>
@@ -62,20 +38,26 @@
         <h2>No alerts yet.</h2>
         <p>Track a product and set a target or drop rule to see alerts after a price update.</p>
       </div>
-      <article class="list-item" th:each="event : ${events}" th:classappend="${!event.visible ? ' is-checked' : ''}">
-        <div class="list-item-heading">
-          <div>
-            <h3 th:text="${format.alertType(event.type.name())}"></h3>
-            <p class="helper" th:text="${event.productCode + ' · ' + event.retailerCode}"></p>
+      <article class="list-item" th:each="view : ${events}" th:classappend="${!view.event.visible ? ' is-checked' : ''}">
+        <div th:with="event=${view.event}">
+          <div class="list-item-heading">
+            <div>
+              <h3><a th:href="@{/products/{code}(code=${event.productCode})}" th:text="${names.get(event.productCode)}"></a></h3>
+              <p class="helper" th:text="${format.alertType(event.type.name()) + ' · ' + event.retailerCode + ' · ' + event.productCode}"></p>
+            </div>
+            <strong class="line-total" th:text="${format.money(event.price)}"></strong>
           </div>
-          <strong class="line-total" th:text="${format.money(event.price)}"></strong>
+          <p class="helper" th:if="${view.rule != null}"
+             th:text="${'Rule: ' + format.alertType(view.rule.type.name()) + (view.rule.targetAmount != null ? ' at ' + format.money(view.rule.targetAmount) : '')}"></p>
+          <p class="helper" th:if="${view.rule == null}">Rule removed</p>
+          <p class="helper" th:if="${event.comparedPrice != null}" th:text="${'Earlier price: ' + format.money(event.comparedPrice)}"></p>
+          <p class="selection-mode" th:text="${event.visible ? 'Shown in the app' : 'Held — not delivered while the app was closed'}"></p>
+          <p class="helper" th:if="${event.snoozeUntil != null}" th:text="${'Snoozed until ' + format.time(event.snoozeUntil)}"></p>
+          <form th:action="@{/alerts/{id}/snooze(id=${event.id})}" method="post">
+            <button class="button secondary" type="submit">Snooze 24 hours</button>
+          </form>
+          <a class="button secondary" th:href="@{/products/{code}(code=${event.productCode})}">View product</a>
         </div>
-        <p class="helper" th:if="${event.comparedPrice != null}" th:text="${'Earlier price: ' + format.money(event.comparedPrice)}"></p>
-        <p class="selection-mode" th:text="${event.visible ? 'Shown in the app' : 'Held — not delivered while the app was closed'}"></p>
-        <p class="helper" th:if="${event.snoozeUntil != null}" th:text="${'Snoozed until ' + format.time(event.snoozeUntil)}"></p>
-        <form th:action="@{/alerts/{id}/snooze(id=${event.id})}" method="post">
-          <button class="button secondary" type="submit">Snooze 24 hours</button>
-        </form>
       </article>
     </div>
     <p class="source-note">A target uses one current known price. A price-drop alert needs an earlier known price for the same product and retailer. A closed app never collects prices or delivers alerts.</p>

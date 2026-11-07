@@ -159,12 +159,17 @@ class HelloControllerTest {
                 .andExpect(content().string(containsString("SAVE IS NOT TRACK")))
                 .andExpect(content().string(containsString("P000000124")));
         mvc.perform(post("/saved/P000000124/track")).andExpect(redirectedUrl("/saved"));
+        mvc.perform(post("/products/P000000124/alerts").param("type", "TARGET").param("targetAmount", "9999"))
+                .andExpect(redirectedUrl("/products/P000000124"));
+        catalog.importSample();
         mvc.perform(get("/alerts")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("INSIDE THE APP ONLY")));
+                .andExpect(content().string(containsString("INSIDE THE APP ONLY")))
+                .andExpect(content().string(containsString("href=\"/products/P000000124\"")));
         mvc.perform(post("/reminders/P000000124/create").param("quantity", "2").param("intervalDays", "7"))
                 .andExpect(redirectedUrl("/reminders"));
         mvc.perform(get("/reminders")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("P000000124")));
+                .andExpect(content().string(containsString("P000000124")))
+                .andExpect(content().string(containsString("100 %Fresh Milk 236mL")));
         mvc.perform(get("/list")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("planned budget")));
     }

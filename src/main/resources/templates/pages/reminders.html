@@ -22,8 +22,8 @@
                th:classappend="${dueCodes.contains(reminder.productCode) ? ' is-due' : ''}">
         <div class="list-item-heading">
           <div>
-            <h3 th:text="${reminder.productCode}"></h3>
-            <p class="helper" th:text="${reminder.quantity + ' pack(s) · every ' + reminder.intervalDays + ' day(s)'}"></p>
+            <h3 th:text="${names.get(reminder.productCode)}"></h3>
+            <p class="helper" th:text="${reminder.productCode + ' · ' + reminder.quantity + ' pack(s) · every ' + reminder.intervalDays + ' day(s)'}"></p>
           </div>
           <span class="planned-tag" th:if="${dueCodes.contains(reminder.productCode)}">Due</span>
         </div>

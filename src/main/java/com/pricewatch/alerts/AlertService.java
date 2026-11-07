@@ -45,11 +45,11 @@ public class AlertService {
     }
 
     @Transactional
-    public AlertRuleEntity createRule(String productCode, String retailerCode, Type type, BigDecimal targetAmount) {
+    public AlertRuleEntity createRule(String productCode, Type type, BigDecimal targetAmount) {
         if (type == Type.TARGET && targetAmount == null) {
             throw new IllegalArgumentException("A target alert needs a target amount.");
         }
-        return rules.save(new AlertRuleEntity(productCode, retailerCode, type, targetAmount));
+        return rules.save(new AlertRuleEntity(productCode, type, targetAmount));
     }
 
     @Transactional
@@ -57,32 +57,90 @@ public class AlertService {
         rules.findById(ruleId).ifPresent(AlertRuleEntity::disable);
     }
 
+    @Transactional
+    public AlertRuleEntity updateRule(Long ruleId, Type type, BigDecimal targetAmount) {
+        if (type == Type.TARGET && targetAmount == null) {
+            throw new IllegalArgumentException("A target alert needs a target amount.");
+        }
+        AlertRuleEntity rule = rules.findById(ruleId)
+                .orElseThrow(() -> new IllegalArgumentException("That alert rule no longer exists."));
+        rule.update(type, targetAmount);
+        return rule;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AlertRuleEntity> rulesForProduct(String productCode) {
+        return rules.findAllByProductCodeAndEnabledTrue(productCode);
+    }
+
     /**
-     * Evaluate enabled rules for a tracked pair after new observations were
-     * recorded. Uses the latest known observation as the current price and, for a
-     * drop, the latest prior known observation. Returns the number of new events.
+     * Evaluate enabled rules for a product after new observations were recorded.
+     * A TARGET rule fires when the lowest current known price across the product's
+     * tracked retailers is at or below the target; the event names that retailer.
+     * A DROP rule fires per retailer when its new known price is below its prior
+     * known price. Returns the number of new events.
      */
     @Transactional
-    public int evaluate(String productCode, String retailerCode) {
-        List<PriceObservationEntity> history =
-                observations.findAllByProductCodeAndRetailerCodeOrderByRetrievedAtAscIdAsc(productCode, retailerCode);
-        Optional<PriceObservationEntity> currentKnown = lastKnown(history);
-        if (currentKnown.isEmpty()) {
+    public int evaluate(String productCode) {
+        List<AlertRuleEntity> productRules = rules.findAllByProductCodeAndEnabledTrue(productCode);
+        if (productRules.isEmpty()) {
             return 0;
         }
-        PriceObservationEntity current = currentKnown.get();
+        List<PriceObservationEntity> history = observations.findAllByProductCodeOrderByRetrievedAtAscIdAsc(productCode);
+        java.util.Map<String, List<PriceObservationEntity>> byRetailer = history.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        PriceObservationEntity::getRetailerCode, java.util.LinkedHashMap::new,
+                        java.util.stream.Collectors.toList()));
         int created = 0;
-        for (AlertRuleEntity rule : rules.findAllByProductCodeAndRetailerCodeAndEnabledTrue(productCode, retailerCode)) {
-            BigDecimal eventPrice = switch (rule.getType()) {
-                case TARGET -> matchesTarget(rule, current) ? current.getPrice() : null;
-                case DROP -> dropPrice(history, current);
+        for (AlertRuleEntity rule : productRules) {
+            created += switch (rule.getType()) {
+                case TARGET -> evaluateTarget(productCode, rule, byRetailer);
+                case DROP -> evaluateDrops(productCode, rule, byRetailer);
             };
-            if (eventPrice != null && !events.existsByProductCodeAndRetailerCodeAndTypeAndPrice(
-                    productCode, retailerCode, rule.getType(), eventPrice)) {
-                BigDecimal compared = rule.getType() == Type.DROP ? priorKnownPrice(history, current).orElse(null) : null;
-                events.save(new AlertEventEntity(productCode, retailerCode, rule.getType(), eventPrice, compared, clock.instant()));
-                created++;
+        }
+        return created;
+    }
+
+    private int evaluateTarget(String productCode, AlertRuleEntity rule,
+                               java.util.Map<String, List<PriceObservationEntity>> byRetailer) {
+        String bestRetailer = null;
+        PriceObservationEntity best = null;
+        for (var entry : byRetailer.entrySet()) {
+            Optional<PriceObservationEntity> current = lastKnown(entry.getValue());
+            if (current.isEmpty()) continue;
+            if (best == null || current.get().getPrice().compareTo(best.getPrice()) < 0) {
+                best = current.get();
+                bestRetailer = entry.getKey();
             }
+        }
+        if (best == null || !matchesTarget(rule, best)) {
+            return 0;
+        }
+        if (events.existsByProductCodeAndRetailerCodeAndTypeAndPrice(
+                productCode, bestRetailer, Type.TARGET, best.getPrice())) {
+            return 0;
+        }
+        events.save(new AlertEventEntity(productCode, bestRetailer, Type.TARGET, best.getPrice(), null, clock.instant()));
+        return 1;
+    }
+
+    private int evaluateDrops(String productCode, AlertRuleEntity rule,
+                              java.util.Map<String, List<PriceObservationEntity>> byRetailer) {
+        int created = 0;
+        for (var entry : byRetailer.entrySet()) {
+            String retailerCode = entry.getKey();
+            List<PriceObservationEntity> retailerHistory = entry.getValue();
+            Optional<PriceObservationEntity> currentKnown = lastKnown(retailerHistory);
+            if (currentKnown.isEmpty()) continue;
+            PriceObservationEntity current = currentKnown.get();
+            BigDecimal eventPrice = dropPrice(retailerHistory, current);
+            if (eventPrice == null || events.existsByProductCodeAndRetailerCodeAndTypeAndPrice(
+                    productCode, retailerCode, Type.DROP, eventPrice)) {
+                continue;
+            }
+            BigDecimal compared = priorKnownPrice(retailerHistory, current).orElse(null);
+            events.save(new AlertEventEntity(productCode, retailerCode, Type.DROP, eventPrice, compared, clock.instant()));
+            created++;
         }
         return created;
     }
@@ -123,6 +181,18 @@ public class AlertService {
     @Transactional(readOnly = true)
     public List<AlertEventEntity> allEvents() {
         return events.findAllByOrderByCreatedAtDescIdDesc();
+    }
+
+    public record AlertEventView(AlertEventEntity event, AlertRuleEntity rule) {}
+
+    @Transactional(readOnly = true)
+    public List<AlertEventView> eventViews() {
+        return events.findAllByOrderByCreatedAtDescIdDesc().stream()
+                .map(event -> new AlertEventView(event, rules
+                        .findFirstByProductCodeAndTypeAndEnabledTrue(
+                                event.getProductCode(), event.getType())
+                        .orElse(null)))
+                .toList();
     }
 
     @Transactional(readOnly = true)

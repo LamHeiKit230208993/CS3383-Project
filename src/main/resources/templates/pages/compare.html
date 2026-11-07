@@ -51,6 +51,43 @@
                  value="7" required inputmode="numeric" autocomplete="off">
           <button class="button secondary full" type="submit">Set reminder</button>
         </form>
+        <div class="panel">
+          <p class="eyebrow">ALERT RULES</p>
+          <form class="list-edit-form" th:if="${product.active}" th:action="@{/products/{code}/alerts(code=${product.code})}" method="post">
+            <label>
+              Type
+              <select name="type">
+                <option value="TARGET">Target (any retailer at or below)</option>
+                <option value="DROP">Price drop (any retailer)</option>
+              </select>
+            </label>
+            <label>
+              Target amount
+              <input type="number" name="targetAmount" min="0" step="0.01" inputmode="decimal" autocomplete="off">
+            </label>
+            <button class="button secondary" type="submit">Add alert rule</button>
+          </form>
+          <article th:each="rule : ${alertRules}">
+            <form class="list-edit-form" th:action="@{/products/{code}/alerts/{id}/update(code=${product.code},id=${rule.id})}" method="post">
+              <label>
+                Type
+                <select name="type">
+                  <option value="TARGET" th:selected="${rule.type.name() == 'TARGET'}">Target (any retailer at or below)</option>
+                  <option value="DROP" th:selected="${rule.type.name() == 'DROP'}">Price drop (any retailer)</option>
+                </select>
+              </label>
+              <label>
+                Target amount
+                <input type="number" name="targetAmount" min="0" step="0.01" inputmode="decimal" autocomplete="off"
+                       th:value="${rule.targetAmount}">
+              </label>
+              <button class="button secondary" type="submit">Update</button>
+            </form>
+            <form th:action="@{/products/{code}/alerts/{id}/disable(code=${product.code},id=${rule.id})}" method="post">
+              <button class="button danger" type="submit">Remove rule</button>
+            </form>
+          </article>
+        </div>
         <form
           id="add-item-form"
           class="add-form"

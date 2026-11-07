@@ -83,6 +83,14 @@ public class TrackingService {
         return tracking.findAllByEnabledTrueOrderByProductCodeAscRetailerCodeAsc();
     }
 
+    @Transactional(readOnly = true)
+    public List<String> trackedProductCodes() {
+        return tracking.findAllByEnabledTrueOrderByProductCodeAscRetailerCodeAsc().stream()
+                .map(TrackingChoiceEntity::getProductCode)
+                .distinct()
+                .toList();
+    }
+
     @Transactional
     public void enableTracking(String productCode) {
         ProductEntity product = products.findWithListingsByCode(productCode)

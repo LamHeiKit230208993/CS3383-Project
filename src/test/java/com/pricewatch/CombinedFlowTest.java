@@ -85,7 +85,7 @@ class CombinedFlowTest {
         assertFalse(tracking.isTracked("P000000124"), "saving alone does not track");
 
         tracking.enableTracking("P000000124");
-        alerts.createRule("P000000124", "AEON", Type.DROP, null);
+        alerts.createRule("P000000124", Type.DROP, null);
         budget.save(com.pricewatch.alerts.persistence.BudgetSettingsEntity.Period.WEEKLY, new BigDecimal("50"));
         shopping.add("P000000124", 2);
 

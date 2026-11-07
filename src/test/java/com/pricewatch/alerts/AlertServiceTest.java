@@ -71,7 +71,7 @@ class AlertServiceTest {
     @Test
     void targetFiresFromOneKnownObservation() {
         setupTracked();
-        alerts.createRule("P000000124", "AEON", Type.TARGET, new BigDecimal("8.00"));
+        alerts.createRule("P000000124", Type.TARGET, new BigDecimal("8.00"));
         accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"7.50\"}]"));
         assertEquals(1, events.count());
         var event = events.findAll().get(0);
@@ -82,7 +82,7 @@ class AlertServiceTest {
     @Test
     void dropNeedsAValidEarlierKnownPair() {
         setupTracked();
-        alerts.createRule("P000000124", "AEON", Type.DROP, null);
+        alerts.createRule("P000000124", Type.DROP, null);
         accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"9.00\"}]"));
         assertEquals(0, events.count(), "no earlier price yet");
 
@@ -97,7 +97,7 @@ class AlertServiceTest {
     @Test
     void unknownObservationNeverFires() {
         setupTracked();
-        alerts.createRule("P000000124", "AEON", Type.DROP, null);
+        alerts.createRule("P000000124", Type.DROP, null);
         accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"9.00\"}]"));
         accept(product("[{\"supermarketCode\":\"AEON\",\"price\":null}]"));
         assertEquals(0, events.count(), "unknown price cannot fire a drop");
@@ -107,7 +107,7 @@ class AlertServiceTest {
     void quietHoursHoldEventsUntilMorningShow() {
         setupTracked();
         clock.set(Instant.parse("2026-10-31T15:00:00Z")); // 23:00 HKT quiet
-        alerts.createRule("P000000124", "AEON", Type.TARGET, new BigDecimal("8.00"));
+        alerts.createRule("P000000124", Type.TARGET, new BigDecimal("8.00"));
         accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"7.50\"}]"));
         assertEquals(1, events.count());
         assertTrue(alerts.inQuietHours());
@@ -125,7 +125,7 @@ class AlertServiceTest {
     @Test
     void snoozeHidesEventFor24Hours() {
         setupTracked();
-        alerts.createRule("P000000124", "AEON", Type.TARGET, new BigDecimal("8.00"));
+        alerts.createRule("P000000124", Type.TARGET, new BigDecimal("8.00"));
         accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"7.50\"}]"));
         Long eventId = events.findAll().get(0).getId();
         alerts.snooze(eventId);
@@ -134,6 +134,70 @@ class AlertServiceTest {
         assertEquals(0, alerts.showHeldNow(), "still snoozed");
         clock.advance(Duration.ofHours(24));
         assertTrue(alerts.showHeldNow() >= 1, "visible after snooze expires");
+    }
+
+    @Test
+    void updateRuleChangesTypeAndAmountAndListsForProduct() {
+        setupTracked();
+        var rule = alerts.createRule("P000000124", Type.TARGET, new BigDecimal("8.00"));
+        assertEquals(1, alerts.rulesForProduct("P000000124").size());
+
+        alerts.updateRule(rule.getId(), Type.DROP, null);
+        assertEquals(Type.DROP, rules.findById(rule.getId()).orElseThrow().getType());
+        assertNull(rules.findById(rule.getId()).orElseThrow().getTargetAmount());
+
+        alerts.disableRule(rule.getId());
+        assertTrue(alerts.rulesForProduct("P000000124").isEmpty());
+    }
+
+    @Test
+    void eventViewsShowTheRuleThatFired() {
+        setupTracked();
+        alerts.createRule("P000000124", Type.TARGET, new BigDecimal("8.00"));
+        accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"7.50\"}]"));
+
+        var view = alerts.eventViews().get(0);
+        assertEquals("AEON", view.event().getRetailerCode());
+        assertNotNull(view.rule());
+        assertEquals(new BigDecimal("8.0000"), view.rule().getTargetAmount());
+    }
+
+    @Test
+    void targetFiresFromLowestAcrossRetailersAndNamesThatRetailer() {
+        accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"12.00\"},"
+                + "{\"supermarketCode\":\"WELLCOME\",\"price\":\"9.00\"},"
+                + "{\"supermarketCode\":\"JASONS\",\"price\":\"11.00\"}]"));
+        tracking.enableTracking("P000000124");
+        alerts.createRule("P000000124", Type.TARGET, new BigDecimal("10.00"));
+
+        accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"12.00\"},"
+                + "{\"supermarketCode\":\"WELLCOME\",\"price\":\"9.50\"},"
+                + "{\"supermarketCode\":\"JASONS\",\"price\":\"11.00\"}]"));
+
+        assertEquals(1, events.count(), "one product-wide target event");
+        var event = events.findAll().get(0);
+        assertEquals("WELLCOME", event.getRetailerCode(), "named the lowest retailer");
+        assertEquals(new BigDecimal("9.5000"), event.getPrice());
+    }
+
+    @Test
+    void dropFiresWhenAnyRetailerDrops() {
+        accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"10.00\"},"
+                + "{\"supermarketCode\":\"WELLCOME\",\"price\":\"10.00\"}]"));
+        tracking.enableTracking("P000000124");
+        alerts.createRule("P000000124", Type.DROP, null);
+        accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"10.00\"},"
+                + "{\"supermarketCode\":\"WELLCOME\",\"price\":\"10.00\"}]"));
+        assertEquals(0, events.count(), "no drop yet");
+
+        accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"10.00\"},"
+                + "{\"supermarketCode\":\"WELLCOME\",\"price\":\"8.00\"}]"));
+        assertEquals(1, events.count(), "wellcome dropped");
+        assertEquals("WELLCOME", events.findAll().get(0).getRetailerCode());
+
+        accept(product("[{\"supermarketCode\":\"AEON\",\"price\":\"10.00\"},"
+                + "{\"supermarketCode\":\"WELLCOME\",\"price\":\"8.00\"}]"));
+        assertEquals(1, events.count(), "no duplicate for same retailer/price");
     }
 
     private void setupTracked() {

@@ -13,6 +13,8 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
     List<PriceObservationEntity> findAllByProductCodeAndRetailerCodeOrderByRetrievedAtAscIdAsc(
             String productCode, String retailerCode);
 
+    List<PriceObservationEntity> findAllByProductCodeOrderByRetrievedAtAscIdAsc(String productCode);
+
     Optional<PriceObservationEntity> findFirstByProductCodeAndRetailerCodeAndKnownTrueOrderByRetrievedAtDescIdDesc(
             String productCode, String retailerCode);
 }
