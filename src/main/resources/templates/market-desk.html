@@ -32,6 +32,15 @@
           <th:block th:if="${scene == 'list'}">
             <th:block th:replace="~{pages/list :: content}"></th:block>
           </th:block>
+          <th:block th:if="${scene == 'saved'}">
+            <th:block th:replace="~{pages/saved :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'alerts'}">
+            <th:block th:replace="~{pages/alerts :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'reminders'}">
+            <th:block th:replace="~{pages/reminders :: content}"></th:block>
+          </th:block>
           <th:block th:if="${scene == 'data'}">
             <th:block th:replace="~{pages/data :: content}"></th:block>
           </th:block>

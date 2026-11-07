@@ -10,6 +10,7 @@ import com.pricewatch.catalog.persistence.ProductEntity;
 import com.pricewatch.catalog.persistence.RetailerListingEntity;
 import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
+import com.pricewatch.tracking.PostImportProcessor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,17 +39,20 @@ public class CatalogService {
     private final CatalogJsonParser parser;
     private final CatalogReplacementService replacementService;
     private final ConsumerCouncilSourceClient sourceClient;
+    private final PostImportProcessor postImportProcessor;
 
     public CatalogService(ProductRepository productRepository,
                           AcceptedImportRepository importRepository,
                           CatalogJsonParser parser,
                           CatalogReplacementService replacementService,
-                          ConsumerCouncilSourceClient sourceClient) {
+                          ConsumerCouncilSourceClient sourceClient,
+                          PostImportProcessor postImportProcessor) {
         this.productRepository = productRepository;
         this.importRepository = importRepository;
         this.parser = parser;
         this.replacementService = replacementService;
         this.sourceClient = sourceClient;
+        this.postImportProcessor = postImportProcessor;
     }
 
     @Transactional(readOnly = true)
@@ -129,11 +133,16 @@ public class CatalogService {
         return accept(sourceClient.fetch(), "LIVE", sourceClient.sourceUrl());
     }
 
-    ImportStatus accept(byte[] bytes, String origin, String sourceUrl) {
+    public ImportStatus accept(byte[] bytes, String origin, String sourceUrl) {
         ImportedCatalog parsed = parser.parse(bytes);
         Instant retrievedAt = Instant.now();
         String checksum = sha256(bytes);
-        return replacementService.replace(parsed, origin, sourceUrl, retrievedAt, checksum);
+        ImportStatus accepted = replacementService.replace(parsed, origin, sourceUrl, retrievedAt, checksum);
+        // The catalogue import has committed above. Record observations and
+        // evaluate alerts afterwards so a failure here cannot roll back a
+        // committed import (see milestone plan, transaction boundary).
+        postImportProcessor.process(accepted);
+        return accepted;
     }
 
     private static SearchHit rank(ProductEntity product, String query, List<String> terms) {

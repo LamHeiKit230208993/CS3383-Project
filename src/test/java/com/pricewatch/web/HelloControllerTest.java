@@ -143,14 +143,37 @@ class HelloControllerTest {
     }
 
     @Test void laterFeaturesAreClearlyUnavailable() throws Exception {
-        for (String feature : new String[]{"saved", "updates", "ask"}) {
-            mvc.perform(get("/planned/" + feature)).andExpect(status().isOk())
-                    .andExpect(content().string(containsString("PLANNED · NOT AVAILABLE YET")))
-                    .andExpect(content().string(not(containsString("chat-form"))));
-        }
+        mvc.perform(get("/planned/ask")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("PLANNED")))
+                .andExpect(content().string(not(containsString("chat-form"))));
+        // Saved, Alerts, and Reminders are now real destinations, not planned pages.
+        mvc.perform(get("/planned/saved")).andExpect(status().isNotFound());
+        mvc.perform(get("/planned/updates")).andExpect(status().isNotFound());
         mvc.perform(get("/data")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("No automatic refresh runs at startup")));
     }
+    @Test void savedAlertsAndRemindersPagesRenderRealContent() throws Exception {
+        catalog.importSample();
+        mvc.perform(post("/saved/P000000124/save")).andExpect(redirectedUrl("/saved"));
+        mvc.perform(get("/saved")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("SAVE IS NOT TRACK")))
+                .andExpect(content().string(containsString("P000000124")));
+        mvc.perform(post("/saved/P000000124/track")).andExpect(redirectedUrl("/saved"));
+        mvc.perform(post("/products/P000000124/alerts").param("type", "TARGET").param("targetAmount", "9999"))
+                .andExpect(redirectedUrl("/products/P000000124"));
+        catalog.importSample();
+        mvc.perform(get("/alerts")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("INSIDE THE APP ONLY")))
+                .andExpect(content().string(containsString("href=\"/products/P000000124\"")));
+        mvc.perform(post("/reminders/P000000124/create").param("quantity", "2").param("intervalDays", "7"))
+                .andExpect(redirectedUrl("/reminders"));
+        mvc.perform(get("/reminders")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("P000000124")))
+                .andExpect(content().string(containsString("100 %Fresh Milk 236mL")));
+        mvc.perform(get("/list")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("planned budget")));
+    }
+
     @Test void sourceTextIsEscapedAndSearchPaginationIsBounded() throws Exception {
         catalog.importSample();
         mvc.perform(get("/").param("q", "<script>alert(1)</script>").param("page", "2147483647"))

@@ -1,0 +1,46 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="reminders-title">
+    <div class="page-heading">
+      <p class="eyebrow">WHILE THE APP IS RUNNING</p>
+      <h1 id="reminders-title">Reminders</h1>
+      <p class="intro">Set a restock interval yourself. When due, add the chosen quantity to My list, clear, or snooze. A reminder does not prove a purchase.</p>
+    </div>
+    <div class="panel" th:if="${dueCount > 0}">
+      <p class="warning" th:text="${dueCount + ' reminder(s) due now.'}"></p>
+    </div>
+    <div class="panel">
+      <div class="section-heading">
+        <h2>Your reminders</h2>
+        <span th:text="${reminders.size() + ' total'}"></span>
+      </div>
+      <div class="empty-state" th:if="${reminders.isEmpty()}">
+        <h2>No reminders yet.</h2>
+        <p>Open a product to set a restock reminder.</p>
+        <a class="button secondary" th:href="@{/}">Browse products</a>
+      </div>
+      <article class="list-item" th:each="reminder : ${reminders}"
+               th:classappend="${dueCodes.contains(reminder.productCode) ? ' is-due' : ''}">
+        <div class="list-item-heading">
+          <div>
+            <h3 th:text="${names.get(reminder.productCode)}"></h3>
+            <p class="helper" th:text="${reminder.productCode + ' · ' + reminder.quantity + ' pack(s) · every ' + reminder.intervalDays + ' day(s)'}"></p>
+          </div>
+          <span class="planned-tag" th:if="${dueCodes.contains(reminder.productCode)}">Due</span>
+        </div>
+        <p class="helper" th:text="${'Next due: ' + format.time(reminder.dueAt)}"></p>
+        <div class="list-edit-form">
+          <form th:action="@{/reminders/{code}/add(code=${reminder.productCode})}" method="post">
+            <button class="button primary" type="submit" th:text="${'Add ' + reminder.quantity + ' to My list'}"></button>
+          </form>
+          <form th:action="@{/reminders/{code}/snooze(code=${reminder.productCode})}" method="post">
+            <button class="button secondary" type="submit">Snooze 24 hours</button>
+          </form>
+          <form th:action="@{/reminders/{code}/clear(code=${reminder.productCode})}" method="post">
+            <button class="button danger" type="submit">Clear</button>
+          </form>
+        </div>
+      </article>
+    </div>
+    <p class="source-note">Reminders run only while the app is running. Adding to My list reuses the same quantity (1–999) and retailer-conflict rules as the list. Unavailable prices stay unknown.</p>
+  </section>
+</th:block>

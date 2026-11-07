@@ -251,10 +251,68 @@ async function main() {
     assert.match(await text(page.locator(".basket-preview")), /Total is incomplete/);
   });
 
+  await check("saved wishlist is separate from tracking", async () => {
+    await go("/data");
+    await page.getByRole("button", { name: "Refresh live prices" }).click();
+    await go("/products/P000000124");
+    await page.getByRole("button", { name: "Save to wishlist" }).click();
+    await page.waitForURL(url => url.pathname === "/products/P000000124");
+    await go("/saved");
+    assert.match(await text(page.locator("main")), /SAVE IS NOT TRACK/);
+    const row = page.locator(".list-item").filter({ hasText: "P000000124" });
+    assert.match(await text(row), /Track older prices/);
+    await row.getByRole("button", { name: "Track older prices" }).click();
+    await page.waitForURL(base + "/saved");
+    assert.match(await text(row), /Stop tracking/);
+    assert.match(await text(page.locator(".basket-preview")), /P000000124/);
+    await page.screenshot({ path: path.join(artifacts, "saved.png"), fullPage: true, animations: "disabled" });
+  });
+
+  await check("target alert fires on a tracked price update and can be snoozed", async () => {
+    await go("/alerts");
+    await page.locator("select[name=rule]").selectOption({ index: 0 });
+    await page.locator("select[name=type]").selectOption("TARGET");
+    await page.locator("input[name=targetAmount]").fill("999999");
+    await page.getByRole("button", { name: "Add rule" }).click();
+    await page.waitForURL(base + "/alerts");
+    await go("/data");
+    await page.getByRole("button", { name: "Refresh live prices" }).click();
+    await go("/alerts");
+    const event = page.locator(".list-item").filter({ hasText: "Target met" }).first();
+    await event.waitFor();
+    await event.getByRole("button", { name: "Snooze 24 hours" }).click();
+    await page.waitForURL(base + "/alerts");
+    assert.match(await text(page.locator("main")), /Snoozed until/);
+  });
+
+  await check("planned budget and category totals render", async () => {
+    await go("/list");
+    await page.locator("input[name=plannedLimit]").fill("100");
+    await page.getByRole("button", { name: "Save budget" }).click();
+    await page.waitForURL(base + "/list");
+    assert.match(await text(page.locator(".basket-preview")), /planned budget/);
+    assert.match(await text(page.locator(".basket-preview")), /planned estimate, not actual spending/);
+  });
+
+  await check("reminder can be created and adds its quantity to My list", async () => {
+    // TEST-DIMSUM is not in My list, so the reminder add exercises the normal path.
+    await go("/products/TEST-DIMSUM");
+    await page.locator("#reminder-interval").fill("7");
+    await page.getByRole("button", { name: "Set reminder" }).click();
+    await page.waitForURL(base + "/reminders");
+    assert.match(await text(page.locator("main")), /TEST-DIMSUM/);
+    await page.getByRole("button", { name: /Add .* to My list/ }).click();
+    await page.waitForURL(base + "/reminders");
+    assert.match(await text(page.locator("main")), /rescheduled/);
+    await page.getByRole("button", { name: "Clear" }).click();
+    await page.waitForURL(base + "/reminders");
+    assert.match(await text(page.locator("main")), /No reminders yet/);
+  });
+
   await check("navigation, responsive layouts, and keyboard skip link", async () => {
     for (const width of [375, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const route of ["/", "/products/P000000124", "/products/TEST-LARGE", "/list", "/data"]) {
+      for (const route of ["/", "/products/P000000124", "/products/TEST-LARGE", "/list", "/data", "/saved", "/alerts", "/reminders"]) {
         await go(route);
         assert.equal(await page.locator("h1").count(), 1);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
@@ -287,8 +345,8 @@ async function main() {
     await page.waitForURL(base + "/data");
     await page.locator(".mobile-more > summary").click();
     await page.locator(".mobile-nav").getByRole("link", { name: /Saved/ }).click();
-    await page.waitForURL(base + "/planned/saved");
-    assert.match(await text(page.locator("main")), /PLANNED · NOT AVAILABLE YET/);
+    await page.waitForURL(base + "/saved");
+    assert.match(await text(page.locator("main")), /SAVE IS NOT TRACK/);
     await go("/");
     await page.keyboard.press("Tab");
     assert.equal(await page.locator(".skip-link").evaluate(link => link === document.activeElement), true);

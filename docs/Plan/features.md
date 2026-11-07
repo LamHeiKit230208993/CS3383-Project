@@ -88,10 +88,10 @@ J09–J12 remain later work. Conditional scope rows keep their existing conditio
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
-| J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; removal stops new collection | J01-J04 |
-| J06 | In-app target/drop alerts, quiet hours, snooze, and summary | One current price can meet a target; a drop uses a stated earlier price; repeat imports do not repeat an event; closed-app periods are not reported as delivered alerts | J05 |
-| J07 | List totals, planned budgets, and category totals | Quantities affect totals; missing prices make the total incomplete; estimates are not labelled actual spending | J04 |
-| J08 | User-set reminders, add-to-list, clear, and snooze | Reminders run only in the active app; actions set the agreed next due date and preserve product/quantity | J04, J06 |
+| J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; removal stops new collection | J01-J04. **Implemented**: `TrackingService`, `WishlistEntryEntity`, `TrackingChoiceEntity`, `PriceObservationEntity`; `/saved` page. |
+| J06 | In-app target/drop alerts, quiet hours, snooze, and summary | One current price can meet a target; a drop uses a stated earlier price; repeat imports do not repeat an event; closed-app periods are not reported as delivered alerts | J05. **Implemented**: `AlertService`, `AlertRuleEntity`, `AlertEventEntity`; `/alerts` page. |
+| J07 | List totals, planned budgets, and category totals | Quantities affect totals; missing prices make the total incomplete; estimates are not labelled actual spending | J04. **Implemented**: `BudgetService`, `BudgetSettingsEntity`, `BudgetReport`/`CategoryTotal`; budget panel on `/list`. |
+| J08 | User-set reminders, add-to-list, clear, and snooze | Reminders run only in the active app; actions set the agreed next due date and preserve product/quantity | J04, J06. **Implemented**: `ReminderService`, `ReminderEntity`; `/reminders` page. |
 | J09 | Text chat using checked search/comparison operations | The answer uses checked product, retailer, and amount; unclear requests ask for a choice; AI failure still leaves the normal comparison usable | J03 |
 | J10 | Separate-copy list sharing | Export and import a chosen list; preserve product/quantity/checked state; invalid input leaves existing lists unchanged | J04 |
 | J11 | Read-only saved-list view without a connection | Save on the viewing device, disconnect, and reopen the list; no fresh-price or remote-chat claim; saved amounts show their age | J04 |
@@ -103,7 +103,7 @@ agreed notification behaviour. Integrate and check the four jobs together before
 closing the issue. J09 does not need history, but is outside this milestone.
 J10's transfer format remains a later decision.
 
-Before J05, set history retention, re-addition, and recording-date rules. Before J06, set the target boundary, earlier-price rule, first-check alert, repeat reset, summary time, and quiet-hours behaviour. These decisions are listed in the [feasibility review](../feasibility-review-simple.md#5-open-decisions). Agents must not each choose different rules.
+History retention, re-addition, target boundary, earlier-price rule, repeat reset, summary time, and quiet-hours behaviour were agreed as D01–D05 in the [milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work) on 31 October 2026 (D06–D07 cover budgets and reminders). Agents must not choose different rules.
 
 Background device/cloud notifications, offline editing, and price prediction are not part of these jobs.
 
@@ -125,6 +125,6 @@ The independent J01–J04 implementation now replaces the temporary Market Desk 
 **J01–J04: PR #15 is merged**, including the search-mode and numeric-price-precision fixes. The latest recorded full Maven package run on 25 October passed all **47 tests**, including direct database-write rollback; all **9 Chrome scenarios** also passed against an isolated app and local feed. See the [dated test history](../Test/history.md#pr-15-review-regressions--25-october-2026) for evidence and limits. No new tests were run for this planning update. These results do not complete every scope requirement under the related F/R references.
 
 
-J04 includes the minimum per-item lowest-price subtotal needed to review the list. J07 still owns planned budgets and category totals. Wishlist, tracking history, alerts, reminders, AI chat, list transfer, offline reopening, and full UI translation remain J05–J12 work. Planned screens do not complete those jobs.
+**J05–J08 (issue #17): implemented on 31 October 2026.** Wishlist (save ≠ track), explicit tracking with retained per-retailer observations that survive catalogue replacement, in-app target/drop alerts with quiet hours/snooze/summary, planned weekly/monthly budget with category totals, and user-set replenishment reminders that reuse `ShoppingService.add` rules. Decisions D01–D07 are recorded in the [milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work). Full Maven suite and Chrome checks passed; see [test history](../Test/history.md#j05j08-implementation--31-october-2026) and the new `TC-TRACK-*`, `TC-ALERT-*`, `TC-BUDGET-*`, `TC-REMINDER-*` cases. History charts (R10/R35), AI chat, list transfer, offline reopening, and full UI translation remain later work.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

@@ -1,0 +1,59 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="saved-title">
+    <div class="page-heading">
+      <p class="eyebrow">SAVE IS NOT TRACK</p>
+      <h1 id="saved-title">Saved &amp; tracking</h1>
+      <p class="intro">Saving a product only keeps it here. Turn tracking on to keep older retailer prices from future successful imports.</p>
+    </div>
+    <div class="list-layout">
+      <div class="panel">
+        <div class="section-heading">
+          <h2>Wishlist</h2>
+          <span th:text="${savedProducts.size() + ' saved'}"></span>
+        </div>
+        <div class="empty-state" th:if="${savedProducts.isEmpty()}">
+          <h2>Nothing saved yet.</h2>
+          <p>Open a product and choose "Save" to keep it here without tracking it.</p>
+          <a class="button secondary" th:href="@{/}">Browse products</a>
+        </div>
+        <article class="list-item" th:each="entry : ${savedProducts}">
+          <div class="list-item-heading">
+            <div>
+              <h3><a th:href="@{/products/{code}(code=${entry.key})}" th:text="${entry.value.name.en}"></a></h3>
+              <p class="helper" th:text="${entry.value.brand.en + ' · ' + entry.key}"></p>
+            </div>
+            <span class="planned-tag" th:if="${tracked.get(entry.key)}">Tracking</span>
+          </div>
+          <div class="list-edit-form">
+            <form th:if="${!tracked.get(entry.key)}" th:action="@{/saved/{code}/track(code=${entry.key})}" method="post">
+              <input type="hidden" name="back" value="/saved">
+              <button class="button primary" type="submit">Track older prices</button>
+            </form>
+            <form th:if="${tracked.get(entry.key)}" th:action="@{/saved/{code}/untrack(code=${entry.key})}" method="post">
+              <input type="hidden" name="back" value="/saved">
+              <button class="button secondary" type="submit">Stop tracking</button>
+            </form>
+            <form th:action="@{/saved/{code}/unsave(code=${entry.key})}" method="post">
+              <input type="hidden" name="back" value="/saved">
+              <button class="button danger" type="submit">Remove from wishlist</button>
+            </form>
+          </div>
+        </article>
+      </div>
+      <aside class="panel basket-preview">
+        <p class="eyebrow">WHAT IS TRACKED</p>
+        <h2>Tracked retailer pairs</h2>
+        <div class="empty-state" th:if="${trackingChoices.isEmpty()}">
+          <p>No tracking yet. Saving and tracking are separate choices.</p>
+        </div>
+        <ul class="tracked-list" th:unless="${trackingChoices.isEmpty()}">
+          <li th:each="choice : ${trackingChoices}">
+            <strong th:text="${choice.productCode}"></strong>
+            <span th:text="${choice.retailerCode}"></span>
+          </li>
+        </ul>
+        <p class="source-note">Tracking keeps older retailer prices only for these exact product/retailer pairs, separately from the catalogue. A catalogue replacement does not delete them.</p>
+      </aside>
+    </div>
+  </section>
+</th:block>
