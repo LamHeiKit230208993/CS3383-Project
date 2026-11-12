@@ -4,6 +4,15 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## PR #18 review follow-up — 12 November 2026
+
+- Maven package on JDK 21 with the Byte Buddy startup agent passed 88 tests
+  with zero failures, errors or skips. Coverage includes next-day summary
+  catch-up, enrollment of new LIVE retailers, stop-all and preference persistence.
+- Chrome passed 9 baseline scenarios and 11 milestone scenarios.
+- The old-to-new H2 upgrade preserved the catalogue and saved list state.
+- PlantUML 1.2026.9 regenerated the four views for the revised D01 and reminder flow.
+
 ## J05–J08 validation — 6 November 2026
 
 Checked the uncommitted `dev/john` implementation against issue #17 and the

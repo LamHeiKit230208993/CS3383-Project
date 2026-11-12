@@ -12,6 +12,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TrackingRepository extends JpaRepository<TrackingEntity, Long> {
+    @Query("select tracking.product.code from TrackingEntity tracking where tracking.id = :id")
+    Optional<String> findProductCode(@Param("id") long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select tracking from TrackingEntity tracking where tracking.product.code = :code and tracking.enabled = true order by tracking.startedAt desc, tracking.id desc")
+    List<TrackingEntity> findEnabledForProductForUpdate(@Param("code") String code);
+
     Optional<TrackingEntity> findByProduct_CodeAndRetailerCodeAndEnabledTrue(String productCode, String retailerCode);
 
     @EntityGraph(attributePaths = "product")

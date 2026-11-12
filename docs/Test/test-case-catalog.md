@@ -31,8 +31,8 @@ Case descriptions state expected behaviour; they do not prove a later build pass
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
-| [TC-TRACK-001](cases/TC-TRACK-001.md) | Wishlist and tracking | Explicit product/retailer periods, LIVE-only observations, gaps, retention, repeat prevention, rollback and file reopen | `TrackingServiceTest`, `TrackingPersistenceRestartTest` |
-| [TC-ALERT-001](cases/TC-ALERT-001.md) | In-app alerts | Targets, stated drop evidence, quiet hours, snooze, summaries and persisted repeat state | `AlertServiceTest`, `TrackingPersistenceRestartTest` |
+| [TC-TRACK-001](cases/TC-TRACK-001.md) | Wishlist and tracking | Product-wide enrollment on LIVE imports, separate retailer periods, retention, repeat prevention, rollback and file reopen | `TrackingServiceTest`, `TrackingPersistenceRestartTest` |
+| [TC-ALERT-001](cases/TC-ALERT-001.md) | In-app alerts | Targets, stated drop evidence, quiet hours, snooze, next-day summary catch-up and persisted repeat state | `AlertServiceTest`, `TrackingPersistenceRestartTest` |
 | [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget | Persistent weekly/monthly limit, effective selected-retailer estimate, incomplete-price states, category reconciliation, validation, and H2 file reopen | `BudgetServiceTest`, `BudgetControllerTest`, `BudgetPageTest`, `BudgetSettingsPersistenceTest` |
 | [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Replenishment | Persisted due state, clear/snooze timing, manual actions during quiet hours, and unchanged ShoppingService validation | `ReminderControllerTest`, `ReminderPersistenceRestartTest` |
 | [TC-MILESTONE-001](cases/TC-MILESTONE-001.md) | Combined browser flow | Save/track/update/alert, budget, reminder actions, native forms, safe timed refresh and responsive pages | `milestone-check.cjs` |

@@ -34,9 +34,12 @@ frontend, separate API server, accounts or cloud storage.
 ## Saving and tracking
 
 Saving a wishlist entry does not start tracking or add a shopping-list item.
-Tracking needs an exact product and an explicitly chosen retailer. It does not
-change the retailer saved in My list. Each enabled period collects only its own
-product/retailer observations.
+Choose one retailer or use **Track all retailers** for an exact product.
+The product-wide preference survives restart and enrolls newly listed retailers
+on accepted LIVE imports. Each retailer starts with its own baseline and has
+its own alert rules. Tracking is independent of the retailer saved in My list.
+**Stop all retailers** ends all active periods for the product and turns off
+future enrollment. Retained history stays available.
 
 An eligible accepted LIVE catalogue can seed the first observation. Subsequent
 successful LIVE imports record changes, including a transition to an unknown
@@ -144,6 +147,7 @@ These are normal HTML pages and POST forms, not a separate JSON API.
 | `GET /saved?code=…` | Wishlist/history; optional product to save or track |
 | `POST /saved/save`, `/saved/remove` | Wishlist action: `code` |
 | `POST /tracking/start` | `code`, `retailerCode` |
+| `POST /tracking/start-all`, `/tracking/stop-all` | Product-wide tracking action with `code` |
 | `POST /tracking/stop`, `/tracking/history/delete` | `trackingId` |
 | `GET /alerts` | Rules, timing settings and recent events |
 | `POST /alerts/target` | `trackingId`, optional `targetPrice` |

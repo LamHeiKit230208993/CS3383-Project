@@ -25,7 +25,7 @@ rectangle "Local Market Desk - one user, H2 file" as App {
   usecase "Manage My list\n(quantity, retailer, checked state)" as list
   usecase "Review planned budget\nand category estimates" as budget
   usecase "Save / remove\nwishlist products" as wishlist
-  usecase "Manage exact-product / retailer\ntracking and retained history" as track
+  usecase "Track one or all retailers\nfor an exact product" as track
   usecase "Manage target / drop alerts,\ntiming, read state and snooze" as alerts
   usecase "Manage interval reminders;\nclear, snooze or add to My list" as reminder
   usecase "Load checked sample" as sample

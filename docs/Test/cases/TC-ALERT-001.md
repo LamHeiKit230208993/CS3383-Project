@@ -47,6 +47,12 @@ snooze/read persistence, and the once-per-day in-app summary.
 
 ## Expected result
 
+With quiet hours off and a 20:00 Hong Kong summary, create an alert at 19:00
+and leave the scheduled check unrun. Reopen the next day at 09:00 with a
+second alert created that morning. The first check summarizes only the
+earlier alert, records the actual generation time, and leaves the morning
+alert pending. A repeated check that day does not duplicate the summary.
+
 Target alerts use a `<=` boundary and repeat only after a later known price above
 the target rearms the rule. Drop alerts compare only adjacent known observations
 in the same tracking period and retain evidence for the comparison. Quiet hours

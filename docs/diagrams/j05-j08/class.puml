@@ -36,6 +36,7 @@ class ProductEntity {
   brand, name: LocalizedLabel
   category1, category2, category3: LocalizedLabel
   active: boolean
+  trackAllRetailers: Boolean {nullable, defaults off}
 }
 class RetailerListingEntity {
   id: Long {PK}

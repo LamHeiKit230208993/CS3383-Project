@@ -97,6 +97,40 @@ class TrackingServiceTest {
     }
 
     @Test
+    void productWideTrackingEnrollsNewLiveRetailersAndStopsTogether() throws Exception {
+        String first = "{\"supermarketCode\":\"STORE-A\",\"price\":\"10.00\"}";
+        String second = "{\"supermarketCode\":\"STORE-B\",\"price\":\"4.00\"}";
+        catalog.accept(json(product("TRACK-ALL", "[" + first + "]")), "LIVE", "fixture-live");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/tracking/start-all").param("code", "TRACK-ALL"))
+                .andExpect(status().is3xxRedirection());
+        long firstId = tracking.trackingPeriods().getFirst().id();
+        tracking.configureDrop(firstId, true);
+        tracking.startAll("TRACK-ALL");
+        assertEquals(1, tracking.trackingPeriods().size());
+
+        byte[] expanded = json(product("TRACK-ALL", "[" + first + "," + second + "]"));
+        catalog.accept(expanded, "SAMPLE", "fixture-sample");
+        assertEquals(1, tracking.trackingPeriods().size());
+        catalog.accept(expanded, "LIVE", "fixture-live");
+        catalog.accept(expanded, "LIVE", "fixture-live");
+        assertEquals(2, tracking.trackingPeriods().size());
+        assertTrue(tracking.trackingPeriods().stream().allMatch(period -> period.observations().size() == 1));
+        assertEquals(0, alertEventRepository.count(), "Different retailers cannot form a drop comparison.");
+        assertThrows(IllegalArgumentException.class, () -> tracking.stop(firstId));
+        mvc.perform(get("/saved")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Stop all retailers")));
+
+        tracking.stopAll("TRACK-ALL");
+        String third = "{\"supermarketCode\":\"STORE-C\",\"price\":\"3.00\"}";
+        catalog.accept(json(product("TRACK-ALL", "[" + first + "," + second + "," + third + "]")),
+                "LIVE", "fixture-live");
+        assertEquals(2, tracking.trackingPeriods().size());
+        assertTrue(tracking.trackingPeriods().stream().noneMatch(TrackingView::enabled));
+        assertTrue(tracking.allRetailersProducts().isEmpty());
+    }
+
+    @Test
     void savedWishlistIsSeparateAndOnlyLiveImportsAddChangedObservations() {
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"5.00\"},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "SAMPLE", "fixture");

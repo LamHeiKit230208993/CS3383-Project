@@ -43,6 +43,7 @@ class TrackingPersistenceRestartTest {
             TrackingService tracking = firstRun.getBean(TrackingService.class);
             tracking.save("TRACK-RESTART");
             var period = tracking.start("TRACK-RESTART", "STORE-A");
+            tracking.startAll("TRACK-RESTART");
             trackingId = period.id();
             tracking.configureDrop(trackingId, true);
             tracking.configureTarget(trackingId, new BigDecimal("8.00"));
@@ -68,6 +69,7 @@ class TrackingPersistenceRestartTest {
             var restored = tracking.trackingPeriods().stream().filter(item -> item.id() == trackingId)
                     .findFirst().orElseThrow();
             assertEquals(2, restored.observations().size());
+            assertEquals("TRACK-RESTART", tracking.allRetailersProducts().getFirst().code());
             assertEquals(new BigDecimal("7.0000"), restored.observations().getFirst().price());
 
             AlertEventEntity targetEvent = reopened.getBean(AlertEventRepository.class)

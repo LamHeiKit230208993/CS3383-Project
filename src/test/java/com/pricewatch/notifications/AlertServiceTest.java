@@ -176,6 +176,29 @@ class AlertServiceTest {
     }
 
     @Test
+    void catchesUpYesterdayWithoutIncludingAlertsCreatedThisMorning() {
+        settings().update(LocalTime.MIDNIGHT, LocalTime.MIDNIGHT, LocalTime.of(20, 0));
+        now.set(Instant.parse("2026-11-06T11:00:00Z")); // 19:00 Hong Kong.
+        replaceLive("ALERT-YESTERDAY", "5.00");
+        tracking.configureTarget(tracking.start("ALERT-YESTERDAY", "STORE-A").id(), new BigDecimal("5.00"));
+        long missedEvent = event("TARGET").getId();
+
+        Instant reopened = Instant.parse("2026-11-07T01:00:00Z"); // 09:00 Hong Kong.
+        now.set(reopened);
+        replaceLive("ALERT-TODAY", "5.00");
+        tracking.configureTarget(tracking.start("ALERT-TODAY", "STORE-A").id(), new BigDecimal("5.00"));
+        alerts.processDue(reopened);
+        alerts.processDue(reopened.plusSeconds(60));
+
+        assertEquals(1, count("SUMMARY"));
+        assertEquals(1, event("SUMMARY").getSummaryCount());
+        assertEquals(reopened, event("SUMMARY").getCreatedAt());
+        assertEquals(reopened, eventRepository.findById(missedEvent).orElseThrow().getSummarizedAt());
+        assertEquals(1, eventRepository.findByTypeInAndReadAtIsNullAndSummarizedAtIsNull(
+                java.util.List.of("TARGET")).size());
+    }
+
+    @Test
     void summaryScheduledDuringQuietHoursRunsWhenQuietHoursEnd() {
         replaceLive("ALERT-QUIET-SUMMARY", "5.00");
         var period = tracking.start("ALERT-QUIET-SUMMARY", "STORE-A");

@@ -48,6 +48,8 @@ else valid input
         Tracking -> DB: save qualifying target + armed state; no new history
       end
     end
+    Tracking -> DB: enroll newly listed retailers for products tracking all retailers
+    Tracking -> DB: store each new retailer's own baseline
     Replace -> DB: save accepted-import metadata
     alt any database write fails
       note over Replace,DB
@@ -76,6 +78,7 @@ note over Tracking,DB
   Include unread, unsummarized, currently eligible price events.
   Quiet hours and snooze delay availability.
   A catch-up summary uses its actual generation time.
+  Reopening before today's schedule can catch up a missed earlier run.
 end note
 
 == Explicit reminder action: ReminderController ==
@@ -83,6 +86,11 @@ end note
 Web -> Reminder: addToList(id), with no outer transaction
 Reminder -> DB: read product, quantity and saved retailer choice
 Reminder -> Shopping: add(productCode, quantity, selectedRetailerCode)
+note over Reminder,Shopping
+  Default: null retailer keeps the list item in Automatic lowest mode.
+  The estimate uses the lowest current known listing.
+  A pinned retailer uses that retailer's price.
+end note
 Shopping -> DB: validate / merge item in its own mutation transaction
 alt quantity / retailer conflict / unavailable product
   Shopping --> Reminder: validation error; no list change

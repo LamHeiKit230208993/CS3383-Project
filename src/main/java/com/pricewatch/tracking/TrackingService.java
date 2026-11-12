@@ -100,26 +100,67 @@ public class TrackingService {
         if (retailerCode == null || retailerCode.isBlank()) {
             throw new IllegalArgumentException("Choose a retailer to track.");
         }
-        ProductEntity product = currentProduct(productCode);
+        ProductEntity product = lockProduct(productCode);
+        requireActive(product);
         boolean retailerExists = product.getListings().stream()
                 .anyMatch(listing -> retailerCode.equals(listing.getRetailerCode()));
         if (!retailerExists) {
             throw new IllegalArgumentException("Choose a retailer currently listed for this product.");
         }
 
+        return toView(startRetailer(product, retailerCode));
+    }
+
+    private TrackingEntity startRetailer(ProductEntity product, String retailerCode) {
         TrackingEntity tracking = trackingRepository
-                .findByProduct_CodeAndRetailerCodeAndEnabledTrue(productCode, retailerCode)
+                .findByProduct_CodeAndRetailerCodeAndEnabledTrue(product.getCode(), retailerCode)
                 .orElse(null);
         if (tracking == null) {
             Instant now = clock.instant();
             tracking = trackingRepository.saveAndFlush(new TrackingEntity(product, retailerCode, now));
             seedFromCurrentLiveImport(tracking, product);
         }
-        return toView(tracking);
+        return tracking;
+    }
+
+    @Transactional
+    public void startAll(String productCode) {
+        ProductEntity product = lockProduct(productCode);
+        requireActive(product);
+        product.setTrackAllRetailers(true);
+        product.getListings().forEach(listing -> startRetailer(product, listing.getRetailerCode()));
+    }
+
+    @Transactional
+    public void stopAll(String productCode) {
+        ProductEntity product = lockProduct(productCode);
+        product.setTrackAllRetailers(false);
+        Instant now = clock.instant();
+        trackingRepository.findEnabledForProductForUpdate(productCode).forEach(period -> period.stop(now));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AllRetailersView> allRetailersProducts() {
+        return productRepository.findAllByTrackAllRetailersTrueOrderByCode().stream()
+                .map(product -> new AllRetailersView(product.getCode(), product.getName().getEn()))
+                .toList();
+    }
+
+    public record AllRetailersView(String code, String name) {
+    }
+
+    private ProductEntity lockProduct(String code) {
+        return productRepository.findLockedByCode(code)
+                .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
     }
 
     @Transactional
     public void stop(long trackingId) {
+        String code = trackingRepository.findProductCode(trackingId)
+                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+        if (lockProduct(code).isTrackAllRetailers()) {
+            throw new IllegalArgumentException("Use Stop all retailers to end product-wide tracking.");
+        }
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
                 .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
         if (tracking.isEnabled()) tracking.stop(clock.instant());
@@ -182,6 +223,16 @@ public class TrackingService {
                     .get(tracking.getRetailerCode());
             recordIfChanged(tracking, currentPrice, retrievedAt, sourceUrl, checksum);
         }
+        for (ProductEntity product : productRepository.findAllByTrackAllRetailersTrueOrderByCode()) {
+            for (var listing : prices.getOrDefault(product.getCode(), Map.of()).entrySet()) {
+                if (trackingRepository.findByProduct_CodeAndRetailerCodeAndEnabledTrue(
+                        product.getCode(), listing.getKey()).isEmpty()) {
+                    TrackingEntity period = trackingRepository.saveAndFlush(
+                            new TrackingEntity(product, listing.getKey(), now));
+                    recordIfChanged(period, listing.getValue(), retrievedAt, sourceUrl, checksum);
+                }
+            }
+        }
     }
 
     private ProductEntity currentProduct(String productCode) {
@@ -190,10 +241,14 @@ public class TrackingService {
         }
         ProductEntity product = productRepository.findWithListingsByCode(productCode)
                 .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
+        requireActive(product);
+        return product;
+    }
+
+    private void requireActive(ProductEntity product) {
         if (!product.isActive()) {
             throw new IllegalArgumentException("That product is no longer in the current catalogue.");
         }
-        return product;
     }
 
     private TrackingEntity activeTracking(long trackingId) {

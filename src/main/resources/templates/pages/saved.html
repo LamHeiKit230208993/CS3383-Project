@@ -21,7 +21,14 @@
           <input type="hidden" name="code" th:value="${productToSave.code}">
           <button class="button secondary" type="submit">Save to wishlist</button>
         </form>
-        <form th:each="listing : ${productToSave.listings}" th:action="@{/tracking/start}" method="post">
+        <form th:if="${productToSave.active and !allRetailerCodes.contains(productToSave.code)}"
+              th:action="@{/tracking/start-all}" method="post">
+          <input type="hidden" name="code" th:value="${productToSave.code}">
+          <button class="button primary" type="submit">Track all retailers</button>
+        </form>
+        <form th:each="listing : ${productToSave.listings}"
+              th:if="${productToSave.active and !allRetailerCodes.contains(productToSave.code)}"
+              th:action="@{/tracking/start}" method="post">
           <input type="hidden" name="code" th:value="${productToSave.code}">
           <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
           <button class="button primary" type="submit"
@@ -59,7 +66,11 @@
             </form>
           </div>
           <p class="helper" th:if="${!saved.product.active}">This product is not in the current catalogue.</p>
-          <div class="inline-actions" th:if="${saved.product.active and !saved.product.listings.isEmpty()}">
+          <div class="inline-actions" th:if="${saved.product.active and !allRetailerCodes.contains(saved.product.code)}">
+            <form th:action="@{/tracking/start-all}" method="post">
+              <input type="hidden" name="code" th:value="${saved.product.code}">
+              <button class="button primary" type="submit">Track all retailers</button>
+            </form>
             <form th:each="listing : ${saved.product.listings}" th:action="@{/tracking/start}" method="post">
               <input type="hidden" name="code" th:value="${saved.product.code}">
               <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
@@ -78,9 +89,17 @@
           </div>
           <span th:text="${trackingPeriods.?[enabled].size() + ' active'}">0 active</span>
         </div>
-        <div class="empty-state" th:if="${trackingPeriods.isEmpty()}">
+        <article class="list-item" th:each="product : ${allRetailersProducts}">
+          <h3 th:text="${product.name}">Product</h3>
+          <p class="helper">Tracking all retailers. New retailers join after a live refresh.</p>
+          <form th:action="@{/tracking/stop-all}" method="post">
+            <input type="hidden" name="code" th:value="${product.code}">
+            <button class="button secondary" type="submit">Stop all retailers</button>
+          </form>
+        </article>
+        <div class="empty-state" th:if="${trackingPeriods.isEmpty() and allRetailersProducts.isEmpty()}">
           <h3>No tracking yet.</h3>
-          <p>Choose a retailer on a product comparison page to start collecting its future prices.</p>
+          <p>Track all retailers or choose one from a product comparison page.</p>
         </div>
         <article class="list-item" th:each="period : ${trackingPeriods}">
           <div class="list-item-heading">
@@ -113,7 +132,7 @@
             </table>
           </div>
           <div class="inline-actions">
-            <form th:if="${period.enabled}" th:action="@{/tracking/stop}" method="post">
+            <form th:if="${period.enabled and !allRetailerCodes.contains(period.productCode)}" th:action="@{/tracking/stop}" method="post">
               <input type="hidden" name="trackingId" th:value="${period.id}">
               <button class="button secondary" type="submit">Stop tracking</button>
             </form>

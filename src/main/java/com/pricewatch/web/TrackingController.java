@@ -45,6 +45,9 @@ public class TrackingController {
         model.addAttribute("importStatus", catalog.status());
         model.addAttribute("format", format);
         model.addAttribute("savedProducts", tracking.savedProducts());
+        var allRetailers = tracking.allRetailersProducts();
+        model.addAttribute("allRetailersProducts", allRetailers);
+        model.addAttribute("allRetailerCodes", allRetailers.stream().map(TrackingService.AllRetailersView::code).toList());
         model.addAttribute("trackingPeriods", tracking.trackingPeriods());
         if (code != null && !code.isBlank()) {
             try {
@@ -93,6 +96,28 @@ public class TrackingController {
         try {
             tracking.start(code, retailerCode);
             redirect.addFlashAttribute("notice", "Price tracking is on for " + retailerCode + ".");
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", exception.getMessage());
+        }
+        return "redirect:/saved";
+    }
+
+    @PostMapping("/tracking/start-all")
+    public String startAll(@RequestParam String code, RedirectAttributes redirect) {
+        try {
+            tracking.startAll(code);
+            redirect.addFlashAttribute("notice", "Tracking all retailers for this product, including future listings.");
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", exception.getMessage());
+        }
+        return "redirect:/saved";
+    }
+
+    @PostMapping("/tracking/stop-all")
+    public String stopAll(@RequestParam String code, RedirectAttributes redirect) {
+        try {
+            tracking.stopAll(code);
+            redirect.addFlashAttribute("notice", "Tracking stopped for all retailers. Saved history remains available.");
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute("error", exception.getMessage());
         }

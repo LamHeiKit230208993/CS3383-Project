@@ -74,6 +74,7 @@ package "Tracking and notifications" {
     --
     save(code), removeSaved(code)
     start(code, retailer): TrackingView
+    startAll(code), stopAll(code)
     stop(id), deleteHistory(id)
     configureTarget(...), configureDrop(...)
     recordLiveImport(...)

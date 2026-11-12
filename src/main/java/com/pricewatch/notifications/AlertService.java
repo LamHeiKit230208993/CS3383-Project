@@ -87,10 +87,15 @@ public class AlertService {
         var settings = policy.settings();
         ZonedDateTime localNow = now.atZone(NotificationPolicy.ZONE);
         LocalDate today = localNow.toLocalDate();
-        if (!summaryTimeReached(now, today, settings.summaryTime()) || policy.isQuiet(now)) return;
+        if (policy.isQuiet(now)) return;
+        Instant scheduledToday = summaryTime(today, settings.summaryTime());
+        Instant cutoff = now.isBefore(scheduledToday)
+                ? summaryTime(today.minusDays(1), settings.summaryTime()) : now;
+        if (now.isBefore(cutoff)) return;
         if (eventRepository.existsBySummaryDateAndType(today, SUMMARY)) return;
         List<AlertEventEntity> pending = eventRepository
                 .findByTypeInAndReadAtIsNullAndSummarizedAtIsNull(PRICE_ALERTS).stream()
+                .filter(event -> !event.getCreatedAt().isAfter(cutoff))
                 .filter(event -> isAvailable(event, now))
                 .toList();
         if (pending.isEmpty()) return;
@@ -100,15 +105,9 @@ public class AlertService {
         eventRepository.flush();
     }
 
-    private boolean summaryTimeReached(Instant now, LocalDate today, LocalTime summaryTime) {
-        Instant scheduledToday = policy.nextAllowed(today.atTime(summaryTime)
+    private Instant summaryTime(LocalDate date, LocalTime summaryTime) {
+        return policy.nextAllowed(date.atTime(summaryTime)
                 .atZone(NotificationPolicy.ZONE).toInstant());
-        if (!now.isBefore(scheduledToday)) return true;
-
-        Instant deferredYesterday = policy.nextAllowed(today.minusDays(1).atTime(summaryTime)
-                .atZone(NotificationPolicy.ZONE).toInstant());
-        return deferredYesterday.atZone(NotificationPolicy.ZONE).toLocalDate().equals(today)
-                && !now.isBefore(deferredYesterday);
     }
 
     @Transactional

@@ -100,7 +100,7 @@ decisions and evidence. Grouping jobs does not approve conditional features.
 
 | Topic | Agreed milestone rule or remaining question | Related scope |
 |---|---|---|
-| Tracking | Agreed D01–D02: exact product and selected retailer; wishlist is separate; stopping retains history; re-enabling starts a new period. | R10, R14, R21–R22, R35, R39 |
+| Tracking | Revised D01 permits one retailer or all retailers for an exact product. LIVE imports enroll new retailers in all-retailer mode. D02 retains history when stopped and starts a new period on re-enable. | R10, R14, R21–R22, R35, R39 |
 | History and dates | Agreed D02–D03: retain 90 days of changed LIVE observations and unknown gaps. A current LIVE catalogue can seed tracking; SAMPLE imports cannot. Retrieval time stays separate from the unknown source date. Historical downloads/charts remain later work. | R10, R14, R44 |
 | Alert rules | Agreed D04: target uses a known price at or below the limit, then rearms only above it; a drop uses adjacent known observations in one period. No comparisons across gaps. Configurable change thresholds and buy/wait advice remain outside this batch. | R21–R24 |
 | Morning summary | Agreed D05: Hong Kong time; defaults quiet 22:00–08:00 and summary 08:00; snooze 24 hours. Persist eligibility/repeat state and catch up once at an eligible active-app check. | R23, R26 |

@@ -101,12 +101,13 @@ must not be reported as having collected data or delivered a notification.
 
 ## Decisions before dependent work
 
-D01–D07 were agreed with the user on 6 November 2026. These are the rules
+D01–D07 were agreed with the user on 6 November 2026. D01 was revised on
+12 November 2026 after PR #18 review. These are the rules
 for this implementation; later changes need corresponding examples and tests.
 
 | ID | Agreed rule | Example / required check |
 |---|---|---|
-| D01 | Track one exact product and explicitly chosen retailer, independently of wishlist and shopping-list retailer. A current accepted LIVE catalogue can seed the first observation. | Saving does not enable tracking; tracking JASONS does not react to AEON. |
+| D01 | Track one retailer or opt into all retailers for an exact product. Product-wide tracking enrolls current listings and new retailers on accepted LIVE imports. Each retailer keeps its own observations and rules. Wishlist and shopping-list choices are independent. | Tracking JASONS alone does not react to AEON. With all retailers enabled, AEON joins when first listed. Stop all ends collection and future enrollment while keeping retained history. |
 | D02 | Retain observations for 90 days. Untracking stops collection but retains history. Re-enabling starts a new period; old-period prices cannot trigger a drop. Provide explicit history deletion. Keep minimal last-value state for deduplication after observation expiry. | Restart preserves history; re-enable does not compare against the previous period. Expiry does not make an unchanged re-import a new price observation. |
 | D03 | Record only changed prices after successful LIVE imports. Skip consecutive unchanged prices; record transitions to unknown as gaps. Keep retrieval time/provenance, never invent a source date. SAMPLE imports neither seed live history nor generate live price alerts. | Duplicate imports add nothing; invalid/database-failed imports roll back observations/events; no comparisons across unknown gaps. |
 | D04 | Target means known price <= target. First known qualifying price can trigger once. Rearm after price rises above target. A drop needs two adjacent known observations in the same tracking period with a lower current price. No configurable amount/percentage thresholds or buy/wait advice. | Repeated qualifying prices do not repeat target events. Unknown prices cannot trigger drops or cross a gap. |

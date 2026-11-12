@@ -50,6 +50,14 @@ replacement and a stopped tracking period.
 
 ## Expected result
 
+Start product-wide tracking from Saved with one retailer. Starting again
+keeps one active period. A SAMPLE import with a second retailer adds no
+period. The next LIVE import enrolls that retailer with its own baseline
+and no cross-retailer drop. Repeating the import adds nothing. Stop all
+retailers and import a third listing. Existing history remains available
+and the third retailer is excluded. The file-backed restart test also checks
+that the product-wide preference survives reopening the database.
+
 Only successfully accepted `LIVE` imports add observations to enabled periods.
 The exact product/retailer identity is kept. Saving alone never starts tracking.
 Unknown prices break drop comparisons. Stopping preserves past observations;
