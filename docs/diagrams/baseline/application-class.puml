@@ -59,6 +59,39 @@ class ShoppingService <<shopping service>> {
   + summary(): Summary
 }
 
+class TrackingService <<tracking service>> {
+  + save(code): void
+  + unsave(code): void
+  + enableTracking(code): void
+  + disableTracking(code): void
+  + savedProducts(): List<TrackedProductView>
+  + trackedProducts(): List<TrackedProductView>
+}
+class ObservationRecorder <<tracking service>> {
+  + recordAfterImport(retrievedAt, checksum): String
+}
+class BudgetService <<budget service>> {
+  + setBudget(period, limit): void
+  + clearBudget(): void
+  + view(): BudgetView
+}
+class AlertService <<alerts service>> {
+  + createRule(...): void
+  + deleteRule(id): void
+  + acknowledge(id): void
+  + snooze(id): void
+  + evaluateAll(): void
+  + view(): AlertPageView
+}
+class ReminderService <<reminders service>> {
+  + create(...): void
+  + addToList(id): void
+  + clear(id): void
+  + snooze(id): void
+  + reminders(): List<ReminderView>
+}
+class Clock <<java.time>>
+
 class CatalogJsonParser <<import parser>> {
   + parse(bytes): ImportedCatalog
 }
@@ -94,13 +127,29 @@ package "Shopping repositories" {
   }
 }
 
+package "Tracking / budget / alerts / reminders repositories" {
+  interface WishlistEntryRepository
+  interface TrackingChoiceRepository
+  interface PriceObservationRepository
+  interface BudgetSettingsRepository
+  interface AlertRuleRepository
+  interface AlertEventRepository
+  interface ReminderRepository
+}
+
 HelloController ..right.> CatalogService
 HelloController ..right.> ShoppingService
+HelloController ..right.> TrackingService
+HelloController ..right.> BudgetService
+HelloController ..right.> AlertService
+HelloController ..right.> ReminderService
 CatalogService ..down.> ProductRepository
 CatalogService ..down.> AcceptedImportRepository
 CatalogService ..down.> CatalogJsonParser
 CatalogService ..down.> CatalogReplacementService
 CatalogService ..down.> ConsumerCouncilSourceClient
+CatalogService ..down.> ObservationRecorder
+CatalogService ..down.> AlertService
 CatalogReplacementService ..down.> ProductRepository
 CatalogReplacementService ..down.> RetailerListingRepository
 CatalogReplacementService ..down.> OfferRepository
@@ -110,6 +159,21 @@ ShoppingService ..down.> ShoppingListRepository
 ShoppingService ..down.> ShoppingListItemRepository
 ShoppingService ..down.> ProductRepository
 ShoppingService ..right.> PlatformTransactionManager
+TrackingService ..down.> WishlistEntryRepository
+TrackingService ..down.> TrackingChoiceRepository
+TrackingService ..down.> PriceObservationRepository
+TrackingService ..right.> Clock
+ObservationRecorder ..down.> TrackingChoiceRepository
+ObservationRecorder ..down.> PriceObservationRepository
+BudgetService ..down.> BudgetSettingsRepository
+BudgetService ..right.> ShoppingService
+AlertService ..down.> AlertRuleRepository
+AlertService ..down.> AlertEventRepository
+AlertService ..down.> PriceObservationRepository
+AlertService ..right.> Clock
+ReminderService ..down.> ReminderRepository
+ReminderService ..right.> ShoppingService
+ReminderService ..right.> Clock
 LocalRequestGuard -down-|> OncePerRequestFilter
 
 ' Layout hints position the layers and separate catalog from shopping persistence.
@@ -134,7 +198,6 @@ legend bottom left
   Solid open triangle: inheritance.
   Groups show responsibility areas, not exact Java packages.
   Operation parameters and inherited CRUD are omitted or abbreviated.
-  All six repositories extend JpaRepository.
-  DTO/view types are omitted; persisted entities have a separate data-model view.
+  All repositories extend JpaRepository. DTO/view types are omitted; persisted entities have a separate data-model view.
 endlegend
 @enduml

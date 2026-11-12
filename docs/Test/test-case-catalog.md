@@ -5,10 +5,11 @@ This index describes maintained checks. Detailed steps and limits belong in
 
 ## Latest recorded validation
 
-The 25 October 2026 PR #15 review-fix run passed **47 Java tests**, packaging,
-and **9 Chrome scenarios**. See the [run record](history.md#pr-15-review-regressions--25-october-2026).
-These are recorded results, not a new run for the 29 October documentation cleanup.
-J05–J08 checks must be added with their implementation.
+The 12 November 2026 J05–J08 implementation run passed **76 Java tests** (see the
+[run record](history.md#j05j08-implementation--12-november-2026)). The most recent
+browser run remains the 25 October PR #15 run: **9 Chrome scenarios**. J05–J08 are
+not closed until the combined acceptance flow and the integrated browser check are
+recorded.
 
 ## J01–J04 baseline scenarios
 
@@ -27,3 +28,12 @@ J05–J08 checks must be added with their implementation.
 Case descriptions state expected behaviour; they do not prove a later build passed.
 The retired prototype cases and their original source links are preserved in
 [history](history.md#tc-web-002--retired-prototype-scenes-and-assets).
+
+## J05–J08 scenarios
+
+| ID | Area | Expected result | Source |
+|---|---|---|---|
+| [TC-TRACK-001](cases/TC-TRACK-001.md) | Wishlist and tracking | Save ≠ track; observations per priced pair per import; failed import adds none; history survives replacement; untrack stops collection | `TrackingServiceTest` |
+| [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget | Known subtotal vs limit; category totals reconcile; unknown prices incomplete; JASONS 12.50 regression | `BudgetServiceTest` |
+| [TC-ALERT-001](cases/TC-ALERT-001.md) | In-app alerts | Target at/below; drop vs distinct prior; no duplicate events; quiet hours, snooze, summary | `AlertServiceTest` |
+| [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Reminders | Interval/snooze due dates; add-to-list reuses list rules; clear deactivates; survives restart | `ReminderServiceTest` |

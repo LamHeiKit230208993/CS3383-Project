@@ -142,8 +142,50 @@ class HelloControllerTest {
         }
     }
 
+    @Test void savedPageSavesAndTogglesTrackingWithoutStartingIt() throws Exception {
+        catalog.importSample();
+        mvc.perform(post("/saved/P000000124/save")).andExpect(redirectedUrl("/saved"));
+        mvc.perform(get("/saved")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Saved &amp; tracked")))
+                .andExpect(content().string(containsString("P000000124")))
+                .andExpect(content().string(containsString("Saved only · not tracked")));
+
+        mvc.perform(post("/tracking/P000000124/enable")).andExpect(redirectedUrl("/saved"));
+        mvc.perform(get("/saved")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Tracked")));
+
+        mvc.perform(post("/tracking/P000000124/disable")).andExpect(redirectedUrl("/saved"));
+        mvc.perform(get("/saved")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Saved only · not tracked")));
+    }
+
+    @Test void budgetFormShowsWarningForKnownSubtotal() throws Exception {
+        catalog.importSample();
+        shopping.add("P000000124", 2); // AEON 7.50 -> 15.00
+        mvc.perform(post("/budget").param("period", "WEEKLY").param("limit", "10.00"))
+                .andExpect(redirectedUrl("/list"));
+        mvc.perform(get("/list")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("over your planned budget")))
+                .andExpect(content().string(containsString("Planned cost by category")));
+        mvc.perform(post("/budget/clear")).andExpect(redirectedUrl("/list"));
+    }
+
+    @Test void alertsAndRemindersPagesRender() throws Exception {
+        catalog.importSample();
+        mvc.perform(get("/alerts")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Active alerts")))
+                .andExpect(content().string(containsString("Your rules")));
+        mvc.perform(get("/reminders")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Add a reminder")));
+        mvc.perform(post("/reminders").param("code", "P000000124").param("quantity", "2")
+                        .param("intervalDays", "30").param("snoozeDays", "1"))
+                .andExpect(redirectedUrl("/reminders"));
+        mvc.perform(get("/reminders")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("P000000124")));
+    }
+
     @Test void laterFeaturesAreClearlyUnavailable() throws Exception {
-        for (String feature : new String[]{"saved", "updates", "ask"}) {
+        for (String feature : new String[]{"ask"}) {
             mvc.perform(get("/planned/" + feature)).andExpect(status().isOk())
                     .andExpect(content().string(containsString("PLANNED · NOT AVAILABLE YET")))
                     .andExpect(content().string(not(containsString("chat-form"))));

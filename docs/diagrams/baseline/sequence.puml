@@ -9,7 +9,7 @@ skinparam participantBorderColor #4b5563
 skinparam noteBackgroundColor #e5e7eb
 skinparam noteBorderColor #4b5563
 skinparam shadowing false
-title Market Desk | import, compare, save, reopen
+title Market Desk | import, compare, save, reopen (J01-J08)
 
 actor Shopper as shopper
 participant "HelloController" as web
@@ -18,6 +18,10 @@ participant "Consumer Council JSON\n(via source client)" as source
 participant "CatalogJsonParser" as parser
 participant "CatalogReplacementService" as replace
 participant "ShoppingService" as shopping
+participant "ObservationRecorder" as recorder
+participant "AlertService" as alerts
+participant "ReminderService" as reminders
+participant "Clock (Asia/Hong_Kong)" as clock
 database "H2 file" as db
 
 == Accept catalogue ==
@@ -69,8 +73,35 @@ break Replacement failed
   web --> shopper: redirect; prior catalogue and list kept
 end
 replace --> catalog: ImportStatus after commit
+note over catalog, recorder
+  History recording runs only after the replacement has committed.
+  A recording failure is reported, never rolls back the accepted data
+  (the accepted import stays and history retries on the next import).
+end note
+catalog -> recorder: recordAfterImport(retrievedAt, checksum)
+group Separate transaction
+  recorder -> db: read enabled tracking choices
+  db --> recorder: tracked (product, retailer) pairs
+  recorder -> db: insert one observation per priced pair
+  db --> recorder: saved (unique per checksum)
+end
+recorder --> catalog: warning or null
+catalog -> alerts: evaluateAll()
+alerts -> db: read observations and rules; save new events
+db --> alerts: events
+alerts --> catalog: done (failure is logged, not fatal)
 catalog --> web: accepted import status
-web --> shopper: success notice
+web --> shopper: success notice (plus any history warning)
+
+== Record price and show an alert ==
+shopper -> web: GET /alerts
+web -> alerts: view()
+alerts -> clock: instant() / isQuietHours()
+clock --> alerts: Hong Kong time
+alerts -> db: read rules and events
+db --> alerts: rules; events (visible/hidden, snoozed)
+alerts --> web: AlertPageView (quiet hours, events, summary)
+web --> shopper: in-app alerts; closed-app periods are not delivered alerts
 
 == Search and compare ==
 shopper -> web: GET /?q=...&category=...
@@ -112,4 +143,18 @@ shopping --> web: saved items with effective prices
 web -> web: Summary.from(items)
 web --> shopper: My list and known subtotal
 note over shopping, db: Explicit retailer choice persists; unavailable prices remain unknown.
+
+== Reminder adds to list ==
+shopper -> web: POST /reminders/{id}/add-to-list
+web -> reminders: addToList(id)
+reminders -> db: read reminder (product, quantity)
+db --> reminders: reminder
+reminders -> shopping: add(productCode, quantity)
+note over reminders, shopping
+  Reuses J04 rules: quantity 1..999 and the existing-item/
+  other-retailer conflict. It does not change reminder state (D07).
+end note
+shopping --> reminders: saved or conflict error
+reminders --> web: result
+web --> shopper: redirect to Reminders
 @enduml

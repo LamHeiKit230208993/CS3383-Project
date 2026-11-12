@@ -10,6 +10,8 @@ import com.pricewatch.catalog.persistence.ProductEntity;
 import com.pricewatch.catalog.persistence.RetailerListingEntity;
 import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
+import com.pricewatch.alerts.AlertService;
+import com.pricewatch.tracking.ObservationRecorder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,17 +40,32 @@ public class CatalogService {
     private final CatalogJsonParser parser;
     private final CatalogReplacementService replacementService;
     private final ConsumerCouncilSourceClient sourceClient;
+    private final ObservationRecorder observationRecorder;
+    private final AlertService alertService;
+
+    private volatile String lastHistoryWarning;
 
     public CatalogService(ProductRepository productRepository,
                           AcceptedImportRepository importRepository,
                           CatalogJsonParser parser,
                           CatalogReplacementService replacementService,
-                          ConsumerCouncilSourceClient sourceClient) {
+                          ConsumerCouncilSourceClient sourceClient,
+                          ObservationRecorder observationRecorder,
+                          AlertService alertService) {
         this.productRepository = productRepository;
         this.importRepository = importRepository;
         this.parser = parser;
         this.replacementService = replacementService;
         this.sourceClient = sourceClient;
+        this.observationRecorder = observationRecorder;
+        this.alertService = alertService;
+    }
+
+    /** A non-fatal history-recording warning from the most recent accepted import, or null. */
+    public String takeHistoryWarning() {
+        String warning = lastHistoryWarning;
+        lastHistoryWarning = null;
+        return warning;
     }
 
     @Transactional(readOnly = true)
@@ -129,11 +146,21 @@ public class CatalogService {
         return accept(sourceClient.fetch(), "LIVE", sourceClient.sourceUrl());
     }
 
-    ImportStatus accept(byte[] bytes, String origin, String sourceUrl) {
+    public ImportStatus accept(byte[] bytes, String origin, String sourceUrl) {
         ImportedCatalog parsed = parser.parse(bytes);
         Instant retrievedAt = Instant.now();
         String checksum = sha256(bytes);
-        return replacementService.replace(parsed, origin, sourceUrl, retrievedAt, checksum);
+        ImportStatus status = replacementService.replace(parsed, origin, sourceUrl, retrievedAt, checksum);
+        // Record observations only after the catalogue replacement has committed.
+        // A failure here is reported, never rolls back the accepted import.
+        lastHistoryWarning = observationRecorder.recordAfterImport(retrievedAt, checksum);
+        try {
+            alertService.evaluateAll();
+        } catch (RuntimeException exception) {
+            org.slf4j.LoggerFactory.getLogger(getClass())
+                    .warn("Alert evaluation failed after import; accepted data kept", exception);
+        }
+        return status;
     }
 
     private static SearchHit rank(ProductEntity product, String query, List<String> terms) {

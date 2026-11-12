@@ -362,3 +362,66 @@ not working budgets, alerts, tracking, or AI.
 The original [theme plan at its prototype commit](https://github.com/LamHeiKit230208993/CS3383-Project/blob/8f94149/docs/Plan/market-desk-theme.md)
 remains in Git history. Current screens and limits are recorded in the
 [implementation guide](../implementation-baseline-j01-j04.md).
+
+
+## J05–J08 implementation — 12 November 2026
+
+The four J05–J08 workstreams were implemented with focused automated tests. This
+entry records the run observed on this date; it does not close the milestone,
+because the combined acceptance checklist and the integrated browser check are not
+recorded here.
+
+| Suite | Tests | Result |
+|---|---|---|
+| `CatalogJsonParserTest` | 9 | Passed |
+| `CatalogPersistenceTest` | 1 | Passed |
+| `CatalogServiceIntegrationTest` | 6 | Passed |
+| `ConsumerCouncilSourceClientTest` | 1 | Passed |
+| `SearchRelevanceTest` | 4 | Passed |
+| `ShoppingServiceTest` | 11 | Passed |
+| `TrackingServiceTest` | 8 | Passed |
+| `BudgetServiceTest` | 6 | Passed |
+| `AlertServiceTest` | 7 | Passed |
+| `ReminderServiceTest` | 5 | Passed |
+| `HelloControllerModelTest` | 3 | Passed |
+| `HelloControllerTest` | 15 | Passed |
+| **Total** | **76** | **0 failures, 0 errors, 0 skipped** |
+
+- Command: `.\mvnw.cmd test`, exit 0.
+- New features: Saved & tracked page with wishlist and explicit tracking; price
+  observations recorded after each valid import (separate tables with an offer
+  snapshot); planned weekly/monthly budget with category totals on My list;
+  in-app target/drop alerts with quiet hours, 8-hour snooze, and a morning
+  summary; reminders page with interval, add-to-list, clear, and snooze.
+- Decision gates D01–D07 were agreed on this date before dependent work; see the
+  [milestone plan](../Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work).
+- The alert and reminder suites use a fixed controllable clock
+  (`Asia/Hong_Kong`) so date/threshold behaviour is deterministic.
+- Limits: the browser (`npm run test:browser`) suite was not re-run for this
+  record. A successful compile and the Java suite alone do not close J05–J08;
+  the combined acceptance flow and the updated UML remain outstanding.
+
+
+## J05–J08 UML regeneration — 12 November 2026
+
+The four PlantUML sources were updated for the J05–J08 records and services, then
+regenerated with the official PlantUML 1.2026.9 Java JAR.
+
+- `use-case.puml`: added save/track, planned budget, in-app alerts, and reminders
+  goals; background/cloud push stays excluded.
+- `class.puml`: added WishlistEntry, TrackingChoice, PriceObservation,
+  AlertRule, AlertEvent, BudgetSettings, and Reminder. Observations are keyed by
+  product/retailer strings, not foreign keys to listings, so replacement cannot
+  delete history.
+- `application-class.puml`: added TrackingService, ObservationRecorder,
+  BudgetService, AlertService, ReminderService and their repositories plus the
+  shared Clock.
+- `sequence.puml`: added observation recording after a committed replacement,
+  alert evaluation, and the reminder add-to-list path.
+
+All four sources passed the JAR syntax check and exported to SVG and PNG at
+non-zero sizes: `render.ps1` reported `Exported <name>.svg/png (PlantUML 1.2026.9)`
+for each. Exports were generated with the same 1.2026.9 version for consistency.
+Limits: the PNGs were not visually re-inspected in this session (image preview is
+unavailable to the tool); SVG text was checked to contain the new classes. This
+entry does not close J05–J08; the combined acceptance flow and browser check remain.

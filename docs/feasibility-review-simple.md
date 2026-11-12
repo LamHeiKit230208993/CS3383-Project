@@ -80,21 +80,21 @@ These are acceptance checks, not results from completed tests. Made-up data may 
 
 Open decisions do not make planned features optional. They define the remaining detail needed to build them consistently.
 
-For the agreed J05–J08 milestone, use the decision register in the
-[execution plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work).
-Record agreed answers there and link them from this overview. A milestone issue
-does not by itself resolve the questions below or approve conditional features.
+For the agreed J05–J08 milestone, the decision register is **agreed** (12 November
+2026): see the [execution plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work).
+The resolved rules are summarised below; the plan holds the detail. Rows not tied
+to J05–J08 remain open, and a decided row does not approve conditional features.
 
 | Topic | Decision still needed | Related scope |
 |---|---|---|
-| Tracking | Use explicit tracking, separate from saving a wishlist or list. Before the tracking job, set retailer selection, retained records, and re-addition rules. | R10, R14, R21–R22, R35, R39 |
-| History and dates | Start history at tracking time or include older records? How much data is retained? What source/date label appears on untracked results? | R10, R14, R44 |
-| Alert rules | At or below target, or strictly below? Which earlier price is used? Alert immediately if already met? When can the same price trigger again? | R21–R24 |
-| Morning summary | Which products, time, quiet-hours rule, and missed-run behaviour? First delivery is inside the active app. | R23, R26 |
-| Spending | Planned costs, actual purchases, or both? How are purchases entered? Which comparison price defines savings? | R18, R30–R31, R43 |
+| Tracking | **Decided (D01–D02):** explicit tracking, not seeded; all priced retailers; history kept across replacement and untracking. | R10, R14, R21–R22, R35, R39 |
+| History and dates | **Decided (D02–D03):** history starts at tracking time; one observation per pair per import; retrieval time labelled, source date unknown. | R10, R14, R44 |
+| Alert rules | **Decided (D04):** target at or below; drop vs most recent distinct prior; checked on creation and after import; one event per observation. | R21–R24 |
+| Morning summary | **Decided (D05):** 08:00 HKT; quiet hours 22:00–07:00; missed runs show on next open, not as delivered. | R23, R26 |
+| Spending | Planned-cost only for now. **Decided (D06):** planned budget vs live known subtotal. Actual purchases and savings remain open. | R18, R30–R31, R43 |
 | Saved-list viewing | How is the list/page saved on the viewing device? First offline use is read-only, with no live price refresh or remote chat. | R48 |
 | Advice and offers | What measured rule supports conditional advice or price comparisons? What happens without enough records? | R11, R16, R20, R35 |
-| Reminders | User-set interval or recorded use rate? How does a purchase or snooze change the next date? | R34, R36–R37 |
+| Reminders | **Decided (D07):** user-set interval; snooze adds days; clear deactivates; add-to-list does not change state. | R34, R36–R37 |
 | Project limits | Course marking guide, deadline, team availability, and operating budget. Spring Boot is chosen; other frameworks are backups. | All planned work |
 
 ## 6. Evidence needed before stronger claims

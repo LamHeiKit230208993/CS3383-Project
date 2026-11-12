@@ -106,8 +106,28 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Updates, and Ask are planned features. See the
-[implementation guide](implementation-baseline-j01-j04.md) for the current scope.
+
+### Saved, tracking, budgets, alerts, and reminders (J05–J08)
+
+The sidebar now links to working pages instead of placeholders:
+
+- **Saved** — wishlist and explicit tracking. Saving a product does not start
+  tracking. Tracking records each tracked retailer's price after every valid
+  import, in separate tables so history survives a catalogue replacement.
+- **Alerts** — in-app target/drop rules, checked after each valid import while the
+  app runs. Quiet hours are 22:00–07:00 Hong Kong time; the morning summary is at
+  08:00. An alert snooze lasts 8 hours.
+- **Reminders** — user-set interval and snooze (in days) with add-to-list, clear,
+  and snooze. They run only while the app is open.
+- **My list** — the planned weekly/monthly budget and category totals use the same
+  known-price rows as the list subtotal.
+
+All time-based behaviour uses one `Asia/Hong_Kong` clock. Tests replace it with a
+fixed clock so date/threshold results are deterministic. There are no new
+required settings; the new tables are created automatically in the existing H2
+file database (`spring.jpa.hibernate.ddl-auto=update`). Ask remains a planned
+feature. See the [milestone plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md)
+and the [implementation guide](implementation-baseline-j01-j04.md) for scope.
 
 To stop the app, press `Ctrl+C` in the terminal.
 

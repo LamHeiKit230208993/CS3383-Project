@@ -1,9 +1,16 @@
-# J01–J04 UML — official PlantUML
+# J01–J08 UML — official PlantUML
 
-Updated: 25 October 2026. These diagrams describe the independent Market Desk
-implementation for issue #13. They use the official **PlantUML 1.2026.9 Java JAR**
-for final exports and the achromatic Print palette. The `.puml` files are the
-editable source; SVG is best for zooming, and PNG is convenient for PR previews.
+Updated: 12 November 2026. These diagrams describe the independent Market Desk
+implementation. They now cover the J01–J04 baseline and the J05–J08 workstreams.
+They use the official **PlantUML 1.2026.9 Java JAR** for final exports and the
+achromatic Print palette. The `.puml` files are the editable source; SVG is best
+for zooming, and PNG is convenient for PR previews.
+
+J05–J08 add saved/tracking records, price observations kept separate from live
+listings, planned budgets, alert rules/events, and reminders. The class view shows
+these new tables; the application-class view adds the tracking, budget, alerts, and
+reminders services; the sequence view adds observation recording after a committed
+import, alert evaluation, and the reminder add-to-list path.
 
 | Question | Editable source | Vector | Image |
 |---|---|---|---|

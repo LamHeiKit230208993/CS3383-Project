@@ -1,9 +1,15 @@
 package com.pricewatch.web;
 
+import com.pricewatch.alerts.AlertService;
+import com.pricewatch.alerts.persistence.AlertRuleEntity;
+import com.pricewatch.budget.BudgetService;
+import com.pricewatch.reminders.ReminderService;
+import com.pricewatch.budget.persistence.BudgetSettingsEntity;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
+import com.pricewatch.tracking.TrackingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,13 +29,22 @@ import java.util.Map;
 @Controller
 public class HelloController {
     private static final Map<String, String> PLANNED = Map.of(
-            "saved", "Wishlist and tracking", "updates", "Alerts and reminders", "ask", "Price assistant");
+            "ask", "Price assistant");
     private final CatalogService catalog;
     private final ShoppingService shopping;
+    private final TrackingService tracking;
+    private final BudgetService budget;
+    private final AlertService alerts;
+    private final ReminderService reminders;
 
-    public HelloController(CatalogService catalog, ShoppingService shopping) {
+    public HelloController(CatalogService catalog, ShoppingService shopping, TrackingService tracking,
+                           BudgetService budget, AlertService alerts, ReminderService reminders) {
         this.catalog = catalog;
         this.shopping = shopping;
+        this.tracking = tracking;
+        this.budget = budget;
+        this.alerts = alerts;
+        this.reminders = reminders;
     }
     @ModelAttribute
     void common(Model model) {
@@ -70,10 +85,140 @@ public class HelloController {
         var items = shopping.items();
         model.addAttribute("items", items);
         model.addAttribute("summary", Summary.from(items));
+        model.addAttribute("budget", budget.view());
         return screen(model, "list", "My list");
     }
+    @PostMapping("/budget")
+    String setBudget(@RequestParam String period, @RequestParam BigDecimal limit, RedirectAttributes redirect) {
+        try {
+            BudgetSettingsEntity.Period parsed;
+            try {
+                parsed = BudgetSettingsEntity.Period.valueOf(period.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException invalid) {
+                throw new IllegalArgumentException("Choose a weekly or monthly budget.");
+            }
+            budget.setBudget(parsed, limit);
+            redirect.addFlashAttribute("notice", "Planned budget saved. This is an estimate, not actual spending.");
+        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
+        return "redirect:/list";
+    }
+    @PostMapping("/budget/clear")
+    String clearBudget(RedirectAttributes redirect) {
+        budget.clearBudget();
+        redirect.addFlashAttribute("notice", "Planned budget cleared.");
+        return "redirect:/list";
+    }
     @GetMapping("/data")
-    String data(Model model) { return screen(model, "data", "Price data & updates"); }
+    String data(Model model) { return screen(model, "data", "Price data & updates"); }    @GetMapping("/saved")
+    String saved(Model model) {
+        model.addAttribute("savedProducts", tracking.savedProducts());
+        model.addAttribute("trackedProducts", tracking.trackedProducts());
+        return screen(model, "saved", "Saved & tracked");
+    }
+    @PostMapping("/saved/{code}/save")
+    String saveProduct(@PathVariable String code, RedirectAttributes redirect) {
+        try {
+            tracking.save(code);
+            redirect.addFlashAttribute("notice", "Saved. Saving does not start tracking.");
+        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
+        return "redirect:/saved";
+    }
+    @PostMapping("/saved/{code}/unsave")
+    String unsaveProduct(@PathVariable String code, RedirectAttributes redirect) {
+        tracking.unsave(code);
+        redirect.addFlashAttribute("notice", "Removed from saved. Any tracking history is kept.");
+        return "redirect:/saved";
+    }
+    @PostMapping("/tracking/{code}/enable")
+    String enableTracking(@PathVariable String code, RedirectAttributes redirect) {
+        try {
+            tracking.enableTracking(code);
+            redirect.addFlashAttribute("notice", "Tracking on. Prices are recorded for this product's retailers on each import.");
+        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
+        return "redirect:/saved";
+    }
+    @PostMapping("/tracking/{code}/disable")
+    String disableTracking(@PathVariable String code, RedirectAttributes redirect) {
+        tracking.disableTracking(code);
+        redirect.addFlashAttribute("notice", "Tracking off. Existing history is kept.");
+        return "redirect:/saved";
+    }
+    @GetMapping("/alerts")
+    String alerts(Model model) {
+        alerts.evaluateAll();
+        model.addAttribute("alerts", alerts.view());
+        model.addAttribute("trackedProducts", tracking.trackedProducts());
+        return screen(model, "alerts", "Alerts");
+    }
+    @PostMapping("/alerts/rules")
+    String createAlertRule(@RequestParam String productCode, @RequestParam String retailerCode,
+                           @RequestParam String type, @RequestParam(required = false) BigDecimal target,
+                           RedirectAttributes redirect) {
+        try {
+            AlertRuleEntity.Type parsed;
+            try {
+                parsed = AlertRuleEntity.Type.valueOf(type.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException invalid) {
+                throw new IllegalArgumentException("Choose a target or drop alert.");
+            }
+            alerts.createRule(productCode, retailerCode, parsed, target);
+            redirect.addFlashAttribute("notice", "Alert rule saved. It is checked after each valid import while the app runs.");
+        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
+        return "redirect:/alerts";
+    }
+    @PostMapping("/alerts/rules/{id}/delete")
+    String deleteAlertRule(@PathVariable Long id, RedirectAttributes redirect) {
+        alerts.deleteRule(id);
+        redirect.addFlashAttribute("notice", "Alert rule removed.");
+        return "redirect:/alerts";
+    }
+    @PostMapping("/alerts/events/{id}/acknowledge")
+    String acknowledgeAlert(@PathVariable Long id, RedirectAttributes redirect) {
+        alerts.acknowledge(id);
+        redirect.addFlashAttribute("notice", "Alert acknowledged.");
+        return "redirect:/alerts";
+    }
+    @PostMapping("/alerts/events/{id}/snooze")
+    String snoozeAlert(@PathVariable Long id, RedirectAttributes redirect) {
+        alerts.snooze(id);
+        redirect.addFlashAttribute("notice", "Alert snoozed for 8 hours.");
+        return "redirect:/alerts";
+    }
+    @GetMapping("/reminders")
+    String reminders(Model model) {
+        model.addAttribute("reminders", reminders.reminders());
+        return screen(model, "reminders", "Reminders");
+    }
+    @PostMapping("/reminders")
+    String createReminder(@RequestParam String code, @RequestParam int quantity,
+                          @RequestParam int intervalDays, @RequestParam int snoozeDays,
+                          RedirectAttributes redirect) {
+        try {
+            reminders.create(code, quantity, intervalDays, snoozeDays);
+            redirect.addFlashAttribute("notice", "Reminder set. These run only while the app is open.");
+        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
+        return "redirect:/reminders";
+    }
+    @PostMapping("/reminders/{id}/add-to-list")
+    String reminderAddToList(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            reminders.addToList(id);
+            redirect.addFlashAttribute("notice", "Added to My list.");
+        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", exception.getMessage()); }
+        return "redirect:/reminders";
+    }
+    @PostMapping("/reminders/{id}/clear")
+    String reminderClear(@PathVariable Long id, RedirectAttributes redirect) {
+        reminders.clear(id);
+        redirect.addFlashAttribute("notice", "Reminder cleared.");
+        return "redirect:/reminders";
+    }
+    @PostMapping("/reminders/{id}/snooze")
+    String reminderSnooze(@PathVariable Long id, RedirectAttributes redirect) {
+        reminders.snooze(id);
+        redirect.addFlashAttribute("notice", "Reminder snoozed.");
+        return "redirect:/reminders";
+    }
     @GetMapping("/planned/{feature}")
     String planned(@PathVariable String feature, Model model) {
         if (!PLANNED.containsKey(feature)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -90,6 +235,10 @@ public class HelloController {
             var accepted = action.equals("sample") ? catalog.importSample() : catalog.refreshLive();
             redirect.addFlashAttribute("notice", accepted.productCount() + " products accepted. "
                     + (action.equals("sample") ? "This is a historical sample, not current prices." : "Live source downloaded; source price date is unknown."));
+            String historyWarning = catalog.takeHistoryWarning();
+            if (historyWarning != null) {
+                redirect.addFlashAttribute("error", historyWarning);
+            }
         } catch (RuntimeException exception) {
             // Keep provider and database details out of user-facing HTML.
             org.slf4j.LoggerFactory.getLogger(getClass()).warn("Catalogue import failed", exception);

@@ -13,7 +13,8 @@ The original idea was a price-comparison app with a chat helper. The team has si
 | Check agreed technical safeguards | [Baseline decisions](docs/Plan/baseline-proposal.md) |
 | Understand the implemented baseline | [J01–J04 implementation](docs/implementation-baseline-j01-j04.md) and [accepted UML](docs/diagrams/baseline/README.md) |
 | Assign jobs or check dependencies | [Job plan](docs/Plan/features.md) |
-| Build J05–J08 | [Milestone execution plan](docs/Plan/tracking-alerts-budgets-reminders-j05-j08.md); resolve the relevant decision gates first |
+| Build J05–J08 | [Milestone execution plan](docs/Plan/tracking-alerts-budgets-reminders-j05-j08.md); decisions D01–D07 are agreed |
+| Review the J05–J08 change set | [J05–J08 implementation summary](docs/j05-j08-implementation-summary.md) |
 | Check data limits and wider design proposals | [Feasibility review](docs/feasibility-review-simple.md), [source inspection](docs/Plan/data-sample-review.md), and [architecture](docs/architecture-options.md) |
 | Review test coverage or past results | [Current catalogue](docs/Test/test-case-catalog.md) and [dated history](docs/Test/history.md) |
 
@@ -24,7 +25,7 @@ evidence, not current implementation guidance.
 
 PR #15 is merged. J01–J04 provide the local import, search, comparison, and saved-list baseline. The latest recorded checks passed 47 Java tests and 9 browser scenarios; see the [test history](docs/Test/history.md#pr-15-review-regressions--25-october-2026). These are recorded results, not a new run on 29 October.
 
-The team has grouped **J05–J08 into the next milestone issue**. Its implementation is planned, not complete. The milestone plan is the execution reference; the project scope remains the authority for feature decisions.
+The team has grouped **J05–J08 into one milestone issue (#17)**. Decision gates D01–D07 are agreed and the four workstreams are implemented in code: a Saved &amp; tracked page, price history recording after valid imports, a planned budget with category totals on My list, an Alerts page, and a Reminders page. The latest Java suite passed 76 tests; see the [test history](docs/Test/history.md#j05j08-implementation--12-november-2026) and the [implementation summary](docs/j05-j08-implementation-summary.md). The jobs are **not closed** until the combined acceptance flow and the integrated browser check are recorded. The milestone plan is the execution reference; the project scope remains the authority for feature decisions.
 
 ## Share the plan with teammates
 
