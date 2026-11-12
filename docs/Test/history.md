@@ -4,6 +4,79 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## PR #18 review follow-up — 12 November 2026
+
+- Maven package on JDK 21 with the Byte Buddy startup agent passed 88 tests
+  with zero failures, errors or skips. Coverage includes next-day summary
+  catch-up, enrollment of new LIVE retailers, stop-all and preference persistence.
+- Chrome passed 9 baseline scenarios and 11 milestone scenarios.
+- The old-to-new H2 upgrade preserved the catalogue and saved list state.
+- PlantUML 1.2026.9 regenerated the four views for the revised D01 and reminder flow.
+
+## J05–J08 validation — 6 November 2026
+
+Checked the uncommitted `dev/john` implementation against issue #17 and the
+approved D01–D07 rules. The issue remains open; no commit, push or merge is
+implied. Environment: JDK 21.0.8, Spring Boot 3.4.5, H2 2.3.232, Node 24.14.0,
+Playwright 1.58.2 and the installed Chrome channel.
+
+| Check | Observed result |
+|---|---|
+| Full Maven package | 86 tests; no failures, errors or skips; runnable JAR built |
+| Final full Maven test after UI polish | 86 tests; no failures, errors or skips |
+| Baseline Chrome suite | 9 scenarios passed |
+| J05–J08 Chrome suite | 11 scenarios passed, including final mobile-price layout check |
+| Old-to-new H2 upgrade | Existing catalogue, JASONS selection, quantity, checked state and HK$25.00 line estimate retained |
+| UML | Four official PlantUML 1.2026.9 sources checked; SVG/PNG rendered; worker and integrator inspected every view |
+
+Commands from the repository root:
+
+```powershell
+$env:JAVA_HOME = 'D:/App/Java/JDK21'
+$testAgent = '-DargLine=-javaagent:C:/Users/User/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar'
+.\mvnw.cmd $testAgent package
+.\mvnw.cmd $testAgent test
+$env:BROWSER_CHANNEL = 'chrome'
+npm run test:browser
+npm run test:milestone
+$env:BASELINE_JAR = 'target/upgrade-check/baseline.jar'
+npm run test:persistence
+.\docs\diagrams\j05-j08\render.ps1 -Java 'D:/App/Java/JDK21/bin/java.exe'
+```
+
+The explicit Byte Buddy startup agent avoids a dynamic-attach hang observed
+in this environment. It is not an application dependency or runtime setting.
+Focused checks also passed: tracking 8, alerts 7, tracking file reopen 1,
+budget 13, reminders 8 and reminder file reopen 1. Those are included in the
+full suite, not additional tests to add to 86.
+
+The first tracking run exposed an assigned-`@MapsId` wishlist insertion error;
+leaving the ID for JPA to derive fixed it. Review regressions cover stale/sample
+targets, fresh current targets after history expiry, unchanged-import deduplication,
+unknown gaps, snapshot drop evidence, database rollback, snoozed/read summary
+exclusion, overnight quiet deferral, concurrent summaries, and restart state.
+Pending alert details remain hidden until eligible.
+
+The new browser harness initially needed two fixes: normalize Spring's initial
+`;jsessionid` redirect, and use the reminder controls' accessible names. Its
+navigation/click promises now fail together so cleanup still runs. The final
+run passed. Desktop/mobile screenshots and logs are in ignored
+`target/browser-milestone/`; baseline artifacts are in `target/browser-checks/`.
+The integrator viewed all four desktop and mobile milestone screenshots.
+
+The upgrade used the old J01–J04 JAR preserved before rebuilding, then the new
+J05–J08 JAR against the same isolated temporary H2 file. This was an actual
+old-to-new run, not the earlier same-JAR control run. `WRITE_DELAY=0` makes the
+harness independent of Windows forced-termination timing.
+
+Limits: all price changes are explicit synthetic/local fixtures. These checks
+do not establish current provider prices, every historical database version,
+all browser engines, complete accessibility or wider J09–J12 delivery. No normal
+user database was used. There is no account, cloud notification, purchase ledger,
+promotional-price calculation or price prediction in this milestone.
+
+## Historical records
+
 The table below is the **retired UI-prototype suite**. The J01–J04 implementation
 replaces these six-scene checks with real pages, services, and persistence checks.
 The 17 October results remain historical evidence, not results for the new code.

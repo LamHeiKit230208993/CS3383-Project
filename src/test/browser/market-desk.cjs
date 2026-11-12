@@ -287,8 +287,8 @@ async function main() {
     await page.waitForURL(base + "/data");
     await page.locator(".mobile-more > summary").click();
     await page.locator(".mobile-nav").getByRole("link", { name: /Saved/ }).click();
-    await page.waitForURL(base + "/planned/saved");
-    assert.match(await text(page.locator("main")), /PLANNED · NOT AVAILABLE YET/);
+    await page.waitForURL(base + "/saved");
+    assert.match(await text(page.locator("main")), /Wishlist/);
     await go("/");
     await page.keyboard.press("Tab");
     assert.equal(await page.locator(".skip-link").evaluate(link => link === document.activeElement), true);

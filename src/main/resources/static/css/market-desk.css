@@ -297,3 +297,36 @@ dd { margin: 0; }
   .retailer-price strong { font-size: 21px; }
   .retailer-offer-details { padding: 0 16px 12px; }
 }
+
+/* Saved state and time-based tools share the existing native form controls. */
+.milestone-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; margin-top: 24px; }
+.milestone-grid > *, .stack-form > *, .data-facts dd { min-width: 0; }
+.stack-form { display: grid; gap: 16px; margin-top: 20px; }
+.stack-form label { display: grid; gap: 7px; font-size: 14px; }
+.stack-form .check-label { display: flex; align-items: center; min-height: 46px; }
+.stack-form .button { justify-self: start; }
+.inline-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.inline-actions form { min-width: 0; }
+.inline-actions .button { white-space: normal; }
+section[aria-labelledby="alerts-title"] > .panel + .panel { margin-top: 24px; }
+.panel > h2 + p { color: var(--muted); margin-top: 12px; }
+.status-pill { display: inline-block; padding: 5px 10px; border-radius: 7px; font-size: 12px; color: var(--blue); background: var(--blue-soft); }
+.history-table-wrap { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; }
+.history-table-wrap > .helper { padding: 12px 12px 0; }
+.history-table-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.history-table-wrap th, .history-table-wrap td { text-align: left; padding: 12px; vertical-align: top; border-bottom: 1px solid var(--line); }
+.history-table-wrap th { background: var(--page); color: var(--muted); font-weight: 600; }
+.history-table-wrap td { min-width: 110px; }
+.history-table-wrap tbody tr:last-child td { border-bottom: 0; }
+.data-facts dd, .list-item-heading > strong { overflow-wrap: anywhere; }
+section[aria-labelledby="alerts-title"] .list-item-heading > strong { flex-shrink: 0; max-width: 45%; font-variant-numeric: tabular-nums; }
+.milestone-grid .section-heading > span { flex-shrink: 0; }
+@media (max-width: 1100px) {
+  .milestone-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
+  .inline-actions form { flex: 1 1 140px; }
+  .inline-actions .button { width: 100%; }
+  .history-table-wrap { max-width: 100%; }
+  .stack-form .button { justify-self: stretch; }
+}

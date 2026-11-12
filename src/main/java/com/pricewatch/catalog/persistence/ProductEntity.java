@@ -63,6 +63,9 @@ public class ProductEntity {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "track_all_retailers")
+    private Boolean trackAllRetailers;
+
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private Set<RetailerListingEntity> listings = new LinkedHashSet<>();
 
@@ -85,6 +88,8 @@ public class ProductEntity {
     public LocalizedLabel getCategory3() { return category3; }
     public void setCategory3(LocalizedLabel category3) { this.category3 = category3; }
     public boolean isActive() { return active; }
+    public boolean isTrackAllRetailers() { return Boolean.TRUE.equals(trackAllRetailers); }
+    public void setTrackAllRetailers(boolean enabled) { this.trackAllRetailers = enabled; }
     public void setActive(boolean active) { this.active = active; }
     public Set<RetailerListingEntity> getListings() { return listings; }
 

@@ -5,10 +5,11 @@ This index describes maintained checks. Detailed steps and limits belong in
 
 ## Latest recorded validation
 
-The 25 October 2026 PR #15 review-fix run passed **47 Java tests**, packaging,
-and **9 Chrome scenarios**. See the [run record](history.md#pr-15-review-regressions--25-october-2026).
-These are recorded results, not a new run for the 29 October documentation cleanup.
-J05–J08 checks must be added with their implementation.
+The 6 November 2026 J05–J08 run passed **86 Java tests**, packaging,
+**9 baseline and 11 milestone Chrome scenarios**, and an old-to-new H2 upgrade
+check. Official PlantUML exports were rendered and visually reviewed.
+See the [dated run record](history.md). The earlier PR #15 results remain there
+as historical evidence. These local results do not close issue #17 or imply merge.
 
 ## J01–J04 baseline scenarios
 
@@ -25,5 +26,17 @@ J05–J08 checks must be added with their implementation.
 | [TC-BROWSER-001](cases/TC-BROWSER-001.md) | Browser regression | Native forms, retailer cards, search-mode reset, responsive navigation, and exact estimates | `market-desk.cjs` |
 
 Case descriptions state expected behaviour; they do not prove a later build passed.
+
+## J05–J08 milestone checks
+
+| ID | Area | Expected result | Source |
+|---|---|---|---|
+| [TC-TRACK-001](cases/TC-TRACK-001.md) | Wishlist and tracking | Product-wide enrollment on LIVE imports, separate retailer periods, retention, repeat prevention, rollback and file reopen | `TrackingServiceTest`, `TrackingPersistenceRestartTest` |
+| [TC-ALERT-001](cases/TC-ALERT-001.md) | In-app alerts | Targets, stated drop evidence, quiet hours, snooze, next-day summary catch-up and persisted repeat state | `AlertServiceTest`, `TrackingPersistenceRestartTest` |
+| [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget | Persistent weekly/monthly limit, effective selected-retailer estimate, incomplete-price states, category reconciliation, validation, and H2 file reopen | `BudgetServiceTest`, `BudgetControllerTest`, `BudgetPageTest`, `BudgetSettingsPersistenceTest` |
+| [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Replenishment | Persisted due state, clear/snooze timing, manual actions during quiet hours, and unchanged ShoppingService validation | `ReminderControllerTest`, `ReminderPersistenceRestartTest` |
+| [TC-MILESTONE-001](cases/TC-MILESTONE-001.md) | Combined browser flow | Save/track/update/alert, budget, reminder actions, native forms, safe timed refresh and responsive pages | `milestone-check.cjs` |
+| [TC-UPGRADE-001](cases/TC-UPGRADE-001.md) | Existing database upgrade | An old baseline's catalogue, selected retailer, quantity and checked state survive the new schema | `persistence-check.cjs` with `BASELINE_JAR` |
+
 The retired prototype cases and their original source links are preserved in
 [history](history.md#tc-web-002--retired-prototype-scenes-and-assets).

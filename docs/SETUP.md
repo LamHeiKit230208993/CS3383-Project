@@ -106,8 +106,41 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Updates, and Ask are planned features. See the
-[implementation guide](implementation-baseline-j01-j04.md) for the current scope.
+Saved, Alerts, Budget, and Reminders now have working forms in the J05–J08
+implementation. Local integration checks passed on 6 November 2026; Ask remains planned.
+See the [baseline guide](implementation-baseline-j01-j04.md) and
+[extension guide](implementation-j05-j08.md) for behaviour and limits.
+
+### Try the J05–J08 flow
+
+1. Open a product comparison and choose **Save or track this product**. Save it to the
+   wishlist, or explicitly track a retailer. These are separate actions.
+2. Open **Alerts** to set a target or enable a drop rule for that tracking period.
+   Only accepted LIVE data can create live history and price alerts. Loading the
+   historical sample is useful for screens, lists, budgets, and reminders; it
+   does not simulate live observations.
+3. Open **Budget**, choose Weekly or Monthly, and save a planned limit. It is
+   compared with the current My list estimate, including checked items. An
+   explicit retailer choice stays selected when its price becomes unknown.
+4. From a product comparison, choose **Set a replenishment reminder**. Choose packs, an interval
+   in days, and an optional retailer. Adding its quantity to My list leaves the
+   reminder active. Clear starts a new interval from now; Snooze delays its
+   effective due time by 24 hours.
+
+Alert timing uses Hong Kong time. Defaults are quiet hours **22:00–08:00** and
+daily summary **08:00**. Change them on Alerts; equal quiet start/end disables
+quiet hours. Quiet hours delay notification eligibility, not manual list actions.
+Events and reminders stay inside the app. Nothing is delivered while the app is
+closed, and startup does not fetch prices.
+
+The running web app checks summaries every minute. Alerts and Reminders pages
+also refresh every minute when visible, unless a form has edits or focus, or a
+disclosure is open. Reopen or reload the page to refresh manually. Without
+JavaScript, forms still work and page opening checks the current state.
+
+For isolated checks, disable the scheduled summary job with
+`--pricewatch.jobs.enabled=false`. This does not disable manual refresh, page
+checks, or the browser's safe page refresh.
 
 To stop the app, press `Ctrl+C` in the terminal.
 
@@ -193,3 +226,34 @@ state, keyboard navigation, and four viewport widths. Synthetic source records
 exercise relevance and decimal boundaries; they are test data, not real prices.
 The script stops its own app and test server on completion or failure. It saves
 screenshots and the app log under ignored `target/browser-checks/`.
+
+### Milestone browser and upgrade checks
+
+Build the current JAR first, then run the additional checks:
+
+```powershell
+npm run test:milestone
+npm run test:persistence
+```
+
+The milestone check uses an isolated app and a local synthetic feed. It covers
+Saved/tracking, alerts, budgets, reminders, form validation, timed refresh, and
+desktop/mobile layouts. Screenshots and logs go under ignored
+`target/browser-milestone/`. Synthetic price changes are test data, not provider
+price evidence.
+
+The persistence check creates a temporary file database, saves a selected retailer,
+quantity and checked state, then restarts the app and checks those records. By
+default it uses the current JAR for both starts. To check an upgrade, keep a copy
+of the earlier JAR before rebuilding, then supply it explicitly:
+
+```powershell
+$env:BASELINE_JAR = 'D:/path/to/earlier-pricewatch.jar'
+npm run test:persistence
+Remove-Item Env:BASELINE_JAR
+```
+
+Neither check uses the normal `data/pricewatch` database. An upgrade result is
+valid only for the two supplied JAR versions; a current-to-current restart does
+not prove an upgrade. See the [test catalogue](Test/test-case-catalog.md) and
+[dated history](Test/history.md) for recorded results and limits.

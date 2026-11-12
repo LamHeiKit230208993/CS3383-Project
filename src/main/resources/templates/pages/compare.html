@@ -19,6 +19,8 @@
         <p lang="zh-Hans" th:text="${product.name.zhHans}"></p>
         <p class="product-code" th:text="${product.code}" translate="no"></p>
         <p class="helper">Pack details are part of the original product name.</p>
+        <p><a th:href="@{/saved(code=${product.code})}">Save or track this product</a></p>
+        <p><a th:href="@{/reminders(code=${product.code})}">Set a replenishment reminder</a></p>
         <p class="warning" th:unless="${product.active}">Not in the accepted catalogue. Saved identity kept; current price unknown.</p>
         <form
           id="add-item-form"
