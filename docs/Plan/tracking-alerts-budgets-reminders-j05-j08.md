@@ -1,14 +1,17 @@
 # J05–J08: Tracking, alerts, budgets, and reminders
 
-Updated: 29 October 2026.
+Updated: 6 November 2026.
 
-Status: The team agreed to group J05–J08 in one milestone issue. Implementation
-has not started in this baseline. This plan does not claim that an issue has
-already been created. Add its number here when it exists.
+Status: [Issue #17](https://github.com/LamHeiKit230208993/CS3383-Project/issues/17)
+groups J05–J08 in one milestone. The user approved the D01–D07 rules on
+6 November 2026. The local implementation passed its integrated checks on that
+date: 86 Java tests, 20 browser scenarios and the old-to-new H2 upgrade check.
+See [test history](../Test/history.md). Commit/PR review and merge remain;
+the issue is still open. The closure checks below remain applicable.
 
 Read the [project scope](../project-scope.md), [job plan](features.md), and
 [implemented J01–J04 contract](../implementation-baseline-j01-j04.md) first.
-The project scope controls feature decisions. This file controls the next
+The project scope controls feature decisions. This file controls this
 milestone's delivery plan and agreed implementation rules.
 
 ## Goal and boundaries
@@ -29,11 +32,20 @@ unknown-price handling, import rollback, and saved-list behaviour.
   device/cloud notifications, accounts, and cloud storage remain outside this batch.
 - J07 adds planned budgets and category totals to existing list calculations.
   It does not add purchase accounting or claim actual spending/savings.
+- Reuse J04's effective-price calculation: an explicit retailer choice uses only
+  that retailer's current price; Automatic lowest uses a current lowest known
+  listing. If the selected retailer's price is missing, retain the choice and
+  report an unknown amount and incomplete total. Budget calculations must not
+  silently switch the retailer.
 - J09 chat, J10 transfer, J11 offline reopening, and full J12 completion remain
   later work. History inspection needed to verify J05 belongs here; full history
   charts remain later work subject to R10's data condition.
-- R22 change thresholds remain conditional on an agreed comparison price.
-  Other conditional rows, including R24, R29, and R35, are not approved by batching.
+- Listing R10, R22, or R35 in the issue does not approve all related features.
+  Full history charts remain later work under R10's dated-record condition.
+  Amount/percentage change thresholds under R22 require an agreed comparison
+  rule in D04 before implementation. Buy/wait advice under R35 is not included
+  automatically and retains R16's evidence limits. Other conditional rows,
+  including R24 and R29, are not approved by batching.
 
 ## Workstreams and dependency order
 
@@ -44,7 +56,7 @@ unknown-price handling, import rollback, and saved-list behaviour.
 | J07 — planned budgets | Weekly/monthly budget settings, list estimate warning, category totals | J04 totals and agreed budget rules | Quantities and retailer choices affect estimates; unknown prices mark totals incomplete; category amounts reconcile with the known subtotal |
 | J08 — replenishment reminders | User-set interval/use input; due state; add-to-list, clear, and snooze | J04; J06 notification behaviour and agreed reminder rules | Product/quantity survive actions and restart; clear/snooze set the agreed next due time; unavailable prices remain unknown |
 
-J05 and J07 can proceed in parallel once their own decisions are resolved.
+J05 and J07 are independent workstreams under the agreed rules below.
 J06 follows J05; J08 follows the shared notification behaviour. UI sketches and
 test-case design can proceed while independent storage work runs.
 
@@ -55,8 +67,8 @@ navigation, and notification code before parallel edits.
 
 ## Shared records and operations
 
-These are logical contracts to settle before connected implementation. They are
-not existing Java classes, database migrations, method signatures, or web routes.
+These are logical contracts. Actual classes, operations and web routes are
+documented in the [implementation guide](../implementation-j05-j08.md).
 
 | Record | Required meaning |
 |---|---|
@@ -67,20 +79,20 @@ not existing Java classes, database migrations, method signatures, or web routes
 | Budget settings/result | Weekly/monthly choice, planned limit, known estimate, missing-price count, category breakdown, and period meaning |
 | Reminder | Product, quantity, user-supplied interval/use input, due state, next due time, and clear/snooze state |
 
-Agree inputs and result/error states for save/unsave, enable/stop tracking,
+Keep inputs and result/error states consistent for save/unsave, enable/stop tracking,
 record observations, evaluate alerts, change budget, and create/clear/snooze a
 reminder. Reuse J04's add-to-list validation for reminder actions, including its
 quantity limit and conflict when an existing item has a different retailer.
 
 Current catalogue replacement deletes retailer listings and offers. History must
 survive replacement through separate retained records; do not attach its lifetime
-to those deleted listing rows. Agree the transaction boundary for catalogue,
-observations, and alert events. A failed import must leave accepted data and new
+to those deleted listing rows. Catalogue replacement, observations and price-rule
+events share one transaction. A failed import must leave accepted data and new
 history/events unchanged. A visible import success notice must follow a successful
 commit. If later notification processing fails after that commit, retain the
 accepted import and report/retry the notification failure under the agreed policy;
-do not claim that an already committed import was rolled back. The transaction
-and retry design still needs agreement before implementation.
+do not claim that an already committed import was rolled back. Summary checks
+use a separate transaction and can retry on a later active-app check.
 
 Use one notification policy for alerts, summaries, and reminders. Define time-zone
 and clock handling once, with controllable time in tests. Store due/event state
@@ -89,22 +101,28 @@ must not be reported as having collected data or delivered a notification.
 
 ## Decisions before dependent work
 
-All rows below are **open**. Record the chosen rule, examples, decision date,
-and affected acceptance checks here before implementing the dependent behaviour.
-Agents must not choose separate defaults. Unaffected work can continue.
+D01–D07 were agreed with the user on 6 November 2026. D01 was revised on
+12 November 2026 after PR #18 review. These are the rules
+for this implementation; later changes need corresponding examples and tests.
 
-| ID | Decision needed | Blocks |
+| ID | Agreed rule | Example / required check |
 |---|---|---|
-| D01 | Which retailer(s) are tracked? Is enabling tracking seeded from the accepted catalogue? | J05 tracking contract |
-| D02 | Retention, stopping/re-enabling tracking, deleting history, and handling missing/inactive products | J05 lifecycle |
-| D03 | Observation identity and duplicate rule; unchanged/repeated files, unknown prices, and unknown source dates | J05 recording; J06 comparisons |
-| D04 | Target boundary; earlier comparison observation; first-check alert; repeat reset; any conditional amount/percentage thresholds | J06 evaluation |
-| D05 | Time zone, quiet-hour boundaries, snooze duration, summary content/time, missed-run/restart behaviour, and refresh/check scheduling | J06 delivery; shared J08 timing |
-| D06 | How one current list estimate relates to weekly/monthly budgets; reset/rollover, warning boundary, category level/fallback, and missing-price warnings | J07 budget rules |
-| D07 | Reminder interval/use input, initial due time, clear versus snooze, next-date calculation, and whether adding to the list changes reminder state | J08 lifecycle |
+| D01 | Track one retailer or opt into all retailers for an exact product. Product-wide tracking enrolls current listings and new retailers on accepted LIVE imports. Each retailer keeps its own observations and rules. Wishlist and shopping-list choices are independent. | Tracking JASONS alone does not react to AEON. With all retailers enabled, AEON joins when first listed. Stop all ends collection and future enrollment while keeping retained history. |
+| D02 | Retain observations for 90 days. Untracking stops collection but retains history. Re-enabling starts a new period; old-period prices cannot trigger a drop. Provide explicit history deletion. Keep minimal last-value state for deduplication after observation expiry. | Restart preserves history; re-enable does not compare against the previous period. Expiry does not make an unchanged re-import a new price observation. |
+| D03 | Record only changed prices after successful LIVE imports. Skip consecutive unchanged prices; record transitions to unknown as gaps. Keep retrieval time/provenance, never invent a source date. SAMPLE imports neither seed live history nor generate live price alerts. | Duplicate imports add nothing; invalid/database-failed imports roll back observations/events; no comparisons across unknown gaps. |
+| D04 | Target means known price <= target. First known qualifying price can trigger once. Rearm after price rises above target. A drop needs two adjacent known observations in the same tracking period with a lower current price. No configurable amount/percentage thresholds or buy/wait advice. | Repeated qualifying prices do not repeat target events. Unknown prices cannot trigger drops or cross a gap. |
+| D05 | Use Asia/Hong_Kong. Defaults: quiet 22:00–08:00, summary 08:00, event/reminder snooze 24 hours. Price refresh remains manual. Active-app checks run every minute and on relevant pages. Summary catches up once on an eligible active-app check, labelled with actual generation time; it does not claim delivery while closed. Persist snooze/repeat/summary state. | Clock-controlled quiet-hour boundaries, overnight windows, snooze and restart; pending events become visible after quiet hours, without duplicate delivery. |
+| D06 | Compare current My list estimate with a selected WEEKLY or MONTHLY planning limit. No purchase accumulator or rollover. Warn when known subtotal > limit; when incomplete and not already above limit, overall budget result is unknown. Use English category level2 or Uncategorised. | JASONS choice remains JASONS; category known amounts sum to known subtotal; checked items stay included. |
+| D07 | User chooses interval in days and quantity. Initial due = creation + interval. Clear means handled and next due = action time + interval; snooze moves current due by24h without changing interval. Add-to-list alone does not clear, track, or record purchase. | Preserve quantity/product; existing retailer conflicts use ShoppingService.add errors; clear/snooze/restart obey due dates. |
+
+Decisions D04 and D05 use persisted in-app events. Catalogue replacement,
+observation recording, and price-rule evaluation must commit together. Display
+and due-event processing happen only while the app runs. A later display/check
+failure must not claim to undo a committed catalogue. A sample catalogue may
+still be used for labelled screen demonstrations and isolated constructed tests.
 
 The [feasibility overview](../feasibility-review-simple.md#5-open-decisions)
-retains wider-project questions. Agree this milestone's answers here and link
+retains wider-project questions. Keep this milestone's agreed answers here and link
 them from that overview. Scope changes must also update the scope and job plan.
 
 ## Acceptance and issue closure
@@ -123,6 +141,10 @@ controlled clock for date/threshold tests; synthetic history is test data.
 4. Configure a budget and review category totals. Change quantity or retailer and
    refresh a price. Verify the known subtotal and warning; unavailable amounts
    keep the estimate incomplete. Checked items retain J04's total behaviour.
+   With the historical sample, selecting JASONS for milk uses HK$12.50 per pack
+   even though AEON lists HK$7.50. If JASONS becomes unpriced, retain JASONS and
+   show an incomplete estimate. Switching explicitly to Automatic lowest may
+   then use AEON. These are regression examples, not current shopping prices.
 5. Make a reminder due. Add the chosen quantity to My list, then test clear and
    snooze independently. Verify due dates, item conflicts, and persisted state.
 6. Run the combined flow: a tracked price update creates the expected alert,
@@ -132,10 +154,13 @@ controlled clock for date/threshold tests; synthetic history is test data.
    focused tests and case documents with each PR; run the full suite and saved
    browser checks against the integrated batch before issue closure.
 
-Record results in the [test catalogue](../Test/test-case-catalog.md), with source
-links, commands, dates, and limitations. Update implementation documentation and
+Maintain coverage and case links in the [test catalogue](../Test/test-case-catalog.md)
+and detailed procedures in `docs/Test/cases/`. Record commands, dates, outcomes,
+and limitations in [test history](../Test/history.md). Update implementation documentation and
 UML when the new behaviour exists. The accepted diagrams in
-`docs/diagrams/baseline/` remain the implemented J01–J04 view until then.
+`docs/diagrams/baseline/` remain the historical J01–J04 view. The
+[current diagram index](../diagrams/README.md) links the J05–J08 extension and
+states its review status.
 
 Close the shared issue when J05–J08 meet the agreed checks, their PRs are merged,
 and the integrated evidence is recorded. A planned screen or this document alone

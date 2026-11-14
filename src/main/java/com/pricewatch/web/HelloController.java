@@ -76,6 +76,8 @@ public class HelloController {
     String data(Model model) { return screen(model, "data", "Price data & updates"); }
     @GetMapping("/planned/{feature}")
     String planned(@PathVariable String feature, Model model) {
+        if (feature.equals("saved")) return "redirect:/saved";
+        if (feature.equals("updates")) return "redirect:/alerts";
         if (!PLANNED.containsKey(feature)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         model.addAttribute("feature", feature);
         return screen(model, "planned", PLANNED.get(feature));

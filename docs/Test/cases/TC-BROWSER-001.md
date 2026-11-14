@@ -17,7 +17,7 @@ Nine scenarios cover:
 5. Search normalization, both Chinese source labels, Related results, and category URL state. A new query from Related returns to Best matches; clearing it restores the catalogue, including when opening a stale blank Related URL.
 6. Exact four-decimal and large-price previews; invalid exponent quantities.
 7. A disappeared selected price stays unknown without retailer fallback; its card clearly reports unavailable pricing.
-8. Five-route layouts at four widths, unclipped prices, mobile navigation, and keyboard skip link.
+8. Five-route layouts at four widths, unclipped prices, mobile navigation to the working Saved page, and keyboard skip link.
 9. No JavaScript or console errors in the main browser context.
 
 The script stops its app and feed server on completion or failure. Artifacts go

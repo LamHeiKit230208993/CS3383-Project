@@ -1,8 +1,11 @@
 # Data and Feasibility Review
 
-Updated: 29 October 2026. The source-inspection observations below remain dated 17 October 2026.
+Updated: 6 November 2026. The source-inspection observations below remain dated 17 October 2026.
 
-Status: Source inspection was completed on 17 October 2026. J01–J04 implementation checks have since passed; see the [test catalogue](Test/test-case-catalog.md) for dated evidence. The wider app scope and later jobs remain incomplete.
+Status: Source inspection was completed on 17 October 2026. J01–J04 checks have
+passed. J05–J08 implementation and verification are in progress under the rules
+agreed on 6 November 2026. See the [test catalogue](Test/test-case-catalog.md) for
+dated evidence. The wider app scope and later jobs remain incomplete.
 
 The [project scope](project-scope.md) is the main record of team decisions. This file explains feasibility; it does not add, remove, or defer selected features.
 
@@ -10,7 +13,11 @@ The [project scope](project-scope.md) is the main record of team decisions. This
 
 The planned app is feasible in principle, subject to data checks and clear feature rules. Search, comparison, saved items, lists, and user-set reminders have a clear basis. Chat must use checked price results.
 
-The selected scope also includes budgets, list export/import, three languages, high-contrast display, and offline use. The app has one local user, no accounts, and no cloud saving. Each imported list is a separate copy. These selected features still need work and testing.
+The selected scope also includes budgets, list export/import, three languages,
+high-contrast display, and offline use. The app has one local user, no accounts,
+and no cloud saving. Budgets are part of the current J05–J08 implementation.
+Separate-copy list transfer, full UI translation, and offline reopening remain
+later work. Each selected feature still needs its own acceptance checks.
 
 Spring Boot is chosen. Normal storage must survive restart. First alerts/reminders appear inside the active app; first offline use is read-only saved-list review with live price refresh and remote chat disabled.
 
@@ -39,7 +46,13 @@ This download had no duplicate product codes, no missing name label in the three
 
 The product fields did not supply separate regular prices, structured pack sizes, delivery charges, stock, branch locations, purchase URLs, offer dates, or a source-date field. Do not assume CSV and JSON have identical fields. Retrieval time must not be presented as the source price date.
 
-Full-catalogue history is not proved impossible. The baseline keeps only selected products' older price records to limit the first implementation. The checked endpoint returned the whole catalogue; smaller filtered downloads were not established. Database growth, historical coverage, search behaviour, AI answers, and alert delivery remain untested.
+Full-catalogue history is not proved impossible. J05 stores only explicitly
+tracked product/retailer observations, with 90-day retention. The checked endpoint
+returned the whole catalogue; smaller filtered downloads were not established.
+J01–J04 tests cover the documented text-search rules. Long-term database growth,
+historical-source coverage, spelling tolerance, AI answers, and external
+notification delivery remain unverified. J06 adds in-app events, not external
+notification delivery.
 
 ## 3. Corrections to the earlier analysis
 
@@ -68,10 +81,10 @@ These corrections explain technical limits. They do not change the team's Build,
 | Dates | Separate source date from retrieval time | Downloading an old file today must not create a new price observation |
 | Updates | Keep the last good data when an import fails | A failed or empty response must not erase valid listings |
 | Chat | Use checked results and handle unknowns | Every amount in the answer matches a source record; an unclear product triggers clarification |
-| Tracked items | Apply ! only to explicitly tracked items | Define the effect of adding, removing, and re-adding an item |
+| Tracked items | Keep wishlist and explicit retailer tracking separate | Saving alone does not track; stopping retains history; re-enabling starts a new period |
 | List sharing | Export and import a separate local copy | Preserve items, quantities, and checked state; reject invalid input; leave existing lists unchanged; later edits do not sync |
 | Local storage | Preserve saved records across app restarts | Save a list and settings, restart the normal app, and read them again |
-| Active-app jobs | Run any agreed scheduled work only while the local app runs | A closed app does not claim collection or delivery. Current imports are manual; startup checks and scheduling remain proposed until milestone decision D05 is resolved |
+| Active-app jobs | Run scheduled checks only while the local app runs | D05 keeps price imports manual. In-app summary checks run every minute and on the Alerts page; no collection or delivery is claimed while closed |
 | Offline use | Read a previously saved list on the viewing device; show saved-data age | Disconnect and reopen the saved list; price refresh and remote chat remain off |
 
 These are acceptance checks, not results from completed tests. Made-up data may test a rule, but it does not verify live data access.
@@ -80,21 +93,21 @@ These are acceptance checks, not results from completed tests. Made-up data may 
 
 Open decisions do not make planned features optional. They define the remaining detail needed to build them consistently.
 
-For the agreed J05–J08 milestone, use the decision register in the
+The user agreed D01–D07 for J05–J08 on 6 November 2026. Use the decision register in the
 [execution plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work).
-Record agreed answers there and link them from this overview. A milestone issue
-does not by itself resolve the questions below or approve conditional features.
+These settled rules are summarised below. Later extensions still need their own
+decisions and evidence. Grouping jobs does not approve conditional features.
 
-| Topic | Decision still needed | Related scope |
+| Topic | Agreed milestone rule or remaining question | Related scope |
 |---|---|---|
-| Tracking | Use explicit tracking, separate from saving a wishlist or list. Before the tracking job, set retailer selection, retained records, and re-addition rules. | R10, R14, R21–R22, R35, R39 |
-| History and dates | Start history at tracking time or include older records? How much data is retained? What source/date label appears on untracked results? | R10, R14, R44 |
-| Alert rules | At or below target, or strictly below? Which earlier price is used? Alert immediately if already met? When can the same price trigger again? | R21–R24 |
-| Morning summary | Which products, time, quiet-hours rule, and missed-run behaviour? First delivery is inside the active app. | R23, R26 |
-| Spending | Planned costs, actual purchases, or both? How are purchases entered? Which comparison price defines savings? | R18, R30–R31, R43 |
+| Tracking | Revised D01 permits one retailer or all retailers for an exact product. LIVE imports enroll new retailers in all-retailer mode. D02 retains history when stopped and starts a new period on re-enable. | R10, R14, R21–R22, R35, R39 |
+| History and dates | Agreed D02–D03: retain 90 days of changed LIVE observations and unknown gaps. A current LIVE catalogue can seed tracking; SAMPLE imports cannot. Retrieval time stays separate from the unknown source date. Historical downloads/charts remain later work. | R10, R14, R44 |
+| Alert rules | Agreed D04: target uses a known price at or below the limit, then rearms only above it; a drop uses adjacent known observations in one period. No comparisons across gaps. Configurable change thresholds and buy/wait advice remain outside this batch. | R21–R24 |
+| Morning summary | Agreed D05: Hong Kong time; defaults quiet 22:00–08:00 and summary 08:00; snooze 24 hours. Persist eligibility/repeat state and catch up once at an eligible active-app check. | R23, R26 |
+| Spending | Agreed D06: current-list estimate versus a weekly/monthly planning limit, with known category subtotals. Purchases, accumulated spending, rollover and actual savings are not implemented. | R18, R30–R31, R43 |
 | Saved-list viewing | How is the list/page saved on the viewing device? First offline use is read-only, with no live price refresh or remote chat. | R48 |
 | Advice and offers | What measured rule supports conditional advice or price comparisons? What happens without enough records? | R11, R16, R20, R35 |
-| Reminders | User-set interval or recorded use rate? How does a purchase or snooze change the next date? | R34, R36–R37 |
+| Reminders | Agreed D07: user-set interval in days and quantity. Initial due is creation plus interval; clear starts a new interval from the action; snooze delays the effective due by 24 hours. Adding to My list does not clear it or record a purchase. | R34, R36–R37 |
 | Project limits | Course marking guide, deadline, team availability, and operating budget. Spring Boot is chosen; other frameworks are backups. | All planned work |
 
 ## 6. Evidence needed before stronger claims

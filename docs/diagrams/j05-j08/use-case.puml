@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 15
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam arrowColor #4b5563
+skinparam rectangleBackgroundColor #f3f4f6
+skinparam rectangleBorderColor #4b5563
+skinparam usecaseBackgroundColor #ffffff
+skinparam usecaseBorderColor #4b5563
+skinparam actorBorderColor #4b5563
+skinparam actorBackgroundColor #f3f4f6
+skinparam noteBackgroundColor #e5e7eb
+skinparam noteBorderColor #4b5563
+skinparam nodesep 14
+skinparam ranksep 30
+
+title Market Desk | local shopper goals through J08
+actor Shopper as shopper
+actor "Consumer Council\nprice feed" as feed
+rectangle "Local Market Desk - one user, H2 file" as App {
+  usecase "Find and compare\naccepted products / offer text" as search
+  usecase "Manage My list\n(quantity, retailer, checked state)" as list
+  usecase "Review planned budget\nand category estimates" as budget
+  usecase "Save / remove\nwishlist products" as wishlist
+  usecase "Track one or all retailers\nfor an exact product" as track
+  usecase "Manage target / drop alerts,\ntiming, read state and snooze" as alerts
+  usecase "Manage interval reminders;\nclear, snooze or add to My list" as reminder
+  usecase "Load checked sample" as sample
+  usecase "Refresh live prices" as refresh
+}
+shopper -- search
+shopper -- list
+shopper -- budget
+shopper -- wishlist
+shopper -- track
+shopper -- alerts
+shopper -- reminder
+shopper -- sample
+shopper -- refresh
+refresh -- feed
+note right of App
+  **Reading this view**
+  Saving, tracking, and adding to My list
+  are separate actions.
+
+  History records changes after accepted
+  LIVE imports. The sample is excluded.
+
+  Alerts and reminders are in-app.
+  A closed app collects and delivers nothing.
+
+  Budgets describe a shopping plan,
+  not purchases or actual spending.
+
+  Offer text is preserved; promotional
+  discounts are not calculated.
+
+  The feed is a supporting actor on the right.
+  Only the shopper starts a refresh.
+end note
+@enduml

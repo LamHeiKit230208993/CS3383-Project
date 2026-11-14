@@ -1,0 +1,110 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <header class="page-heading">
+    <p class="eyebrow">A GENTLE NUDGE</p>
+    <h1>Reminders</h1>
+    <p class="intro">Choose when to check a product again. A reminder is a plan, not a purchase record.</p>
+  </header>
+
+  <p class="warning" th:if="${overview.quietHours}">
+    Due status is hidden during quiet hours. It will be available after
+    <span th:text="${format.time(overview.nextAllowedAt)}"></span>.
+  </p>
+  <div class="data-layout">
+    <section class="panel" aria-labelledby="reminder-create-title">
+      <h2 id="reminder-create-title">Set a reminder</h2>
+      <p th:if="${candidate == null and importStatus == null}">
+        Load a catalogue, then open a product and choose Set reminder.
+      </p>
+      <div th:if="${candidate != null}">
+        <p class="product-brand" th:text="${candidate.brand.en}"></p>
+        <h3 th:text="${candidate.name.en}"></h3>
+        <p class="product-code" th:text="${candidate.code}"></p>
+        <form class="add-form" th:action="@{/reminders/create}" method="post">
+          <input type="hidden" name="code" th:value="${candidate.code}">
+          <label for="reminder-quantity">Packs to remind me about</label>
+          <input id="reminder-quantity" type="number" name="quantity" min="1" max="999" step="1"
+                 value="1" inputmode="numeric" autocomplete="off" required>
+          <label for="reminder-interval">Remind me again after (days)</label>
+          <input id="reminder-interval" type="number" name="intervalDays" min="1" step="1"
+                 value="30" inputmode="numeric" autocomplete="off" required>
+          <label for="reminder-retailer">Retailer choice</label>
+          <select id="reminder-retailer" name="retailerCode">
+            <option value="">Automatic lowest when added</option>
+            <option th:each="listing : ${candidate.listings}" th:value="${listing.retailerCode}"
+                    th:text="${listing.retailerCode + (listing.price == null ? ' · no current price' : ' · ' + format.money(listing.price))}"></option>
+          </select>
+          <p class="helper">The interval starts when you save this reminder. Choose an optional retailer to keep the same choice when you add the packs later. A missing price stays unknown.</p>
+          <button class="button primary" type="submit">Save reminder</button>
+        </form>
+      </div>
+      <p class="helper" th:if="${candidate == null and importStatus != null}">
+        Choose a product in Discover, then open Compare prices and select Set reminder.
+      </p>
+      <a class="button secondary" th:href="@{/}" th:if="${candidate == null}">Find a product</a>
+    </section>
+
+    <section class="panel" aria-labelledby="reminder-list-title">
+      <div class="section-heading">
+        <h2 id="reminder-list-title">Your reminders</h2>
+        <span th:text="${overview.reminders.size() + ' saved'}"></span>
+      </div>
+      <div class="empty-state" th:if="${overview.reminders.isEmpty()}">
+        <h3>No reminders yet.</h3>
+        <p>Set one from a product comparison when you want a future nudge.</p>
+      </div>
+      <article class="list-item" th:each="reminder : ${overview.reminders}">
+        <div class="list-item-heading">
+          <div>
+            <h3><a th:href="@{/products/{code}(code=${reminder.productCode})}"
+                   th:text="${reminder.productName}"></a></h3>
+            <p class="helper" th:text="${(reminder.brandName.isBlank() ? '' : reminder.brandName + ' · ') + reminder.productCode}"></p>
+          </div>
+          <span class="small-tag" th:if="${reminder.due}">Due now</span>
+        </div>
+        <p class="helper" th:text="${reminder.quantity + ' packs · every ' + reminder.intervalDays + ' days'}"></p>
+        <p class="selection-mode" th:text="${reminder.selectedRetailerCode == null ? 'Automatic lowest at time of adding' : 'Your retailer: ' + reminder.selectedRetailerCode}"></p>
+        <p class="helper" th:if="${!reminder.currentPriceAvailable}">
+          No current price for this choice. The amount stays unknown and your reminder is kept.
+        </p>
+        <p class="helper" th:if="${reminder.currentPriceAvailable}">
+          A current listing is available. The price is checked again when you add to My list.
+        </p>
+        <p class="warning" th:if="${!reminder.productActive}">
+          This product is no longer in the current catalogue. You can keep or delete this reminder, but cannot add it to My list.
+        </p>
+        <p class="helper" th:if="${overview.quietHours}">Due status is hidden during quiet hours.</p>
+        <p class="helper" th:if="${!overview.quietHours and reminder.due}">This reminder is due. The app checks this page when opened.</p>
+        <p class="helper" th:if="${!overview.quietHours and !reminder.due}">
+          Next check: <time th:text="${format.time(reminder.effectiveDueAt)}"></time>
+          <span th:if="${reminder.effectiveDueAt.isAfter(reminder.nextDueAt)}"> (snoozed)</span>
+        </p>
+        <p class="helper">Clear means handled and starts the next interval from now. Snooze moves this reminder by 24 hours.</p>
+        <div class="inline-actions">
+          <form th:action="@{/reminders/{id}/add(id=${reminder.id})}" method="post">
+            <button class="button primary" type="submit" th:disabled="${!reminder.productActive}"
+                    th:attr="aria-label=${'Add ' + reminder.quantity + ' packs of ' + reminder.productName + ' to My list'}">
+              Add to My list
+            </button>
+          </form>
+          <form th:action="@{/reminders/{id}/snooze(id=${reminder.id})}" method="post">
+            <button class="button secondary" type="submit"
+                    th:attr="aria-label=${'Snooze reminder for ' + reminder.productName + ' for 24 hours'}">Snooze 24 hours</button>
+          </form>
+          <form th:action="@{/reminders/{id}/clear(id=${reminder.id})}" method="post">
+            <button class="button secondary" type="submit"
+                    th:attr="aria-label=${'Clear reminder for ' + reminder.productName}">Clear</button>
+          </form>
+        </div>
+        <details>
+          <summary>Delete reminder…</summary>
+          <form th:action="@{/reminders/{id}/delete(id=${reminder.id})}" method="post">
+            <p>Delete this reminder from this device?</p>
+            <button class="button danger" type="submit"
+                    th:attr="aria-label=${'Delete reminder for ' + reminder.productName}">Delete reminder</button>
+          </form>
+        </details>
+      </article>
+      <p class="source-note">Due status is checked when this page opens. The app does not send reminders while it is closed. Adding packs to My list does not clear the reminder or record a purchase.</p>
+    </section>
+  </div>
+</th:block>

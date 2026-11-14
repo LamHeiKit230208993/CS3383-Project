@@ -1,5 +1,8 @@
 # J01–J04 UML — official PlantUML
 
+This is the historical first milestone. See the [current UML index](../README.md)
+for the J05–J08 extension and its review status.
+
 Updated: 25 October 2026. These diagrams describe the independent Market Desk
 implementation for issue #13. They use the official **PlantUML 1.2026.9 Java JAR**
 for final exports and the achromatic Print palette. The `.puml` files are the

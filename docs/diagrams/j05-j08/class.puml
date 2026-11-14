@@ -1,0 +1,147 @@
+@startuml
+top to bottom direction
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #f3f4f6
+skinparam classBorderColor #4b5563
+skinparam arrowColor #4b5563
+skinparam noteBackgroundColor #e5e7eb
+skinparam noteBorderColor #4b5563
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor #ffffff
+skinparam packageBorderColor #e5e7eb
+skinparam nodesep 35
+skinparam ranksep 45
+hide circle
+hide empty methods
+
+title Market Desk | persisted data through J08
+
+class ShoppingListEntity {
+  id: Long {PK}
+  name: String {unique, required}
+}
+class ShoppingListItemEntity {
+  id: Long {PK}
+  quantity: int
+  checked: boolean
+  selectedRetailerCode: String {nullable}
+}
+class ProductEntity {
+  code: String {PK}
+  brand, name: LocalizedLabel
+  category1, category2, category3: LocalizedLabel
+  active: boolean
+  trackAllRetailers: Boolean {nullable, defaults off}
+}
+class RetailerListingEntity {
+  id: Long {PK}
+  retailerCode: String
+  price: BigDecimal {nullable}
+}
+class OfferEntity {
+  id: Long {PK}
+  text: LocalizedLabel
+}
+class SavedProductEntity {
+  productCode: String {PK, FK}
+  savedAt: Instant
+}
+class ReminderEntity {
+  id: Long {PK}
+  quantity, intervalDays: int
+  selectedRetailerCode: String {nullable}
+  nextDueAt: Instant
+  snoozedUntil: Instant {nullable}
+}
+class TrackingEntity {
+  id: Long {PK}
+  retailerCode: String
+  enabled: boolean
+  startedAt: Instant
+  stoppedAt: Instant {nullable}
+  targetPrice: BigDecimal {nullable}
+  targetArmed, dropEnabled: boolean
+  hasObservedPriceState: boolean
+  lastObservedPrice: BigDecimal {nullable}
+  lastObservedAt: Instant {nullable}
+}
+class PriceObservationEntity {
+  id: Long {PK}
+  price: BigDecimal {nullable = unknown gap}
+  observedAt: Instant {retrieval time}
+  sourceUrl, sourceChecksum: String
+}
+class AlertEventEntity {
+  id: Long {PK}
+  observationId: Long {nullable; no FK}
+  type: String {TARGET / DROP / SUMMARY}
+  price: BigDecimal {nullable}
+  observedAt: Instant {nullable}
+  previousPrice: BigDecimal {nullable}
+  previousObservedAt: Instant {nullable}
+  createdAt, availableAt: Instant
+  readAt, snoozedUntil, summarizedAt: Instant {nullable}
+  summaryDate: LocalDate {nullable, unique}
+  summaryCount: Integer {nullable}
+}
+class AcceptedImportEntity {
+  id: Long {PK}
+  origin, sourceUrl, checksum: String
+  retrievedAt: Instant
+  sourceDate: LocalDate {nullable}
+  productCount, listingCount, offerCount: int
+}
+class NotificationSettingsEntity {
+  id: Long {PK}
+  quietStart, quietEnd: LocalTime
+  summaryTime: LocalTime
+}
+class BudgetSettingsEntity {
+  id: Long {PK}
+  period: BudgetPeriod {WEEKLY / MONTHLY}
+  limitAmount: BigDecimal
+}
+class LocalizedLabel <<embedded value>> {
+  en: String {English}
+  zhHant: String {Traditional Chinese}
+  zhHans: String {Simplified Chinese}
+}
+
+ShoppingListEntity "1" *-right- "0..*" ShoppingListItemEntity
+ShoppingListItemEntity "0..*" -right-> "1" ProductEntity
+ProductEntity "1" -right- "0..*" RetailerListingEntity
+RetailerListingEntity "1" *-right- "0..*" OfferEntity
+ProductEntity "1" -down- "0..1" SavedProductEntity : wishlist
+ProductEntity "1" -down- "0..*" ReminderEntity
+ProductEntity "1" -down- "0..*" TrackingEntity
+TrackingEntity "1" -right- "0..*" PriceObservationEntity
+TrackingEntity "0..1" -right- "0..*" AlertEventEntity
+ProductEntity "1" *-up- "0..5" LocalizedLabel : embeds
+OfferEntity "1" *-up- "0..1" LocalizedLabel : embeds
+
+ShoppingListEntity -[hidden]down-> BudgetSettingsEntity
+BudgetSettingsEntity -[hidden]right-> ReminderEntity
+ReminderEntity -[hidden]right-> TrackingEntity
+SavedProductEntity -[hidden]down-> AcceptedImportEntity
+AcceptedImportEntity -[hidden]right-> NotificationSettingsEntity
+NotificationSettingsEntity -[hidden]right-> AlertEventEntity
+
+legend bottom left
+  |= Database constraints / mapping |= Service rules (not database CHECK constraints) |
+  | Required product FKs: list item, saved entry, reminder, tracking. | Quantity 1..999; exact products are never merged. |
+  | Observation requires a tracking FK; alert tracking FK is optional. | Only one enabled period per product / retailer; re-enable starts a new period. |
+  | Unique: list name; (list, product); (product, retailer listing). | Retain observations for 90 days; retain deduplication state across pruning. |
+  | Unique alert: (tracking period, observationId, type), when ID is present. | LIVE imports only; unchanged prices add no history; unknowns break comparisons. |
+  | Summary date is unique; observationId may be null on a target event. | Armed target state and period locking prevent repeats without an observation ID. |
+  | Prices and limits: DECIMAL(19,4); optional values shown above. | Target rearms above limit; drops need adjacent known observations in one period. |
+  | Retailer-code preferences and observationId have no FK. | Null preference means Automatic lowest; explicit missing price stays unknown. |
+  | Embedded language columns are nullable; no LocalizedLabel table. | Import requires five product labels in all three languages; offers may be blank. |
+  | PK identifies each settings record and accepted import. | Settings / metadata use ID 1; no account or purchase ledger exists. |
+  | Diamonds show JPA-owned children or embedded values. | Observation time is retrieval time; a source price date is not supplied. |
+endlegend
+@enduml

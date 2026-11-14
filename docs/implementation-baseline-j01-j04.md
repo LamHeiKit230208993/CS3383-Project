@@ -1,6 +1,9 @@
 # Market Desk: J01–J04 implementation
 
-Updated: 29 October 2026. This records the J01–J04 implementation for issue #13, merged through PR #15. It describes the implemented baseline. The [J05–J08 milestone plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md) describes the next work; its proposed records and operations are not implemented interfaces.
+Updated: 6 November 2026. This records the J01–J04 baseline for issue #13,
+merged through PR #15. The [J05–J08 implementation guide](implementation-j05-j08.md)
+describes the extension now under verification. Read both for the current branch;
+this file preserves the first milestone's behaviour and evidence.
 
 ## What the first baseline does
 
@@ -8,7 +11,10 @@ The working flow is **load prices → search → compare one exact product → a
 
 The app uses Spring Boot, Thymeleaf, plain HTML/CSS, Spring Data JPA, and a local H2 file database. It does not use React or a separate frontend build. The browser submits forms to Java controllers. Application services own validation, comparison, and totals. Repositories save the records.
 
-This milestone does not add accounts, cloud saving, AI, tracking history, notifications, budgets, list transfer, or offline phone storage. Saved, Updates, and Ask are marked planned. Their earlier demo controls are not working baseline features.
+J01–J04 did not add tracking history, alerts, budgets, or reminders. Those are now
+implemented in the J05–J08 extension and need its own checks. Accounts, cloud
+saving, AI chat, list transfer, and offline phone storage remain outside the
+implemented baseline. Ask remains a planned screen.
 
 ## Records and rules
 
@@ -57,7 +63,7 @@ Retrieval time means when this app obtained the response. It is not the source p
 | `GET /products/{code}` | Exact product and retailer comparison |
 | `GET /list` | Persisted My list and known subtotal |
 | `GET /data` | Accepted source details and manual import actions |
-| `GET /planned/{feature}` | Clear later-work placeholder |
+| `GET /planned/ask` | Clear later-work placeholder |
 | `POST /data/sample` | Load the checked historical excerpt |
 | `POST /data/refresh` | Fetch and accept live data if valid |
 | `POST /list/items` | Add product and quantity |
@@ -79,7 +85,12 @@ selection target. Chinese offer details are a separate disclosure and do not
 change the selected retailer. Missing-price cards show No current price and
 remain unavailable for a new explicit choice.
 
-Desktop navigation groups working shopping pages under **Shopping**, planned alerts/chat under **Assistance**, and **Price data & updates** under **App**. Saved remains labelled planned. Data uses the same selected-row treatment as the other pages. Phone navigation uses Discover, List, Data, and More; More holds the planned features.
+The J05–J08 extension updates navigation: Shopping contains Discover, My list,
+Saved, and Budget; Assistance contains Alerts, Reminders, and planned Ask; App
+contains Price data & updates. Phone navigation uses Discover, My list, Price
+data, and More. See the [extension guide](implementation-j05-j08.md#web-interface)
+for its routes. Old `/planned/saved` and `/planned/updates` links redirect to
+Saved and Alerts.
 
 ### Code structure
 
@@ -108,7 +119,13 @@ The [UML sources and exports](diagrams/baseline/README.md) describe this milesto
 
 See the [setup guide](SETUP.md) for run commands and database configuration. See the [test catalogue](Test/test-case-catalog.md) for automated scenarios and dated observed results. A source file, diagram, or successful compile alone does not prove J01–J04 complete.
 
-J01–J04 implementation checks first passed on 24 October 2026. PR #15 includes the subsequent search-mode and numeric-price-precision fixes. The latest recorded full Maven package run on 25 October passed 47 tests, including the direct database-write rollback case. All 9 saved Chrome scenarios passed against the rebuilt JAR after those fixes. The dated test catalogue separates these runs from earlier baseline, refinement, live-feed, and process-restart evidence. This 29 October documentation update adds no test results. J05–J08 are the agreed next milestone; J05–J12 remain unimplemented work.
+J01–J04 implementation checks first passed on 24 October 2026. PR #15 includes the
+subsequent search-mode and numeric-price-precision fixes. The 25 October full
+Maven package run passed 47 tests, including direct database-write rollback.
+All 9 saved Chrome scenarios passed against that rebuilt JAR. These are baseline
+results; they do not verify the J05–J08 extension or later edits. Current results
+belong in the [test catalogue](Test/test-case-catalog.md) and dated history.
+J09–J12 remain later work.
 
 Issue #13 also requires the method shown in the course tutorial. The data model, application classes, and sequence diagrams cover the implementation and requested flow, but the issue does not identify that method. Confirm the tutorial-specific method with the team before claiming that this course requirement is verified.
 

@@ -3,6 +3,8 @@ package com.pricewatch.catalog.repository;
 import com.pricewatch.catalog.persistence.ProductEntity;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
@@ -10,6 +12,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<ProductEntity, String> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select product from ProductEntity product where product.code = :code")
+    Optional<ProductEntity> findLockedByCode(String code);
+
+    List<ProductEntity> findAllByTrackAllRetailersTrueOrderByCode();
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update ProductEntity product set product.active = false where product.active = true")
     int deactivateAll();

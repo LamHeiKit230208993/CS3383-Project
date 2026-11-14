@@ -1,6 +1,6 @@
 # Baseline Feature and Job Plan
 
-Updated: 29 October 2026.
+Updated: 6 November 2026.
 
 Read the [project scope](../project-scope.md), [baseline decisions](baseline-proposal.md), and [JSON sample check](data-sample-review.md) first. The scope decides what is included. This file sets the build order and completion checks. A plan entry is not evidence that a feature works.
 
@@ -79,31 +79,35 @@ J04 completes the first milestone. UI work can start as a small sketch while J01
 
 ## 5. Following baseline jobs
 
-**Next milestone: J05–J08 in one shared issue.** Read the
+**Current milestone: J05–J08 in issue #17, locally implemented and checked; review/merge pending.** Read the
 [milestone execution plan](tracking-alerts-budgets-reminders-j05-j08.md) before
 assigning or implementing any of these jobs. It defines workstreams, shared
-contracts, unresolved decisions, and the combined completion checks. The issue
+contracts, the D01–D07 rules agreed on 6 November 2026, and combined completion checks. The issue
 can use separate linked PRs; grouping jobs does not remove their dependencies.
 J09–J12 remain later work. Conditional scope rows keep their existing conditions.
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
-| J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; removal stops new collection | J01-J04 |
+| J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; stopping tracking stops new collection without unsaving the product | J01-J04 |
 | J06 | In-app target/drop alerts, quiet hours, snooze, and summary | One current price can meet a target; a drop uses a stated earlier price; repeat imports do not repeat an event; closed-app periods are not reported as delivered alerts | J05 |
-| J07 | List totals, planned budgets, and category totals | Quantities affect totals; missing prices make the total incomplete; estimates are not labelled actual spending | J04 |
+| J07 | List totals, planned budgets, and category totals | Preserve explicit retailer choices; Automatic lowest applies only in that mode; quantities affect totals; missing prices keep the result incomplete; estimates are not actual spending | J04 |
 | J08 | User-set reminders, add-to-list, clear, and snooze | Reminders run only in the active app; actions set the agreed next due date and preserve product/quantity | J04, J06 |
 | J09 | Text chat using checked search/comparison operations | The answer uses checked product, retailer, and amount; unclear requests ask for a choice; AI failure still leaves the normal comparison usable | J03 |
 | J10 | Separate-copy list sharing | Export and import a chosen list; preserve product/quantity/checked state; invalid input leaves existing lists unchanged | J04 |
 | J11 | Read-only saved-list view without a connection | Save on the viewing device, disconnect, and reopen the list; no fresh-price or remote-chat claim; saved amounts show their age | J04 |
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
-Within the next milestone, J05 and J07 can proceed in parallel after their own
-decision gates are resolved. J06 follows J05; J08 uses the saved list and J06's
+Within this milestone, J05 and J07 can proceed in parallel under the agreed
+D01–D07 rules. J06 follows J05; J08 uses the saved list and J06's
 agreed notification behaviour. Integrate and check the four jobs together before
 closing the issue. J09 does not need history, but is outside this milestone.
 J10's transfer format remains a later decision.
 
-Before J05, set history retention, re-addition, and recording-date rules. Before J06, set the target boundary, earlier-price rule, first-check alert, repeat reset, summary time, and quiet-hours behaviour. These decisions are listed in the [feasibility review](../feasibility-review-simple.md#5-open-decisions). Agents must not each choose different rules.
+Use the [agreed decision register](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
+for retention, periods, target/drop rules, repeat reset, timing, budgets, and
+reminders. Agents must not each choose different rules. The
+[feasibility review](../feasibility-review-simple.md#5-open-decisions) separates
+these settled milestone rules from questions that remain for later work.
 
 Background device/cloud notifications, offline editing, and price prediction are not part of these jobs.
 
@@ -111,9 +115,10 @@ Background device/cloud notifications, offline editing, and price prediction are
 
 For existing record fields, operations, routes, money, and failure behaviour,
 use the [J01–J04 implementation guide](../implementation-baseline-j01-j04.md).
-For J05–J08 records and proposed operations, use the
+For current J05–J08 routes, records, operations, and limits, use the
+[extension implementation guide](../implementation-j05-j08.md). The
 [milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#shared-records-and-operations)
-after its relevant decisions are resolved. J09 chat contracts remain later work.
+defines its approved rules and acceptance checks. J09 chat contracts remain later work.
 App code must search and calculate before sending checked facts to an LLM.
 
 ## 7. Checks and current state
@@ -122,9 +127,15 @@ Use the existing testing skill and Maven test setup for code changes. A UI pictu
 
 The independent J01–J04 implementation now replaces the temporary Market Desk interactions with a persisted search-to-list flow. It uses Spring Data JPA and an H2 file database, explicit sample/live imports, multilingual source-label search, exact-product comparison, and one saved My list. See the [implementation guide](../implementation-baseline-j01-j04.md) and [test catalogue](../Test/test-case-catalog.md) for the implementation contract and observed checks.
 
-**J01–J04: PR #15 is merged**, including the search-mode and numeric-price-precision fixes. The latest recorded full Maven package run on 25 October passed all **47 tests**, including direct database-write rollback; all **9 Chrome scenarios** also passed against an isolated app and local feed. See the [dated test history](../Test/history.md#pr-15-review-regressions--25-october-2026) for evidence and limits. No new tests were run for this planning update. These results do not complete every scope requirement under the related F/R references.
+**J01–J04: PR #15 is merged**, including the search-mode and numeric-price-precision fixes. The 25 October baseline Maven package run passed all **47 tests**, including direct database-write rollback; all **9 Chrome scenarios** also passed against an isolated app and local feed. See the [dated test history](../Test/history.md#pr-15-review-regressions--25-october-2026) for evidence and limits. These historical results do not verify later edits or complete every scope requirement under the related F/R references.
 
 
-J04 includes the minimum per-item lowest-price subtotal needed to review the list. J07 still owns planned budgets and category totals. Wishlist, tracking history, alerts, reminders, AI chat, list transfer, offline reopening, and full UI translation remain J05–J12 work. Planned screens do not complete those jobs.
+J04 includes the minimum effective-price subtotal needed to review the list.
+This branch now adds J05–J08 wishlist/tracking, alerts, planned budgets/category
+totals, and reminders. Local validation on 6 November passed 86 Java tests,
+20 browser scenarios and an old-to-new database upgrade check; use the
+[test catalogue](../Test/test-case-catalog.md) for current evidence. AI chat,
+list transfer, offline reopening, and full UI translation remain J09–J12 work.
+Neither a working screen nor the earlier baseline test results close issue #17.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.
