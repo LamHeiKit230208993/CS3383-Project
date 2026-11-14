@@ -1,0 +1,59 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="reminders-title">
+    <div class="page-heading">
+      <p class="eyebrow">RESTOCK ON YOUR RHYTHM</p>
+      <h1 id="reminders-title">Reminders</h1>
+      <p class="intro">User-set intervals. Reminders run only while the app is open; nothing is delivered in the background.</p>
+    </div>
+
+    <div class="panel">
+      <div class="section-heading">
+        <h2>Your reminders</h2>
+        <span th:text="${reminders.size() + ' reminders'}"></span>
+      </div>
+      <div class="empty-state" th:if="${reminders.isEmpty()}">
+        <p>No reminders yet. Add one below using a product code from a comparison page.</p>
+      </div>
+      <article class="reminder-item" th:each="reminder : ${reminders}" th:classappend="${reminder.active ? '' : ' is-cleared'}">
+        <div class="list-item-heading">
+          <div>
+            <h3><a th:href="@{/products/{code}(code=${reminder.productCode})}" th:text="${reminder.productName}"></a></h3>
+            <p class="helper" th:text="${'Qty ' + reminder.quantity + ' · every ' + reminder.intervalDays + ' days · snooze ' + reminder.snoozeDays + ' days'}"></p>
+            <p class="helper" th:if="${reminder.active}" th:text="${'Next due ' + format.time(reminder.nextDueAt)}"></p>
+            <p class="helper" th:unless="${reminder.active}">Cleared</p>
+            <p class="warning" th:if="${reminder.due}">Due now. Add the item to My list, snooze, or clear it.</p>
+          </div>
+        </div>
+        <div class="reminder-actions" th:if="${reminder.active}">
+          <form th:action="@{/reminders/{id}/add-to-list(id=${reminder.id})}" method="post" class="inline-form">
+            <button class="button primary" type="submit">Add to My list</button>
+          </form>
+          <form th:action="@{/reminders/{id}/snooze(id=${reminder.id})}" method="post" class="inline-form">
+            <button class="button secondary" type="submit">Snooze</button>
+          </form>
+          <form th:action="@{/reminders/{id}/clear(id=${reminder.id})}" method="post" class="inline-form">
+            <button class="button secondary" type="submit">Clear</button>
+          </form>
+        </div>
+      </article>
+
+      <form class="reminder-form" th:action="@{/reminders}" method="post">
+        <h3>Add a reminder</h3>
+        <label>Product code
+          <input type="text" name="code" required placeholder="e.g. P000000124">
+        </label>
+        <label>Quantity
+          <input type="number" name="quantity" min="1" max="999" value="1" required>
+        </label>
+        <label>Interval (days)
+          <input type="number" name="intervalDays" min="1" value="30" required>
+        </label>
+        <label>Snooze (days)
+          <input type="number" name="snoozeDays" min="1" value="1" required>
+        </label>
+        <button class="button primary" type="submit">Add reminder</button>
+      </form>
+    </div>
+    <p class="source-note">A reminder does not prove household use and does not record a purchase. Adding to the list reuses the list's quantity limit and conflict rules.</p>
+  </section>
+</th:block>

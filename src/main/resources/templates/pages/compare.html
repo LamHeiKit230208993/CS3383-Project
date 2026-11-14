@@ -20,6 +20,16 @@
         <p class="product-code" th:text="${product.code}" translate="no"></p>
         <p class="helper">Pack details are part of the original product name.</p>
         <p class="warning" th:unless="${product.active}">Not in the accepted catalogue. Saved identity kept; current price unknown.</p>
+        <div class="tracking-actions">
+          <p class="helper">Saving keeps the product for later. Tracking records its retailer prices on each import.</p>
+          <form th:action="@{/saved/{code}/save(code=${product.code})}" method="post" class="inline-form">
+            <button class="button secondary" type="submit">Save to wishlist</button>
+          </form>
+          <form th:action="@{/tracking/{code}/enable(code=${product.code})}" method="post" class="inline-form" th:if="${product.active}">
+            <button class="button secondary" type="submit">Start tracking prices</button>
+          </form>
+          <a class="button secondary" th:href="@{/saved}">Open Saved &amp; tracked →</a>
+        </div>
         <form
           id="add-item-form"
           class="add-form"

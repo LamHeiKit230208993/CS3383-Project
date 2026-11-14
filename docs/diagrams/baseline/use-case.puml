@@ -30,6 +30,11 @@ rectangle "Local Market Desk\n(one user; H2 file)" {
   usecase "Choose retailer or automatic\nlowest for a list item" as choose
   usecase "Manage My list\n(add, remove, quantity,\nchecked state)" as manage
   usecase "View saved My list\nafter restart and see\nthe known subtotal" as view
+  usecase "Save to wishlist\n(not tracking)" as wishlist
+  usecase "Track a product and\nretain retailer prices\nacross imports" as track
+  usecase "Review planned budget\nand category totals" as budget
+  usecase "View in-app target/drop\nalerts, quiet hours,\nsnooze, summary" as alerts
+  usecase "Manage reminders\n(add to list, clear, snooze)" as reminders
 }
 
 shopper -- sample
@@ -40,6 +45,16 @@ shopper -- compare
 shopper -- choose
 shopper -- manage
 shopper -- view
+shopper -- wishlist
+shopper -- track
+shopper -- budget
+shopper -- alerts
+shopper -- reminders
 ' Supporting actor on the right; association remains undirected.
 refresh -- provider
+' Background/cloud notifications and accounts remain out of scope.
+note bottom of alerts
+  Alerts, summaries, and reminders are delivered only inside the
+  running app. Background/device/cloud push is out of scope.
+end note
 @enduml

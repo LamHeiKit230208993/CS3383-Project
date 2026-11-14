@@ -131,15 +131,10 @@ public class ShoppingService {
     private ItemView toView(ShoppingListItemEntity item) {
         ProductView product = ProductView.from(item.getProduct());
         String selectedRetailer = item.getSelectedRetailerCode();
-        ListingView effectiveListing = selectedRetailer == null
-                ? product.lowestListings().stream().findFirst().orElse(null)
-                : product.listings().stream()
-                        .filter(listing -> listing.retailerCode().equals(selectedRetailer))
-                        .findFirst().orElse(null);
+        ListingView effectiveListing = EffectivePrice.listingFor(product, selectedRetailer);
         BigDecimal unitPrice = effectiveListing == null ? null : effectiveListing.price();
         BigDecimal lineTotal = unitPrice == null ? null : unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
-        String retailer = selectedRetailer != null ? selectedRetailer
-                : effectiveListing == null ? null : effectiveListing.retailerCode();
+        String retailer = EffectivePrice.retailerCode(product, selectedRetailer);
         return new ItemView(product, item.getQuantity(), item.isChecked(), unitPrice, retailer, lineTotal,
                 selectedRetailer);
     }

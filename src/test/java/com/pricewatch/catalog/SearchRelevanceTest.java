@@ -5,6 +5,9 @@ import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.OfferRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.catalog.repository.RetailerListingRepository;
+import com.pricewatch.tracking.repository.PriceObservationRepository;
+import com.pricewatch.tracking.repository.TrackingChoiceRepository;
+import com.pricewatch.tracking.repository.WishlistEntryRepository;
 import com.pricewatch.shopping.repository.ShoppingListItemRepository;
 import com.pricewatch.shopping.repository.ShoppingListRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +29,9 @@ class SearchRelevanceTest {
     @Autowired private OfferRepository offerRepository;
     @Autowired private RetailerListingRepository listingRepository;
     @Autowired private ProductRepository productRepository;
+    @Autowired private PriceObservationRepository observationRepository;
+    @Autowired private TrackingChoiceRepository trackingRepository;
+    @Autowired private WishlistEntryRepository wishlistRepository;
     @Autowired private ShoppingListItemRepository itemRepository;
     @Autowired private ShoppingListRepository listRepository;
     @MockitoBean private ConsumerCouncilSourceClient sourceClient;
@@ -33,6 +39,9 @@ class SearchRelevanceTest {
     @BeforeEach
     void setUpCatalog() {
         itemRepository.deleteAllInBatch();
+        observationRepository.deleteAllInBatch();
+        trackingRepository.deleteAllInBatch();
+        wishlistRepository.deleteAllInBatch();
         listRepository.deleteAllInBatch();
         importRepository.deleteAllInBatch();
         offerRepository.deleteAllInBatch();

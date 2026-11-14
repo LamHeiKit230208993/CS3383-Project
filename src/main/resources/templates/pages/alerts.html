@@ -1,0 +1,98 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="alerts-title">
+    <div class="page-heading">
+      <p class="eyebrow">WHILE THE APP IS OPEN</p>
+      <h1 id="alerts-title">Alerts</h1>
+      <p class="intro">Target and drop alerts are checked after each valid import, only while the app runs. No background or cloud notifications.</p>
+    </div>
+
+    <p class="warning" th:if="${alerts.quietHours}">Quiet hours (22:00–07:00). New alerts are stored and will appear after 07:00.</p>
+
+    <div class="panel" th:if="${!alerts.summary.events.isEmpty()}">
+      <div class="section-heading">
+        <h2>Morning summary</h2>
+        <span th:text="${'since 08:00 · ' + alerts.summary.events.size() + ' events'}"></span>
+      </div>
+      <ul class="summary-list">
+        <li th:each="event : ${alerts.summary.events}"
+            th:text="${event.productName + ' · ' + event.retailerCode + ' · ' + format.money(event.price) + ' · ' + event.ruleType}"></li>
+      </ul>
+      <p class="source-note">Events are recorded when the app evaluates them. A closed-app period is not shown as a delivered alert.</p>
+    </div>
+
+    <div class="panel">
+      <div class="section-heading">
+        <h2>Active alerts</h2>
+        <span th:text="${alerts.events.size() + ' events'}"></span>
+      </div>
+      <div class="empty-state" th:if="${alerts.events.isEmpty()}">
+        <p>No alerts right now. Add a rule below and it will be checked after the next import.</p>
+      </div>
+      <article class="alert-event" th:each="event : ${alerts.events}" th:classappend="${event.visible ? '' : ' is-hidden-alert'}">
+        <div class="list-item-heading">
+          <div>
+            <h3><a th:href="@{/products/{code}(code=${event.productCode})}" th:text="${event.productName}"></a></h3>
+            <p class="helper" th:text="${event.ruleType + ' · ' + event.retailerCode + ' · ' + format.money(event.price)}"></p>
+            <p class="helper" th:text="${'Fired ' + format.time(event.firedAt)}"></p>
+          </div>
+          <div class="alert-actions">
+            <form th:action="@{/alerts/events/{id}/acknowledge(id=${event.id})}" method="post" class="inline-form">
+              <button class="button secondary" type="submit">Acknowledge</button>
+            </form>
+            <form th:action="@{/alerts/events/{id}/snooze(id=${event.id})}" method="post" class="inline-form">
+              <button class="button secondary" type="submit">Snooze 8h</button>
+            </form>
+          </div>
+        </div>
+        <p class="warning" th:if="${event.snoozedUntil != null and event.snoozedUntil.isAfter(T(java.time.Instant).now())}"
+           th:text="'Snoozed until ' + ${format.time(event.snoozedUntil)}"></p>
+      </article>
+    </div>
+
+    <div class="panel">
+      <div class="section-heading">
+        <h2>Your rules</h2>
+        <span th:text="${alerts.rules.size() + ' rules'}"></span>
+      </div>
+      <div class="empty-state" th:if="${alerts.rules.isEmpty()}">
+        <p>No rules yet. Track a product, then add a target or drop alert.</p>
+      </div>
+      <article class="alert-rule" th:each="rule : ${alerts.rules}">
+        <div class="list-item-heading">
+          <div>
+            <strong th:text="${rule.productName}"></strong>
+            <p class="helper" th:text="${rule.type + ' · ' + rule.retailerCode + (rule.type == 'TARGET' ? ' · target ' + format.money(rule.targetAmount) : '')}"></p>
+          </div>
+          <form th:action="@{/alerts/rules/{id}/delete(id=${rule.id})}" method="post" class="inline-form">
+            <button class="button secondary" type="submit">Delete rule</button>
+          </form>
+        </div>
+      </article>
+
+      <form class="alert-rule-form" th:if="${!trackedProducts.isEmpty()}" th:action="@{/alerts/rules}" method="post">
+        <h3>Add a rule</h3>
+        <label>Tracked product
+          <select name="productCode" required>
+            <option th:each="tracked : ${trackedProducts}" th:value="${tracked.productCode}"
+                    th:text="${tracked.nameEn + ' · ' + tracked.productCode}"></option>
+          </select>
+        </label>
+        <label>Retailer (exact code)
+          <input type="text" name="retailerCode" required placeholder="e.g. AEON">
+        </label>
+        <label>Type
+          <select name="type">
+            <option value="TARGET">Target price (at or below)</option>
+            <option value="DROP">Price drop</option>
+          </select>
+        </label>
+        <label>Target amount (HK$, target only)
+          <input type="number" name="target" min="0.01" step="0.01">
+        </label>
+        <button class="button primary" type="submit">Add alert rule</button>
+      </form>
+      <p class="helper" th:if="${trackedProducts.isEmpty()}">Track a product on the <a th:href="@{/saved}">Saved</a> page before adding alerts.</p>
+    </div>
+    <p class="source-note">A drop needs an earlier observation for the same product and retailer. Repeated imports do not duplicate an event for the same price.</p>
+  </section>
+</th:block>

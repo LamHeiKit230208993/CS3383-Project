@@ -1,10 +1,10 @@
 # J05–J08: Tracking, alerts, budgets, and reminders
 
-Updated: 29 October 2026.
+Updated: 12 November 2026.
 
-Status: The team agreed to group J05–J08 in one milestone issue. Implementation
-has not started in this baseline. This plan does not claim that an issue has
-already been created. Add its number here when it exists.
+Status: The team grouped J05–J08 in one milestone issue (#17). Decisions D01–D07
+are agreed (see below). The implementation is in progress; this document remains
+the authority for the milestone's delivery plan and agreed implementation rules.
 
 Read the [project scope](../project-scope.md), [job plan](features.md), and
 [implemented J01–J04 contract](../implementation-baseline-j01-j04.md) first.
@@ -89,23 +89,23 @@ must not be reported as having collected data or delivered a notification.
 
 ## Decisions before dependent work
 
-All rows below are **open**. Record the chosen rule, examples, decision date,
-and affected acceptance checks here before implementing the dependent behaviour.
-Agents must not choose separate defaults. Unaffected work can continue.
+All rows below are **decided** (decision date: 12 November 2026). Each rule states
+its examples and the acceptance checks it affects. Agents must follow these
+defaults; do not choose separate ones.
 
-| ID | Decision needed | Blocks |
-|---|---|---|
-| D01 | Which retailer(s) are tracked? Is enabling tracking seeded from the accepted catalogue? | J05 tracking contract |
-| D02 | Retention, stopping/re-enabling tracking, deleting history, and handling missing/inactive products | J05 lifecycle |
-| D03 | Observation identity and duplicate rule; unchanged/repeated files, unknown prices, and unknown source dates | J05 recording; J06 comparisons |
-| D04 | Target boundary; earlier comparison observation; first-check alert; repeat reset; any conditional amount/percentage thresholds | J06 evaluation |
-| D05 | Time zone, quiet-hour boundaries, snooze duration, summary content/time, missed-run/restart behaviour, and refresh/check scheduling | J06 delivery; shared J08 timing |
-| D06 | How one current list estimate relates to weekly/monthly budgets; reset/rollover, warning boundary, category level/fallback, and missing-price warnings | J07 budget rules |
-| D07 | Reminder interval/use input, initial due time, clear versus snooze, next-date calculation, and whether adding to the list changes reminder state | J08 lifecycle |
+| ID | Decided rule | Examples | Acceptance checks |
+|---|---|---|---|
+| D01 | Track **all** priced retailer listings of a tracked product. Enabling tracking is an explicit per-product action; it is **not** seeded automatically from the accepted catalogue. | Tracking "milk" records observations for JASONS/AEON/WELLCOME priced listings only; a listing without a price is skipped. | 1, 2 |
+| D02 | History is kept in separate tables that survive catalogue replacement. Untracking stops new collection but keeps existing history until the user deletes it. Inactive/missing products keep their history; new observations resume only when a priced listing returns. Deleting a wishlist (saved) entry does **not** delete tracking or history. | Replace the catalogue → old observations remain readable. Remove a saved product → tracking state and history stay. | 1, 2 |
+| D03 | Store **one observation per (product, retailer) per accepted import** with a known price; unknown prices add no row. A unique key `(product, retailer, checksum)` means an **unchanged repeated file does not duplicate** rows. A drop alert compares against the **most recent distinct prior price**. | Two changed imports → two rows per pair. Re-importing the identical file → no new row. Identical prices across imports do not trigger a drop. | 2, 3 |
+| D04 | A TARGET fires when the current price is **≤** target. It is checked immediately on rule creation and after each valid import. Repeat reset: one event per newly observed observation (tracked by `lastFiredObservationId`); the same observation never fires twice. A DROP needs an earlier distinct observation and fires when the latest price is strictly lower. | Target 10 fires at 10.00 and 9.50, not at 10.50. A drop needs a real earlier higher price. | 3 |
+| D05 | One injectable `Asia/Hong_Kong` `Clock`. Morning summary at **08:00**. Quiet hours **22:00–07:00**: events are still stored, but banners are suppressed and released after 07:00. Alert-event snooze **8 hours**. No background scheduler; evaluation happens on request or after an import. A closed-app period is never reported as a delivered notification. | Create a rule at 23:00 → event stored, hidden until 07:00. Reopening after a missed 08:00 shows the summary, not a claimed 08:00 delivery. | 3 |
+| D06 | Single budget setting (WEEKLY **or** MONTHLY) with a positive limit. Compare the current My-list **known subtotal** to the limit; warn when the known subtotal exceeds it. Category totals use `category2` → fallback `category1` → "Uncategorised", and reconcile with the known subtotal. Unknown prices keep the estimate incomplete. There is **no rollover**: this is a live snapshot of a planned list, not dated spending. | AEON milk 7.50 vs explicit JASONS 12.50: the explicit choice keeps 12.50. Missing selected price → incomplete. | 4, 6 |
+| D07 | Reminder interval (days) and configurable snooze (days). Initial next due = creation time + interval. **Clear** deactivates the reminder. **Snooze** adds the snooze interval to the next due date. Adding to My list does **not** change reminder state. Due state is computed from the `Clock`. | Interval 10, snooze 2: due at +10 days; snooze moves it to +12. Adding to the list leaves the due date unchanged. | 5, 6 |
 
 The [feasibility overview](../feasibility-review-simple.md#5-open-decisions)
-retains wider-project questions. Agree this milestone's answers here and link
-them from that overview. Scope changes must also update the scope and job plan.
+retains wider-project questions. This milestone's answers are recorded here and
+linked from that overview. Scope changes must also update the scope and job plan.
 
 ## Acceptance and issue closure
 

@@ -1,0 +1,71 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="saved-title">
+    <div class="page-heading">
+      <p class="eyebrow">SAVE NOW. TRACK WHEN YOU CHOOSE.</p>
+      <h1 id="saved-title">Saved &amp; tracked</h1>
+      <p class="intro">Saving and tracking are separate. Saving does not start tracking, and neither records a purchase.</p>
+    </div>
+
+    <div class="panel">
+      <div class="section-heading">
+        <h2>Tracked products</h2>
+        <span th:text="${trackedProducts.size() + ' tracked'}"></span>
+      </div>
+      <div class="empty-state" th:if="${trackedProducts.isEmpty()}">
+        <p>No products are tracked yet. Open a product and choose <strong>Start tracking prices</strong>.</p>
+      </div>
+      <article class="tracked-item" th:each="product : ${trackedProducts}">
+        <div class="list-item-heading">
+          <div>
+            <h3><a th:href="@{/products/{code}(code=${product.productCode})}" th:text="${product.nameEn}"></a></h3>
+            <p class="helper" th:text="${product.brandEn + ' · ' + product.productCode}"></p>
+          </div>
+          <form th:action="@{/tracking/{code}/disable(code=${product.productCode})}" method="post" class="inline-form">
+            <button class="button secondary" type="submit">Stop tracking</button>
+          </form>
+        </div>
+        <p class="helper" th:text="'Retailers: ' + ${#strings.listJoin(product.trackedRetailers, ', ')}"></p>
+        <p class="warning" th:unless="${product.active}">Not in the accepted catalogue. History is kept; new observations wait for the product to return.</p>
+        <details class="history-details" th:if="${!product.observations.isEmpty()}">
+          <summary th:text="${product.observations.size() + ' recorded observations'}"></summary>
+          <table class="history-table">
+            <thead><tr><th>Retrieved</th><th>Retailer</th><th>Price</th><th>Original offer</th></tr></thead>
+            <tbody>
+              <tr th:each="observation : ${product.observations}">
+                <td th:text="${format.time(observation.retrievedAt)}"></td>
+                <td th:text="${observation.retailerCode}"></td>
+                <td th:text="${format.money(observation.price)}"></td>
+                <td th:text="${observation.offerSnapshot == null ? 'No offer supplied' : observation.offerSnapshot}"></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="source-note">Retrieval time is when this app got the data. The source price date is unknown. A new download does not prove a new price.</p>
+        </details>
+        <p class="helper" th:if="${product.observations.isEmpty()}">No observations yet. They appear after the next successful import.</p>
+      </article>
+    </div>
+
+    <div class="panel">
+      <div class="section-heading">
+        <h2>Saved products</h2>
+        <span th:text="${savedProducts.size() + ' saved'}"></span>
+      </div>
+      <div class="empty-state" th:if="${savedProducts.isEmpty()}">
+        <p>Nothing saved yet. Open a product and choose <strong>Save to wishlist</strong>.</p>
+      </div>
+      <article class="saved-item" th:each="product : ${savedProducts}">
+        <div class="list-item-heading">
+          <div>
+            <h3><a th:href="@{/products/{code}(code=${product.productCode})}" th:text="${product.nameEn}"></a></h3>
+            <p class="helper" th:text="${product.brandEn + ' · ' + product.productCode}"></p>
+          </div>
+          <form th:action="@{/saved/{code}/unsave(code=${product.productCode})}" method="post" class="inline-form">
+            <button class="button secondary" type="submit">Remove</button>
+          </form>
+        </div>
+        <p class="selection-mode" th:text="${product.tracked ? 'Tracked' : 'Saved only · not tracked'}"></p>
+      </article>
+    </div>
+    <p class="source-note">History is kept only for explicitly tracked exact products and retailers. Removing a saved product does not delete its tracking history.</p>
+  </section>
+</th:block>

@@ -1,6 +1,6 @@
 # Baseline Feature and Job Plan
 
-Updated: 29 October 2026.
+Updated: 12 November 2026.
 
 Read the [project scope](../project-scope.md), [baseline decisions](baseline-proposal.md), and [JSON sample check](data-sample-review.md) first. The scope decides what is included. This file sets the build order and completion checks. A plan entry is not evidence that a feature works.
 
@@ -86,6 +86,12 @@ contracts, unresolved decisions, and the combined completion checks. The issue
 can use separate linked PRs; grouping jobs does not remove their dependencies.
 J09–J12 remain later work. Conditional scope rows keep their existing conditions.
 
+**Progress (12 November 2026):** the decision register D01–D07 is agreed and the
+four workstreams are implemented in code with focused tests (saved/tracking,
+budgets/category totals, in-app alerts, reminders). The J05–J08 jobs are **not
+yet closed**: the combined acceptance checklist, the browser-applied integrated
+check, and updated UML evidence still need recording before issue #17 closes.
+
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
 | J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; removal stops new collection | J01-J04 |
@@ -126,5 +132,14 @@ The independent J01–J04 implementation now replaces the temporary Market Desk 
 
 
 J04 includes the minimum per-item lowest-price subtotal needed to review the list. J07 still owns planned budgets and category totals. Wishlist, tracking history, alerts, reminders, AI chat, list transfer, offline reopening, and full UI translation remain J05–J12 work. Planned screens do not complete those jobs.
+
+**J05–J08: implementation in progress (12 November 2026).** New code adds a
+Saved & tracked page, price-observation recording after each valid import,
+planned weekly/monthly budgets with category totals on My list, an Alerts page
+(target/drop rules, quiet hours, snooze, morning summary), and a Reminders page
+(interval, add-to-list, clear, snooze). The automated Java suite passes; see the
+[test history](../Test/history.md) and the [test catalogue](../Test/test-case-catalog.md)
+for recorded results and limits. The jobs are not closed until the combined
+acceptance checklist and the integrated browser check are recorded.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

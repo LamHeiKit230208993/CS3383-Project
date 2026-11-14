@@ -1,9 +1,13 @@
 package com.pricewatch.web;
 
+import com.pricewatch.alerts.AlertService;
+import com.pricewatch.budget.BudgetService;
+import com.pricewatch.reminders.ReminderService;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.shopping.ItemView;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
+import com.pricewatch.tracking.TrackingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,12 +25,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class HelloControllerModelTest {
     private final CatalogService catalog = mock(CatalogService.class);
     private final ShoppingService shopping = mock(ShoppingService.class);
+    private final TrackingService tracking = mock(TrackingService.class);
+    private final BudgetService budget = mock(BudgetService.class);
+    private final AlertService alerts = mock(AlertService.class);
+    private final ReminderService reminders = mock(ReminderService.class);
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         View emptyView = (model, request, response) -> {};
-        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping))
+        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping, tracking, budget, alerts, reminders))
                 .setViewResolvers((name, locale) -> emptyView)
                 .build();
     }
@@ -48,9 +56,9 @@ class HelloControllerModelTest {
     }
 
     @Test
-    void dataAndPlannedPagesDoNotReadTheShoppingList() throws Exception {
+    void dataAndSavedPagesDoNotReadTheShoppingList() throws Exception {
         mvc.perform(get("/data")).andExpect(status().isOk());
-        mvc.perform(get("/planned/saved")).andExpect(status().isOk());
+        mvc.perform(get("/saved")).andExpect(status().isOk());
         verifyNoInteractions(shopping);
     }
 

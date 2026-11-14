@@ -17,7 +17,7 @@ skinparam ranksep 65
 hide circle
 hide empty methods
 
-title Market Desk | persisted data model (J01-J04)
+title Market Desk | persisted data model (J01-J08)
 
 class ShoppingListEntity <<entity>> {
   - id: Long {PK}
@@ -69,6 +69,63 @@ class LocalizedLabel <<embedded value>> {
   JSON: en / zh-Hant / zh-Hans
 }
 
+' --- J05-J08 records. Keyed by product/retailer strings; NOT linked to listings. ---
+class WishlistEntryEntity <<entity>> {
+  - productCode: String {PK}
+  - createdAt: Instant {not null}
+}
+class TrackingChoiceEntity <<entity>> {
+  - id: Long {PK}
+  - productCode: String {not null}
+  - retailerCode: String {not null}
+  - enabled: boolean {not null}
+  - startedAt: Instant {not null}
+}
+class PriceObservationEntity <<entity>> {
+  - id: Long {PK}
+  - productCode: String {not null}
+  - retailerCode: String {not null}
+  - price: BigDecimal {nullable}
+  - retrievedAt: Instant {not null}
+  - checksum: String {not null}
+  - offerSnapshot: String {nullable}
+}
+class AlertRuleEntity <<entity>> {
+  - id: Long {PK}
+  - productCode: String {not null}
+  - retailerCode: String {not null}
+  - type: TARGET|DROP {not null}
+  - targetAmount: BigDecimal {nullable}
+  - enabled: boolean {not null}
+  - lastFiredObservationId: Long {nullable}
+}
+class AlertEventEntity <<entity>> {
+  - id: Long {PK}
+  - ruleId: Long {not null}
+  - observationId: Long {not null}
+  - productCode: String {not null}
+  - retailerCode: String {not null}
+  - ruleType: String {not null}
+  - price: BigDecimal {nullable}
+  - firedAt: Instant {not null}
+  - acknowledged: boolean {not null}
+  - snoozedUntil: Instant {nullable}
+}
+class BudgetSettingsEntity <<entity>> {
+  - id: Long {PK = 1}
+  - period: WEEKLY|MONTHLY {not null}
+  - limitAmount: BigDecimal {not null}
+}
+class ReminderEntity <<entity>> {
+  - id: Long {PK}
+  - productCode: String {not null}
+  - quantity: int {not null}
+  - intervalDays: int {not null}
+  - snoozeDays: int {not null}
+  - nextDueAt: Instant {not null}
+  - active: boolean {not null}
+}
+
 ShoppingListEntity "1" *-right- "0..*" ShoppingListItemEntity : items
 ShoppingListItemEntity "0..*" -right-> "1" ProductEntity : product
 ProductEntity "1" -right- "0..*" RetailerListingEntity : listings
@@ -80,6 +137,16 @@ OfferEntity "1" *-left- "0..1" LocalizedLabel
 ShoppingListEntity -[hidden]down-> AcceptedImportEntity
 AcceptedImportEntity -[hidden]right-> LocalizedLabel
 
+' History is separate from live listings; a replacement never deletes it.
+AlertRuleEntity "1" -down-> "0..*" AlertEventEntity : fires
+TrackingChoiceEntity ..> PriceObservationEntity : records on import
+note right of PriceObservationEntity
+  Observations are keyed by productCode + retailerCode strings,
+  not foreign keys to retailer_listings. Catalogue replacement
+  deletes listings/offers but this history remains (D02/D03).
+  Unique: (productCode, retailerCode, checksum).
+end note
+
 legend bottom left
   |= Database constraints / persistence mapping |= Parser and service rules (not DB CHECK constraints) |
   | PKs and required list/product/listing foreign keys. | Quantity must be 1..999; checked state is not a purchase. |
@@ -88,5 +155,6 @@ legend bottom left
   | selectedRetailerCode is nullable and has no FK. | Null = lowest priced listing, if available; keep unavailable explicit choices. |
   | Language fields: nullable embedded columns, not a separate table. | Require all five product labels in three languages; offers may be blank. |
   | Diamonds: JPA-owned children or embedded values. | Keep inactive products for saved references; offers remain text. |
+  | J05-J08 tables have no FK to listings or offers. | Track all priced retailers; keep history across replacement; unknown price = no observation. |
 endlegend
 @enduml

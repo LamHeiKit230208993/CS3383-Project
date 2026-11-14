@@ -7,6 +7,9 @@ import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.OfferRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.catalog.repository.RetailerListingRepository;
+import com.pricewatch.tracking.repository.PriceObservationRepository;
+import com.pricewatch.tracking.repository.TrackingChoiceRepository;
+import com.pricewatch.tracking.repository.WishlistEntryRepository;
 import com.pricewatch.shopping.repository.ShoppingListItemRepository;
 import com.pricewatch.shopping.repository.ShoppingListRepository;
 import jakarta.persistence.EntityManagerFactory;
@@ -41,12 +44,18 @@ class ShoppingServiceTest {
     @Autowired private OfferRepository offerRepository;
     @Autowired private RetailerListingRepository listingRepository;
     @Autowired private ProductRepository productRepository;
+    @Autowired private PriceObservationRepository observationRepository;
+    @Autowired private TrackingChoiceRepository trackingRepository;
+    @Autowired private WishlistEntryRepository wishlistRepository;
     @Autowired private ShoppingListItemRepository itemRepository;
     @Autowired private ShoppingListRepository listRepository;
 
     @BeforeEach
     void clearDatabase() {
         itemRepository.deleteAllInBatch();
+        observationRepository.deleteAllInBatch();
+        trackingRepository.deleteAllInBatch();
+        wishlistRepository.deleteAllInBatch();
         listRepository.deleteAllInBatch();
         importRepository.deleteAllInBatch();
         offerRepository.deleteAllInBatch();
