@@ -2,6 +2,8 @@ package com.pricewatch.web;
 
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.ProductView;
+import com.pricewatch.chat.ChatReply;
+import com.pricewatch.chat.ChatService;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
 import org.springframework.http.HttpStatus;
@@ -23,13 +25,15 @@ import java.util.Map;
 @Controller
 public class HelloController {
     private static final Map<String, String> PLANNED = Map.of(
-            "saved", "Wishlist and tracking", "updates", "Alerts and reminders", "ask", "Price assistant");
+            "saved", "Wishlist and tracking", "updates", "Alerts and reminders");
     private final CatalogService catalog;
     private final ShoppingService shopping;
+    private final ChatService chat;
 
-    public HelloController(CatalogService catalog, ShoppingService shopping) {
+    public HelloController(CatalogService catalog, ShoppingService shopping, ChatService chat) {
         this.catalog = catalog;
         this.shopping = shopping;
+        this.chat = chat;
     }
     @ModelAttribute
     void common(Model model) {
@@ -74,6 +78,19 @@ public class HelloController {
     }
     @GetMapping("/data")
     String data(Model model) { return screen(model, "data", "Price data & updates"); }
+    @GetMapping("/ask")
+    String ask(Model model) {
+        model.addAttribute("question", "");
+        model.addAttribute("reply", null);
+        return screen(model, "ask", "Ask");
+    }
+    @PostMapping("/ask")
+    String ask(@RequestParam(defaultValue = "") String question, Model model) {
+        ChatReply reply = chat.reply(question);
+        model.addAttribute("question", question);
+        model.addAttribute("reply", reply);
+        return screen(model, "ask", "Ask");
+    }
     @GetMapping("/planned/{feature}")
     String planned(@PathVariable String feature, Model model) {
         if (feature.equals("saved")) return "redirect:/saved";

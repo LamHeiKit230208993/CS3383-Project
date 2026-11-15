@@ -35,6 +35,9 @@
           <th:block th:if="${scene == 'data'}">
             <th:block th:replace="~{pages/data :: content}"></th:block>
           </th:block>
+          <th:block th:if="${scene == 'ask'}">
+            <th:block th:replace="~{pages/ask :: content}"></th:block>
+          </th:block>
           <th:block th:if="${scene == 'planned'}">
             <th:block th:replace="~{pages/planned :: content}"></th:block>
           </th:block>

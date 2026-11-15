@@ -4,6 +4,19 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## J09 checked price chat — 15 November 2026
+
+- Maven test run on JDK 21 passed **94 tests** with zero failures, errors or skips,
+  including 6 new J09 tests (`ChatControllerTest`, `ChatServiceAmbiguityTest`). The
+  existing suite was adjusted for the new `HelloController` chat dependency.
+- Browser check against the running app (in-memory database, sample loaded): the Ask
+  page renders the chat form, the sidebar shows **Ask** with no "Planned" tag, and the
+  question *"What is the lowest price for fresh milk?"* returned the checked answer
+  "The lowest listed price for 100 %Fresh Milk 236mL is HK$7.5000 at AEON." with the
+  AI-unavailable fallback notice because no key was configured.
+- Limits: the live DeepSeek call is not exercised; AI is stubbed in tests. Screenshot
+  not visually reviewed (environment lacks image display). J10–J12 remain unstarted.
+
 ## PR #18 review follow-up — 12 November 2026
 
 - Maven package on JDK 21 with the Byte Buddy startup agent passed 88 tests

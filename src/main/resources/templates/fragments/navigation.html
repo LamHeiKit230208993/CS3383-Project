@@ -10,7 +10,7 @@
       <p class="sidebar-label">ASSISTANCE</p>
       <a th:href="@{/alerts}" th:attr="aria-current=${scene == 'alerts' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Alerts</a>
       <a th:href="@{/reminders}" th:attr="aria-current=${scene == 'reminders' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Reminders</a>
-      <a th:href="@{/planned/ask}" th:attr="aria-current=${scene == 'planned' and feature == 'ask' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>Ask<span class="planned-tag">Planned</span></a>
+      <a th:href="@{/ask}" th:attr="aria-current=${scene == 'ask' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>Ask</a>
       <p class="sidebar-label">APP</p>
       <a class="data-nav-link" th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span>Price data &amp; updates</span></a>
     </nav>
@@ -25,13 +25,13 @@
     <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>My list</a>
     <a th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg>Price data</a>
     <details class="mobile-more">
-      <summary th:classappend="${scene == 'planned' or scene == 'saved' or scene == 'alerts' or scene == 'budget' or scene == 'reminders' ? ' current' : ''}"><span aria-hidden="true">•••</span>More</summary>
+      <summary th:classappend="${scene == 'ask' or scene == 'planned' or scene == 'saved' or scene == 'alerts' or scene == 'budget' or scene == 'reminders' ? ' current' : ''}"><span aria-hidden="true">•••</span>More</summary>
       <div class="more-destinations">
         <a th:href="@{/saved}">Saved</a>
         <a th:href="@{/budget}">Budget</a>
         <a th:href="@{/alerts}">Alerts</a>
         <a th:href="@{/reminders}">Reminders</a>
-        <a th:href="@{/planned/ask}">Ask <small>Planned</small></a>
+        <a th:href="@{/ask}">Ask</a>
       </div>
     </details>
   </nav>

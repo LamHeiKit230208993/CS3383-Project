@@ -143,11 +143,6 @@ class HelloControllerTest {
     }
 
     @Test void laterFeaturesAreClearlyUnavailable() throws Exception {
-        for (String feature : new String[]{"ask"}) {
-            mvc.perform(get("/planned/" + feature)).andExpect(status().isOk())
-                    .andExpect(content().string(containsString("PLANNED · NOT AVAILABLE YET")))
-                    .andExpect(content().string(not(containsString("chat-form"))));
-        }
         mvc.perform(get("/data")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("No automatic refresh runs at startup")));
     }

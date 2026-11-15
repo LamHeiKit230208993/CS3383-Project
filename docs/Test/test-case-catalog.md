@@ -5,13 +5,13 @@ This index describes maintained checks. Detailed steps and limits belong in
 
 ## Latest recorded validation
 
-The 6 November 2026 J05–J08 run passed **86 Java tests**, packaging,
+The 6 November 2026 J05â€“J08 run passed **86 Java tests**, packaging,
 **9 baseline and 11 milestone Chrome scenarios**, and an old-to-new H2 upgrade
 check. Official PlantUML exports were rendered and visually reviewed.
 See the [dated run record](history.md). The earlier PR #15 results remain there
 as historical evidence. These local results do not close issue #17 or imply merge.
 
-## J01–J04 baseline scenarios
+## J01â€“J04 baseline scenarios
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
@@ -27,7 +27,7 @@ as historical evidence. These local results do not close issue #17 or imply merg
 
 Case descriptions state expected behaviour; they do not prove a later build passed.
 
-## J05–J08 milestone checks
+## J05â€“J08 milestone checks
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
@@ -40,3 +40,9 @@ Case descriptions state expected behaviour; they do not prove a later build pass
 
 The retired prototype cases and their original source links are preserved in
 [history](history.md#tc-web-002--retired-prototype-scenes-and-assets).
+
+## J09â€“J12 milestone checks
+
+| ID | Area | Expected result | Source |
+|---|---|---|---|
+| [TC-CHAT-001](cases/TC-CHAT-001.md) | J09 checked price chat | Answers use checked product/retailer/amount; ambiguous requests ask for a choice; unavailable AI keeps search/comparison usable; no invented price | `ChatControllerTest`, `ChatAgentTest` |

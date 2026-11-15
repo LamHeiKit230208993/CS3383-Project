@@ -1,4 +1,4 @@
-# Setup & Run Guide — Spring Boot App
+# Setup & Run Guide Ã¢â‚¬â€ Spring Boot App
 
 This guide covers installing everything needed to build and run the Spring Boot app and how to start it in the browser.
 
@@ -7,7 +7,7 @@ This guide covers installing everything needed to build and run the Spring Boot 
 | Tool | Version | Notes |
 |------|---------|-------|
 | **JDK** | 21 (LTS) | Temurin (Adoptium) is the recommended distribution. |
-| **Maven** | 3.9.x | Not installed globally — the repo ships a Maven **wrapper** (`mvnw.cmd`), so no global install needed. |
+| **Maven** | 3.9.x | Not installed globally Ã¢â‚¬â€ the repo ships a Maven **wrapper** (`mvnw.cmd`), so no global install needed. |
 
 The project targets **Spring Boot 3.4.5** on **Java 21**.
 
@@ -15,13 +15,13 @@ The project targets **Spring Boot 3.4.5** on **Java 21**.
 
 ## 1. Install the JDK (one-time)
 
-### Option A — via winget (easiest on Windows)
+### Option A Ã¢â‚¬â€ via winget (easiest on Windows)
 
 ```powershell
 winget install --id EclipseAdoptium.Temurin.21.JDK -e --accept-source-agreements --accept-package-agreements
 ```
 
-### Option B — manual download
+### Option B Ã¢â‚¬â€ manual download
 
 Download from <https://adoptium.net/temurin/releases/?version=21> and run the installer (install to `C:\Program Files\Eclipse Adoptium\jdk-21...`).
 
@@ -106,12 +106,12 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Alerts, Budget, and Reminders now have working forms in the J05–J08
-implementation. Local integration checks passed on 6 November 2026; Ask remains planned.
+Saved, Alerts, Budget, Reminders, and the J09 Ask chat now have working forms.
+Local integration checks passed on 6 November 2026; J09 adds the checked price chat.
 See the [baseline guide](implementation-baseline-j01-j04.md) and
 [extension guide](implementation-j05-j08.md) for behaviour and limits.
 
-### Try the J05–J08 flow
+### Try the J05Ã¢â‚¬â€œJ08 flow
 
 1. Open a product comparison and choose **Save or track this product**. Save it to the
    wishlist, or explicitly track a retailer. These are separate actions.
@@ -127,11 +127,51 @@ See the [baseline guide](implementation-baseline-j01-j04.md) and
    reminder active. Clear starts a new interval from now; Snooze delays its
    effective due time by 24 hours.
 
-Alert timing uses Hong Kong time. Defaults are quiet hours **22:00–08:00** and
+Alert timing uses Hong Kong time. Defaults are quiet hours **22:00Ã¢â‚¬â€œ08:00** and
 daily summary **08:00**. Change them on Alerts; equal quiet start/end disables
 quiet hours. Quiet hours delay notification eligibility, not manual list actions.
 Events and reminders stay inside the app. Nothing is delivered while the app is
 closed, and startup does not fetch prices.
+
+### Ask (J09 checked price chat)
+
+The **Ask** page answers price questions in natural language with a short tool-calling
+agent loop. The model is given two read-only tools, `search_products(query)` and
+`product_prices(code)`, and decides which to call. The app runs each lookup
+deterministically against the accepted catalogue and feeds the results back; the model
+may call a few times (up to four steps) to reason across products, then writes the
+answer. Prices, retailers, and stock always come from the database rows the tools
+return, never from the model, so no price is invented. If nothing matches, or the
+question needs data the tools cannot provide, the assistant says so and asks the
+shopper to pick a product rather than guessing.
+The AI provider is **DeepSeek V4 Flash provided by CityU**, configured **server-side
+only**. Put the settings in a local `.env` file in the project root (it is
+git-ignored and loaded automatically at startup):
+
+```
+PRICEWATCH_AI_BASE_URL=https://llm.cs.cityu.edu.hk/v1
+PRICEWATCH_AI_API_KEY=your-key-here
+PRICEWATCH_AI_MODEL=CS3383/DeepSeek-V4-Flash
+```
+
+Copy `.env.example` to `.env` and fill in your key, then just run:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Real environment variables set in the shell still take precedence over `.env`, so CI
+or one-off runs can override without editing the file.
+
+The base URL is the CityU OpenAI-compatible endpoint; the client appends
+`/chat/completions`. The key is supplied the same way as in your editor's
+`opencode.json`, but the app reads it only from these server-side environment
+variables Ã¢â‚¬â€ it does not open `opencode.json`. The values are read through
+`pricewatch.ai.base-url`, `pricewatch.ai.api-key`, and `pricewatch.ai.model` in
+`application.properties`. Never hardcode or commit the key. If the AI is not
+configured or unreachable, Ask still answers from checked records and the normal
+search and comparison flow keep working.
+
 
 The running web app checks summaries every minute. Alerts and Reminders pages
 also refresh every minute when visible, unless a form has edits or focus, or a
@@ -170,8 +210,8 @@ service. Saved data on this computer does not by itself make a phone work offlin
 
 | Problem | Fix |
 |---------|-----|
-| `JAVA_HOME not found in your environment` | Set `JAVA_HOME` (see §2) and reopen your terminal. |
-| `java -version` shows an old version | Your terminal still has a stale PATH — reopen it, or ensure JDK 21 bin is first in the persistent PATH. |
+| `JAVA_HOME not found in your environment` | Set `JAVA_HOME` (see Ã‚Â§2) and reopen your terminal. |
+| `java -version` shows an old version | Your terminal still has a stale PATH Ã¢â‚¬â€ reopen it, or ensure JDK 21 bin is first in the persistent PATH. |
 | Port 8080 already in use | Change the port in `src/main/resources/application.properties` (`server.port=8081`) or stop the process using 8080. |
 
 ---

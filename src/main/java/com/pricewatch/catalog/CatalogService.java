@@ -114,6 +114,12 @@ public class CatalogService {
                 .orElseThrow(() -> new IllegalArgumentException("Product " + code + " was not found."));
     }
 
+    /** All active products with listings, for the Ask chat to reason over the whole catalogue. */
+    @Transactional(readOnly = true)
+    public List<ProductView> catalogue() {
+        return productRepository.findAllByActiveTrue().stream().map(ProductView::from).toList();
+    }
+
     @Transactional(readOnly = true)
     public ImportStatus status() {
         return importRepository.findById(1L).map(CatalogService::toStatus).orElse(null);

@@ -1,6 +1,7 @@
 package com.pricewatch.budget;
 
 import com.pricewatch.catalog.CatalogService;
+import com.pricewatch.chat.ChatService;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.web.BudgetController;
 import com.pricewatch.web.HelloController;
@@ -28,7 +29,7 @@ class BudgetControllerTest {
     private final CatalogService catalog = mock(CatalogService.class);
     private final ShoppingService shopping = mock(ShoppingService.class);
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
-            new BudgetController(budgets, catalog, new HelloController(catalog, shopping))).build();
+            new BudgetController(budgets, catalog, new HelloController(catalog, shopping, mock(ChatService.class)))).build();
 
     @BeforeEach
     void defaults() {

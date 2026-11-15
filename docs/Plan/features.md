@@ -64,7 +64,7 @@ This table replaces the old difficulty rankings and separate feature legend.
 
 R03, R05, R07-R09, R12-R13, R17, R33, and R41 remain excluded. R25 and R42 remain future work. Other conditional rows remain in the scope, not silently excluded by this table.
 
-## 4. First-milestone jobs (J01–J04)
+## 4. First-milestone jobs (J01â€“J04)
 
 These rows define the first-milestone jobs. Their implementation checks passed on 24 October 2026; see section 7 for evidence and remaining acceptance limits. When assigning connected work, agree shared field names, inputs, outputs, and checks first.
 
@@ -79,12 +79,17 @@ J04 completes the first milestone. UI work can start as a small sketch while J01
 
 ## 5. Following baseline jobs
 
-**Current milestone: J05–J08 in issue #17, locally implemented and checked; review/merge pending.** Read the
+**Current milestone: J05â€“J08 in issue #17, locally implemented and checked; review/merge pending.** Read the
 [milestone execution plan](tracking-alerts-budgets-reminders-j05-j08.md) before
 assigning or implementing any of these jobs. It defines workstreams, shared
-contracts, the D01–D07 rules agreed on 6 November 2026, and combined completion checks. The issue
+contracts, the D01â€“D07 rules agreed on 6 November 2026, and combined completion checks. The issue
 can use separate linked PRs; grouping jobs does not remove their dependencies.
-J09–J12 remain later work. Conditional scope rows keep their existing conditions.
+J09â€“J12 remain later work. Conditional scope rows keep their existing conditions.
+J09 (checked price chat) is implemented on this branch with a short tool-calling agent
+loop: the model uses `search_products` and `product_prices` tools that the app runs
+deterministically against the accepted catalogue, then phrases the answer from returned
+facts only, so no price is invented. It falls back to checked records when the AI is
+unavailable. J10â€“J12 are still later work.
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
@@ -98,7 +103,7 @@ J09–J12 remain later work. Conditional scope rows keep their existing conditio
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
 Within this milestone, J05 and J07 can proceed in parallel under the agreed
-D01–D07 rules. J06 follows J05; J08 uses the saved list and J06's
+D01â€“D07 rules. J06 follows J05; J08 uses the saved list and J06's
 agreed notification behaviour. Integrate and check the four jobs together before
 closing the issue. J09 does not need history, but is outside this milestone.
 J10's transfer format remains a later decision.
@@ -114,8 +119,8 @@ Background device/cloud notifications, offline editing, and price prediction are
 ## 6. Implementation contracts
 
 For existing record fields, operations, routes, money, and failure behaviour,
-use the [J01–J04 implementation guide](../implementation-baseline-j01-j04.md).
-For current J05–J08 routes, records, operations, and limits, use the
+use the [J01â€“J04 implementation guide](../implementation-baseline-j01-j04.md).
+For current J05â€“J08 routes, records, operations, and limits, use the
 [extension implementation guide](../implementation-j05-j08.md). The
 [milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#shared-records-and-operations)
 defines its approved rules and acceptance checks. J09 chat contracts remain later work.
@@ -125,17 +130,17 @@ App code must search and calculate before sending checked facts to an LLM.
 
 Use the existing testing skill and Maven test setup for code changes. A UI picture, a successful compile, or a mock AI answer does not complete a working feature.
 
-The independent J01–J04 implementation now replaces the temporary Market Desk interactions with a persisted search-to-list flow. It uses Spring Data JPA and an H2 file database, explicit sample/live imports, multilingual source-label search, exact-product comparison, and one saved My list. See the [implementation guide](../implementation-baseline-j01-j04.md) and [test catalogue](../Test/test-case-catalog.md) for the implementation contract and observed checks.
+The independent J01â€“J04 implementation now replaces the temporary Market Desk interactions with a persisted search-to-list flow. It uses Spring Data JPA and an H2 file database, explicit sample/live imports, multilingual source-label search, exact-product comparison, and one saved My list. See the [implementation guide](../implementation-baseline-j01-j04.md) and [test catalogue](../Test/test-case-catalog.md) for the implementation contract and observed checks.
 
-**J01–J04: PR #15 is merged**, including the search-mode and numeric-price-precision fixes. The 25 October baseline Maven package run passed all **47 tests**, including direct database-write rollback; all **9 Chrome scenarios** also passed against an isolated app and local feed. See the [dated test history](../Test/history.md#pr-15-review-regressions--25-october-2026) for evidence and limits. These historical results do not verify later edits or complete every scope requirement under the related F/R references.
+**J01â€“J04: PR #15 is merged**, including the search-mode and numeric-price-precision fixes. The 25 October baseline Maven package run passed all **47 tests**, including direct database-write rollback; all **9 Chrome scenarios** also passed against an isolated app and local feed. See the [dated test history](../Test/history.md#pr-15-review-regressions--25-october-2026) for evidence and limits. These historical results do not verify later edits or complete every scope requirement under the related F/R references.
 
 
 J04 includes the minimum effective-price subtotal needed to review the list.
-This branch now adds J05–J08 wishlist/tracking, alerts, planned budgets/category
+This branch now adds J05â€“J08 wishlist/tracking, alerts, planned budgets/category
 totals, and reminders. Local validation on 6 November passed 86 Java tests,
 20 browser scenarios and an old-to-new database upgrade check; use the
 [test catalogue](../Test/test-case-catalog.md) for current evidence. AI chat,
-list transfer, offline reopening, and full UI translation remain J09–J12 work.
+list transfer, offline reopening, and full UI translation remain J09â€“J12 work.
 Neither a working screen nor the earlier baseline test results close issue #17.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.
