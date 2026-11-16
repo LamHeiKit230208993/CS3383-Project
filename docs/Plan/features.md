@@ -103,10 +103,14 @@ unavailable. J10â€“J12 are still later work.
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
 Within this milestone, J05 and J07 can proceed in parallel under the agreed
-D01â€“D07 rules. J06 follows J05; J08 uses the saved list and J06's
+D01–D07 rules. J06 follows J05; J08 uses the saved list and J06's
 agreed notification behaviour. Integrate and check the four jobs together before
 closing the issue. J09 does not need history, but is outside this milestone.
-J10's transfer format remains a later decision.
+
+J10's transfer format was decided on 15 November 2026: a downloaded JSON file
+worked through a preview, then merged into My list; imported products missing
+from the accepted catalogue are kept as unpriced items. See the implementation
+guide for the file shape and merge rules.
 
 Use the [agreed decision register](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
 for retention, periods, target/drop rules, repeat reset, timing, budgets, and

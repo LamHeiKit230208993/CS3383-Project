@@ -46,3 +46,4 @@ The retired prototype cases and their original source links are preserved in
 | ID | Area | Expected result | Source |
 |---|---|---|---|
 | [TC-CHAT-001](cases/TC-CHAT-001.md) | J09 checked price chat | Answers use checked product/retailer/amount; ambiguous requests ask for a choice; unavailable AI keeps search/comparison usable; no invented price | `ChatControllerTest`, `ChatAgentTest` |
+| [TC-SHARE-001](cases/TC-SHARE-001.md) | J10 separate-copy list sharing | JSON export round-trips products/quantity/checked/retailer; preview changes nothing; malformed or conflicting import rejects the whole file; unpriced retailers kept | `ListTransferServiceTest`, `HelloControllerTest` |

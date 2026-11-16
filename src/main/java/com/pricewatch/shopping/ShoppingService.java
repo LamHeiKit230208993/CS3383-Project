@@ -79,6 +79,40 @@ public class ShoppingService {
         });
     }
 
+    /** Adds an item from an imported list. Unlike {@link #add}, an explicit retailer does not need a
+     * current price, so an unpriced item keeps its saved choice. Catalogue, conflict and quantity
+     * rules still apply. */
+    public void mergeImported(List<ImportedItem> items) {
+        items.forEach(item -> validateQuantity(item.quantity()));
+        mutate(() -> items.forEach(this::mergeImportedItem));
+    }
+
+    private void mergeImportedItem(ImportedItem item) {
+        String requestedRetailer = automaticIfBlank(item.retailerCode());
+        ProductEntity product = productRepository.findById(item.code())
+                .orElseThrow(() -> new IllegalArgumentException("Product " + item.code()
+                        + " is not in the accepted catalogue."));
+        ShoppingListEntity list = getOrCreateList();
+        ShoppingListItemEntity existing = itemRepository
+                .findByShoppingList_NameAndProduct_Code(LIST_NAME, item.code()).orElse(null);
+        if (existing != null) {
+            if (!Objects.equals(existing.getSelectedRetailerCode(), requestedRetailer)) {
+                throw new IllegalArgumentException("Product " + item.code()
+                        + " is already in your list with another retailer.");
+            }
+            int combined = existing.getQuantity() + item.quantity();
+            validateQuantity(combined);
+            existing.setQuantity(combined);
+            existing.setChecked(item.checked());
+        } else {
+            itemRepository.save(new ShoppingListItemEntity(list, product, item.quantity(), item.checked(),
+                    requestedRetailer));
+        }
+    }
+
+    public record ImportedItem(String code, int quantity, boolean checked, String retailerCode) {
+    }
+
     public void update(String productCode, int quantity, boolean checked) {
         validateQuantity(quantity);
         mutate(() -> {

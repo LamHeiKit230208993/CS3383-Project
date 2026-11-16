@@ -1,0 +1,58 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="import-title">
+    <div class="page-heading heading-with-action">
+      <div>
+        <p class="eyebrow">SHARE A LIST AS A SEPARATE COPY</p>
+        <h1 id="import-title">Import a shared list.</h1>
+        <p class="intro">A Market Desk list file is merged into My list after you review it. This creates a separate copy; later edits do not sync.</p>
+      </div>
+      <a class="button secondary" th:href="@{/list}">Back to My list</a>
+    </div>
+    <div class="panel">
+      <div th:if="${preview == null}">
+        <h2>Choose a list file</h2>
+        <p>Select a <code>.json</code> file exported from Market Desk. Nothing is saved until you review the preview.</p>
+        <form class="stack-form" th:action="@{/list/import}" method="post" enctype="multipart/form-data">
+          <label>
+            List file
+            <input type="file" name="file" accept="application/json,.json" required>
+          </label>
+          <button class="button primary" type="submit">Review file</button>
+        </form>
+      </div>
+      <div th:if="${preview != null}">
+        <h2>Review before importing</h2>
+        <dl class="data-facts">
+          <dt>List</dt>
+          <dd th:text="${preview.listName}"></dd>
+          <dt>Exported</dt>
+          <dd th:text="${preview.exportedAt}"></dd>
+          <dt>Items</dt>
+          <dd th:text="${preview.itemCount + ' products'}"></dd>
+        </dl>
+        <div class="section-heading">
+          <h3>What this file contains</h3>
+        </div>
+        <article class="list-item" th:each="item : ${preview.items}">
+          <div class="list-item-heading">
+            <div>
+              <h3 th:text="${item.name}"></h3>
+              <p class="helper" th:text="${item.name != item.code ? item.code : ''}"></p>
+            </div>
+            <strong th:text="${item.checked ? 'Checked' : 'Not checked'}"></strong>
+          </div>
+          <p class="selection-mode" th:text="${item.retailerCode == null ? 'Automatic lowest listed price' : 'Your retailer: ' + item.retailerCode}"></p>
+          <p class="helper" th:text="${item.quantity + (item.quantity == 1 ? ' pack' : ' packs')}"></p>
+        </article>
+        <p class="helper">These items will be added to My list. Products already present keep their saved retailer; a different retailer for the same product is rejected and nothing changes.</p>
+        <form class="stack-form" th:action="@{/list/import}" method="post">
+          <input type="hidden" name="confirm" value="true">
+          <button class="button primary" type="submit">Import into My list</button>
+        </form>
+        <form th:action="@{/list/import}" method="get">
+          <button class="button secondary" type="submit">Choose another file</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</th:block>

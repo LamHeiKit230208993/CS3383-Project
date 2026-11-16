@@ -165,8 +165,41 @@ Ask remains planned. The shared navigation, import status and local request guar
 apply to the new pages. Invalid form input must produce a useful error rather
 than a partial write.
 
-## Verification and later work
+## List sharing (J10)
 
+Decided 15 November 2026: a list is shared as a downloaded **JSON file**, reviewed
+in a preview, then **merged into My list** as a separate copy. Products missing
+from the accepted catalogue are rejected; an item whose saved retailer has no
+current price is kept as an unpriced item. There is no account, cloud save, live
+sync, or automatic merge of later edits.
+
+| Request | Purpose / main fields |
+|---|---|
+| `GET /list/export` | Downloads `market-desk-list.json` (`application/json` attachment) for the chosen My list |
+| `GET /list/import` | Import form (file chooser) |
+| `POST /list/import` | Multipart `file`; without `confirm=true` returns a preview, with `confirm=true` merges into My list |
+
+The file shape (`ListTransfer`, format `market-desk-list/1`):
+
+```json
+{
+  "format": "market-desk-list/1",
+  "listName": "My list",
+  "exportedAt": "2026-11-15T10:00:00+08:00[Asia/Hong_Kong]",
+  "items": [ { "code": "P000000124", "quantity": 2, "checked": true, "retailerCode": "JASONS" } ]
+}
+```
+
+`ListTransferService` exports from `ShoppingService.items()` and, on import,
+validates the whole file (format, ≤999 items, quantity 1–999, code/retailer
+lengths) before merging. The uploaded bytes are held in the HTTP session between
+the preview and the confirm step. The merge runs in one `ShoppingService`
+transaction (`mergeImported`): any missing product or conflicting retailer rejects
+the whole file and leaves My list unchanged. Merging a product already in My list
+combines quantities and adopts the imported checked state. Unlike `add`, an
+explicit retailer does not need a current price, so unpriced items are kept.
+
+## Verification and later work
 See the [UML index](diagrams/README.md) for the current extension and historical
 baseline. Keep editable sources and use official PlantUML exports. A diagram or
 successful compile alone is not acceptance evidence.
@@ -176,7 +209,8 @@ database restart/upgrade checks. The current [test catalogue](Test/test-case-cat
 links focused cases; [history](Test/history.md) records actual commands, versions,
 outcomes and limits. Earlier J01–J04 results do not verify this extension.
 
-J09 chat, J10 separate-copy transfer, J11 offline reopening and full J12
+J09 chat is implemented on this branch; J10 list sharing is implemented
+(downloaded JSON, preview then merge). J11 offline reopening and full J12
 translation/accessibility/personal-data work remain later jobs. Existing
 conditional scope rows keep their evidence conditions. No new cloud or device
 notification channel is included.

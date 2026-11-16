@@ -4,6 +4,7 @@ import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.chat.ChatReply;
 import com.pricewatch.chat.ChatService;
+import com.pricewatch.shopping.ListTransferService;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
 import org.springframework.http.HttpStatus;
@@ -29,11 +30,14 @@ public class HelloController {
     private final CatalogService catalog;
     private final ShoppingService shopping;
     private final ChatService chat;
+    private final ListTransferService transfer;
 
-    public HelloController(CatalogService catalog, ShoppingService shopping, ChatService chat) {
+    public HelloController(CatalogService catalog, ShoppingService shopping, ChatService chat,
+                           ListTransferService transfer) {
         this.catalog = catalog;
         this.shopping = shopping;
         this.chat = chat;
+        this.transfer = transfer;
     }
     @ModelAttribute
     void common(Model model) {
@@ -75,6 +79,62 @@ public class HelloController {
         model.addAttribute("items", items);
         model.addAttribute("summary", Summary.from(items));
         return screen(model, "list", "My list");
+    }
+    @GetMapping("/list/export")
+    org.springframework.http.ResponseEntity<byte[]> exportList() throws java.io.IOException {
+        byte[] body = transfer.export();
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"market-desk-list.json\"")
+                .body(body);
+    }
+    @GetMapping("/list/import")
+    String importList(Model model) {
+        model.addAttribute("preview", null);
+        return screen(model, "import", "Import a list");
+    }
+    @PostMapping("/list/import")
+    String importList(@RequestParam(defaultValue = "false") boolean confirm,
+                      @RequestParam(required = false) org.springframework.web.multipart.MultipartFile file,
+                      jakarta.servlet.http.HttpSession session, Model model, RedirectAttributes redirect) {
+        String pendingKey = "pendingListImport";
+        if (!confirm) {
+            if (file == null || file.isEmpty()) {
+                model.addAttribute("error", "Choose a Market Desk list file to import.");
+                model.addAttribute("preview", null);
+                return screen(model, "import", "Import a list");
+            }
+            try {
+                byte[] bytes = file.getBytes();
+                var preview = transfer.preview(bytes);
+                session.setAttribute(pendingKey, bytes);
+                model.addAttribute("preview", preview);
+                return screen(model, "import", "Import a list");
+            } catch (IllegalArgumentException | java.io.IOException exception) {
+                session.removeAttribute(pendingKey);
+                model.addAttribute("error", exception.getMessage());
+                model.addAttribute("preview", null);
+                return screen(model, "import", "Import a list");
+            }
+        }
+        Object pending = session.getAttribute(pendingKey);
+        if (!(pending instanceof byte[] bytes)) {
+            model.addAttribute("error", "Choose a Market Desk list file, then review it before importing.");
+            model.addAttribute("preview", null);
+            return screen(model, "import", "Import a list");
+        }
+        try {
+            var result = transfer.importFile(bytes);
+            session.removeAttribute(pendingKey);
+            redirect.addFlashAttribute("notice", "Imported " + result.itemCount()
+                    + " items into My list. This is a separate copy; later edits do not sync.");
+            return "redirect:/list";
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("error", exception.getMessage());
+            model.addAttribute("preview", null);
+            return screen(model, "import", "Import a list");
+        }
     }
     @GetMapping("/data")
     String data(Model model) { return screen(model, "data", "Price data & updates"); }

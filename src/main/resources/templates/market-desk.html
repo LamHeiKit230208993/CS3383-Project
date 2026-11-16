@@ -32,6 +32,9 @@
           <th:block th:if="${scene == 'list'}">
             <th:block th:replace="~{pages/list :: content}"></th:block>
           </th:block>
+          <th:block th:if="${scene == 'import'}">
+            <th:block th:replace="~{pages/import-list :: content}"></th:block>
+          </th:block>
           <th:block th:if="${scene == 'data'}">
             <th:block th:replace="~{pages/data :: content}"></th:block>
           </th:block>

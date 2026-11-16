@@ -4,6 +4,20 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## J10 separate-copy list sharing — 15 November 2026
+
+- Maven test run on JDK 21 passed **108 tests** with zero failures, errors or skips,
+  including 6 new J10 cases (`ListTransferServiceTest`) and 2 import/export scenarios
+  in `HelloControllerTest`. The intentional `ERROR` log lines are expected
+  constraint-violation tests from earlier milestone cases.
+- The transfer format was decided this date: a downloaded JSON file
+  (`market-desk-list/1`), reviewed in a preview, then merged into My list; imported
+  products missing from the catalogue are rejected, while items whose saved retailer
+  has no current price are kept as unpriced. Only the chosen My list is exported.
+- Limits: the browser download dialog and multipart upload were not exercised
+  through a real browser this run; they are covered by MockMvc multipart tests.
+  J11–J12 remain unstarted.
+
 ## J09 checked price chat — 15 November 2026
 
 - Maven test run on JDK 21 passed **94 tests** with zero failures, errors or skips,

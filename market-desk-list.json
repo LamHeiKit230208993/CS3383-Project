@@ -1,0 +1,11 @@
+{
+  "format" : "market-desk-list/1",
+  "listName" : "My list",
+  "exportedAt" : "2026-11-15T21:42:14.595+08:00[Asia/Hong_Kong]",
+  "items" : [ {
+    "code" : "P000000002",
+    "quantity" : 1,
+    "checked" : false,
+    "retailerCode" : "WELLCOME"
+  } ]
+}
