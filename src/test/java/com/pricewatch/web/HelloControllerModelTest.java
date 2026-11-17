@@ -25,12 +25,14 @@ class HelloControllerModelTest {
     private final ChatService chat = mock(ChatService.class);
     private final com.pricewatch.shopping.ListTransferService transfer =
             mock(com.pricewatch.shopping.ListTransferService.class);
+    private final com.pricewatch.shopping.OfflineListExporter offlineExporter =
+            mock(com.pricewatch.shopping.OfflineListExporter.class);
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         View emptyView = (model, request, response) -> {};
-        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping, chat, transfer))
+        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping, chat, transfer, offlineExporter))
                 .setViewResolvers((name, locale) -> emptyView)
                 .build();
     }

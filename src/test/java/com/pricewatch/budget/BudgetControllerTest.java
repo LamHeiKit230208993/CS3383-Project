@@ -30,7 +30,8 @@ class BudgetControllerTest {
     private final ShoppingService shopping = mock(ShoppingService.class);
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
             new BudgetController(budgets, catalog, new HelloController(catalog, shopping, mock(ChatService.class),
-                    mock(com.pricewatch.shopping.ListTransferService.class)))).build();
+                    mock(com.pricewatch.shopping.ListTransferService.class),
+                    mock(com.pricewatch.shopping.OfflineListExporter.class)))).build();
 
     @BeforeEach
     void defaults() {

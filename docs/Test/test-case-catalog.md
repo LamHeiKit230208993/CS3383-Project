@@ -47,3 +47,5 @@ The retired prototype cases and their original source links are preserved in
 |---|---|---|---|
 | [TC-CHAT-001](cases/TC-CHAT-001.md) | J09 checked price chat | Answers use checked product/retailer/amount; ambiguous requests ask for a choice; unavailable AI keeps search/comparison usable; no invented price | `ChatControllerTest`, `ChatAgentTest` |
 | [TC-SHARE-001](cases/TC-SHARE-001.md) | J10 separate-copy list sharing | JSON export round-trips products/quantity/checked/retailer; preview changes nothing; malformed or conflicting import rejects the whole file; unpriced retailers kept | `ListTransferServiceTest`, `HelloControllerTest` |
+| [TC-OFFLINE-001](cases/TC-OFFLINE-001.md) | J11 offline saved list | Downloaded self-contained HTML has no external resources, shows saved time and incomplete totals, opens offline, and supports local-only tick-off | `OfflineListExporterTest`, `HelloControllerTest` |
+| [TC-PHONE-001](cases/TC-PHONE-001.md) | Phone on same Wi-Fi | Loopback-only by default; a listed LAN host is served; other hosts stay blocked; cross-site writes still rejected | `LocalRequestGuardTest`, `HelloControllerTest` |

@@ -5,6 +5,7 @@ import com.pricewatch.catalog.ProductView;
 import com.pricewatch.chat.ChatReply;
 import com.pricewatch.chat.ChatService;
 import com.pricewatch.shopping.ListTransferService;
+import com.pricewatch.shopping.OfflineListExporter;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
 import org.springframework.http.HttpStatus;
@@ -31,13 +32,15 @@ public class HelloController {
     private final ShoppingService shopping;
     private final ChatService chat;
     private final ListTransferService transfer;
+    private final OfflineListExporter offlineExporter;
 
     public HelloController(CatalogService catalog, ShoppingService shopping, ChatService chat,
-                           ListTransferService transfer) {
+                           ListTransferService transfer, OfflineListExporter offlineExporter) {
         this.catalog = catalog;
         this.shopping = shopping;
         this.chat = chat;
         this.transfer = transfer;
+        this.offlineExporter = offlineExporter;
     }
     @ModelAttribute
     void common(Model model) {
@@ -87,6 +90,15 @@ public class HelloController {
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"market-desk-list.json\"")
+                .body(body);
+    }
+    @GetMapping("/list/offline")
+    org.springframework.http.ResponseEntity<byte[]> exportOfflineList() {
+        byte[] body = offlineExporter.export();
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType("text/html;charset=UTF-8"))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"market-desk-list.html\"")
                 .body(body);
     }
     @GetMapping("/list/import")

@@ -151,6 +151,17 @@ class HelloControllerTest {
         mvc.perform(get("/planned/updates")).andExpect(redirectedUrl("/alerts"));
     }
 
+    @Test void offlineListDownloadsSelfContainedHtml() throws Exception {
+        catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
+        String html = mvc.perform(get("/list/offline"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("market-desk-list.html")))
+                .andExpect(content().contentTypeCompatibleWith(org.springframework.http.MediaType.TEXT_HTML))
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(html.contains("P000000124"));
+        assertTrue(html.contains("WORKS OFFLINE"));
+    }
     @Test void exportDownloadsJsonAndImportPreviewsThenMerges() throws Exception {
         catalog.importSample();
         shopping.add("P000000124", 2, "JASONS");

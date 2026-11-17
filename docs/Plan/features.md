@@ -112,6 +112,14 @@ worked through a preview, then merged into My list; imported products missing
 from the accepted catalogue are kept as unpriced items. See the implementation
 guide for the file shape and merge rules.
 
+J11's offline view is delivered as a downloaded, self-contained HTML file rather
+than a re-opened app page, because the app is a web app that needs its server.
+My list's "Save a copy that works offline" downloads one `market-desk-list.html`
+with inline CSS and a small script: it opens after the app is closed and the
+device is offline, shows the saved time and amounts that may be out of date,
+makes no fresh-price or chat claim, and lets the user tick items off locally
+(ticks are not saved). No server-side snapshot is kept.
+
 Use the [agreed decision register](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
 for retention, periods, target/drop rules, repeat reset, timing, budgets, and
 reminders. Agents must not each choose different rules. The

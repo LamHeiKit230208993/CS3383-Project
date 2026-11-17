@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Market Desk &mdash; My list (saved copy)</title><style>:root{color-scheme:light;--page:#f5f7fb;--surface:#fff;--ink:#16243b;--muted:#53647c;--line:#dce3ed;--blue:#2854ce;--blue-soft:#edf2ff;--green:#146b48;font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Arial,sans-serif;font-size:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);line-height:1.6}
+main{max-width:780px;margin:auto;padding:34px 22px 44px}
+h1{font-size:clamp(26px,4vw,36px);letter-spacing:-1px;margin:0}
+h2{font-size:22px;letter-spacing:-.5px;margin:0}
+h3{font-size:17px;margin:0}
+p{margin:0}
+.eyebrow{color:var(--muted);font-size:10px;letter-spacing:1.8px;font-weight:650;margin-bottom:14px}
+.intro{color:var(--muted);font-size:14px;margin-top:12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;margin-top:22px}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 18px}
+.section-heading>span{color:var(--muted);font-size:12px}
+.helper{font-size:13px;color:var(--muted);line-height:1.7;margin-top:12px}
+.source-note{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px;margin-top:26px}
+.warning{padding:12px;background:#fff4dd;color:#69470e;border-radius:8px;font-size:13px;margin-top:16px}
+.list-item{padding:22px 0;border-top:1px solid var(--line)}
+.list-item:first-of-type{border-top:0}
+.list-item-heading{display:flex;align-items:start;justify-content:space-between;gap:20px}
+.list-item-heading>div{min-width:0}
+.line-total{font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.is-checked h3{text-decoration:line-through;color:var(--muted)}
+.selection-mode{color:var(--blue);font-size:12px;margin-top:8px}
+.check-label{display:flex;align-items:center;gap:10px;font-size:14px;margin-top:14px;cursor:pointer}
+.check-label input{width:20px;height:20px;accent-color:var(--blue)}
+.summary-total{border-top:1px solid var(--line);padding-top:20px;margin-top:20px}
+.summary-total span{font-size:13px;color:var(--muted);display:block}
+.summary-total strong{font-size:30px;letter-spacing:-.8px;font-variant-numeric:tabular-nums;display:block}
+</style></head><body><main><header><p class="eyebrow">SAVED COPY &middot; WORKS OFFLINE</p><h1>Your next shop, saved.</h1><p class="intro">Prices saved 18 Nov 2026, 00:42 HKT. Amounts may be out of date; tick items while you shop. Ticks are not saved.</p></header><section class="panel"><div class="section-heading"><h2>My list</h2><span id="done-count">1 products</span></div><article class="list-item"><div class="list-item-heading"><div><h3>7 Up Carbonated Soft Drink - Can 330mL x 8</h3><p class="helper">7 Up &middot; P000000002</p></div><strong class="line-total">HK$85.50</strong></div><p class="selection-mode">Your retailer: WELLCOME</p><p class="helper">HK$28.50 per pack &middot; 3 packs &middot; WELLCOME</p><label class="check-label"><input type="checkbox"> Got it</label></article><div class="summary-total"><span>Estimated list cost</span><strong>HK$85.50</strong></div><p class="helper">Uses saved retailer choices. A missing selected price stays unknown; we do not switch your retailer.</p><p class="source-note">A read-only copy. No new prices are fetched and no chat is available offline. Delivery, stock, and multi-buy offers are not included. This is not actual spending.</p></section></main><script>
+(function(){
+  var items=[].slice.call(document.querySelectorAll('.list-item'));
+  var count=document.getElementById('done-count');
+  items.forEach(function(item){
+    var box=item.querySelector('input[type=checkbox]');
+    var sync=function(){item.classList.toggle('is-checked',box.checked);};
+    box.addEventListener('change',function(){sync();render();});
+    sync();
+  });
+  function render(){
+    if(!count)return;
+    var done=items.filter(function(i){var b=i.querySelector('input');return b&&b.checked;}).length;
+    count.textContent=done+' of '+items.length+' done';
+  }
+  render();
+})();
+</script>
+</body></html>

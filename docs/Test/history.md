@@ -4,6 +4,38 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Phone on same Wi-Fi — 18 November 2026
+
+- Maven test run on JDK 21 passed **115 tests** with zero failures, errors or skips,
+  adding `LocalRequestGuardTest` (4).
+- `LocalRequestGuard` now accepts hostnames from `pricewatch.allowed-hosts` in
+  addition to loopback. `server.address` defaults to `127.0.0.1` and reads
+  `SERVER_ADDRESS`; the app is still loopback-only unless started with
+  `--server.address=0.0.0.0` and a listed host.
+- Manual check against the packaged app: bound to `0.0.0.0` with
+  `PRICEWATCH_ALLOWED_HOSTS=192.168.1.20`, host `192.168.1.20` was served (200);
+  host `10.0.0.9` got 403. The phone address is documented in the setup guide,
+  not shown on the Price data page.
+- Limits: a real phone joining the Wi-Fi and the OS firewall prompt were not
+  exercised this run; these are documented in SETUP.md for the user to allow.
+
+
+## J11 read-only offline saved list — 18 November 2026
+
+- Maven test run on JDK 21 passed **111 tests** with zero failures, errors or skips,
+  including 2 new J11 cases (`OfflineListExporterTest`) and 1 offline-download
+  scenario in `HelloControllerTest`. The `HelloController` constructor gained the
+  `OfflineListExporter` dependency, so `HelloControllerModelTest` and
+  `BudgetControllerTest` were updated to pass a mock.
+- J11 is delivered as a downloaded self-contained HTML (`GET /list/offline`), since
+  the app is a web app that cannot render without its server. The file inlines CSS
+  and a small tick-off script, has no external `<link>` or `src=`, shows the saved
+  HKT time and an inaccurate-total warning, and keeps totals fixed as saved.
+- Limits: the browser download dialog and opening the file with the network off
+  were not exercised through a real browser this run; the HTML contents
+  (self-contained, escaping, saved values) are covered by service and MockMvc
+  tests. J12 remains later work.
+
 ## J10 separate-copy list sharing — 15 November 2026
 
 - Maven test run on JDK 21 passed **108 tests** with zero failures, errors or skips,

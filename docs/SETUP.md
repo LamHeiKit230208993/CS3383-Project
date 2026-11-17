@@ -204,6 +204,82 @@ isolated databases and do not need your normal data file.
 The default server binds to `127.0.0.1`. It is a local app, not a shared cloud
 service. Saved data on this computer does not by itself make a phone work offline.
 
+### Open the app from a phone on the same Wi-Fi
+
+By default the app listens only on `127.0.0.1`, so a phone cannot reach it. The
+phone workflow turns on two things: the server listens on the network
+(`--server.address=0.0.0.0`), and the guard accepts your computer's Wi-Fi address
+(`PRICEWATCH_ALLOWED_HOSTS`). Do these steps once per Wi-Fi network.
+
+**1. Find this computer's Wi-Fi address.** It looks like `192.168.x.x`.
+
+```powershell
+ipconfig
+```
+
+Read the IPv4 address of the active Wi-Fi adapter. Use it below in place of
+`192.168.1.20`. On macOS/Linux use `ipconfig getifaddr en0` or `ip addr`.
+
+**2. Start the app so the phone can connect.** Open PowerShell in the project
+folder. Set the allowed host, then start the app bound to all interfaces. Build
+the runnable JAR first if needed (a JAR under about 1 MB is not the packaged app;
+stop any running copy, then rebuild):
+
+```powershell
+.\mvnw.cmd clean package
+```
+
+Then, in the same PowerShell window:
+
+```powershell
+$env:PRICEWATCH_ALLOWED_HOSTS = "192.168.1.20"
+java -jar target\pricewatch-0.0.1-SNAPSHOT.jar --server.address=0.0.0.0
+```
+
+To run from source instead, pass the same flag through the wrapper:
+
+```powershell
+$env:PRICEWATCH_ALLOWED_HOSTS = "192.168.1.20"
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.arguments=--server.address=0.0.0.0'
+```
+
+macOS/Linux use `export PRICEWATCH_ALLOWED_HOSTS=192.168.1.20` instead of the
+`$env:` line, and `./mvnw` instead of `.\mvnw.cmd`.
+
+For more than one address, separate them with commas, for example
+`192.168.1.20,192.168.1.20:8080`. A single bare address is enough for both.
+
+**3. Open the app on the phone.** Keep the phone on the same Wi-Fi and enter this
+in its browser, using your own address:
+
+```
+http://192.168.1.20:8080
+```
+
+**4. If the phone cannot connect, allow the app through the firewall.** On
+Windows, accept the prompt for Java when it first listens, or add an inbound rule
+for the port:
+
+```powershell
+New-NetFirewallRule -DisplayName "PriceWatch 8080" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow
+```
+
+Remove it later with
+`Remove-NetFirewallRule -DisplayName "PriceWatch 8080"`.
+
+**To switch it off**, stop the app (`Ctrl+C`) and clear the variable:
+
+```powershell
+Remove-Item Env:\PRICEWATCH_ALLOWED_HOSTS
+```
+
+With the app stopped, the phone address no longer works. Without the variable (or
+with it empty), requests using a LAN address are refused and only `localhost`
+works, even if the app is bound to `0.0.0.0`.
+
+Only list addresses you trust: anyone on that Wi-Fi can open the running app
+while it is bound to `0.0.0.0`. Do not do this on public or untrusted networks.
+
 ---
 
 ## Troubleshooting
