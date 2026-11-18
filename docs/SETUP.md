@@ -1,4 +1,4 @@
-# Setup & Run Guide Ã¢â‚¬â€ Spring Boot App
+# Setup & Run Guide — Spring Boot App
 
 This guide covers installing everything needed to build and run the Spring Boot app and how to start it in the browser.
 
@@ -7,7 +7,7 @@ This guide covers installing everything needed to build and run the Spring Boot 
 | Tool | Version | Notes |
 |------|---------|-------|
 | **JDK** | 21 (LTS) | Temurin (Adoptium) is the recommended distribution. |
-| **Maven** | 3.9.x | Not installed globally Ã¢â‚¬â€ the repo ships a Maven **wrapper** (`mvnw.cmd`), so no global install needed. |
+| **Maven** | 3.9.x | Not installed globally — the repo ships a Maven **wrapper** (`mvnw.cmd`), so no global install needed. |
 
 The project targets **Spring Boot 3.4.5** on **Java 21**.
 
@@ -15,13 +15,13 @@ The project targets **Spring Boot 3.4.5** on **Java 21**.
 
 ## 1. Install the JDK (one-time)
 
-### Option A Ã¢â‚¬â€ via winget (easiest on Windows)
+### Option A — via winget (easiest on Windows)
 
 ```powershell
 winget install --id EclipseAdoptium.Temurin.21.JDK -e --accept-source-agreements --accept-package-agreements
 ```
 
-### Option B Ã¢â‚¬â€ manual download
+### Option B — manual download
 
 Download from <https://adoptium.net/temurin/releases/?version=21> and run the installer (install to `C:\Program Files\Eclipse Adoptium\jdk-21...`).
 
@@ -111,7 +111,7 @@ Local integration checks passed on 6 November 2026; J09 adds the checked price c
 See the [baseline guide](implementation-baseline-j01-j04.md) and
 [extension guide](implementation-j05-j08.md) for behaviour and limits.
 
-### Try the J05Ã¢â‚¬â€œJ08 flow
+### Try the J05–J08 flow
 
 1. Open a product comparison and choose **Save or track this product**. Save it to the
    wishlist, or explicitly track a retailer. These are separate actions.
@@ -127,7 +127,7 @@ See the [baseline guide](implementation-baseline-j01-j04.md) and
    reminder active. Clear starts a new interval from now; Snooze delays its
    effective due time by 24 hours.
 
-Alert timing uses Hong Kong time. Defaults are quiet hours **22:00Ã¢â‚¬â€œ08:00** and
+Alert timing uses Hong Kong time. Defaults are quiet hours **22:00–08:00** and
 daily summary **08:00**. Change them on Alerts; equal quiet start/end disables
 quiet hours. Quiet hours delay notification eligibility, not manual list actions.
 Events and reminders stay inside the app. Nothing is delivered while the app is
@@ -166,7 +166,7 @@ or one-off runs can override without editing the file.
 The base URL is the CityU OpenAI-compatible endpoint; the client appends
 `/chat/completions`. The key is supplied the same way as in your editor's
 `opencode.json`, but the app reads it only from these server-side environment
-variables Ã¢â‚¬â€ it does not open `opencode.json`. The values are read through
+variables — it does not open `opencode.json`. The values are read through
 `pricewatch.ai.base-url`, `pricewatch.ai.api-key`, and `pricewatch.ai.model` in
 `application.properties`. Never hardcode or commit the key. If the AI is not
 configured or unreachable, Ask still answers from checked records and the normal
@@ -183,6 +183,43 @@ For isolated checks, disable the scheduled summary job with
 checks, or the browser's safe page refresh.
 
 To stop the app, press `Ctrl+C` in the terminal.
+
+### Languages, contrast, and personal data (J12)
+
+- **Settings tab.** The sidebar **Settings** entry (`/my-data`) is the one place
+  for the language switch, the display contrast switch, the local user-data
+  counts, the export, and the delete. The controls are no longer in the sidebar.
+- **Languages.** The Settings page has English / 繁體中文 / 简体中文 buttons. Each
+  calls `GET /lang?code=en|zh_TW|zh_CN&back=<path>`, which sets the `LANG`
+  cookie and returns to the same page. Text lives in
+  `src/main/resources/messages.properties`,
+  `messages_zh_TW.properties`, and `messages_zh_CN.properties`; product names
+  come from the imported JSON (`zh-Hant`/`zh-Hans`) with an English fallback.
+  The same bundle covers controller feedback and page titles, so the switch
+  also applies to flash notices and validation errors. The Chinese wording
+  still needs a native-speaker review.
+- **Contrast.** On the same Settings page, the **High contrast** button calls
+  `GET /contrast?mode=high|off&back=<path>`, sets the `CONTRAST` cookie, and
+  switches the page to `data-contrast="high"`.
+- **Personal data.** `/my-data` shows the local user's stored rows and settings
+  state. `/my-data/export` downloads `market-desk-my-data.json`. The delete form
+  requires typing `DELETE` and then removes the list, wishlist, tracking and
+  observations, alerts, reminders, and settings; the imported catalogue is kept
+  because it is source data, not the user's.
+- **Demo history data.** The Price data page has a **Load demo history data**
+  panel that replaces the catalogue with three demo products (`DEMO-MILK`,
+  `DEMO-BREAD`, `DEMO-COFFEE`), starts product-wide tracking, and writes
+  dated observations over the last three weeks with deliberate gaps, price
+  moves, one unknown price, and one target. Use it to exercise the History,
+  Alerts, Reminders, and Tracking screens. The prices are synthetic and are
+  labelled `demo://synthetic-price` in the History source column; loading
+  replaces the catalogue, so reload the sample or live prices afterwards.
+- **Tracking summary.** `/saved` shows one card per tracked product, with the
+  latest three prices for each retailer and a link to the full dated history on
+  `/history`.
+- **History.** `/history` lists only stored price observations per retailer with
+  a visible **No records** row between recorded days, and an empty state before
+  any observation. Times are when the app retrieved the data.
 
 ### Local database
 
@@ -286,8 +323,8 @@ while it is bound to `0.0.0.0`. Do not do this on public or untrusted networks.
 
 | Problem | Fix |
 |---------|-----|
-| `JAVA_HOME not found in your environment` | Set `JAVA_HOME` (see Ã‚Â§2) and reopen your terminal. |
-| `java -version` shows an old version | Your terminal still has a stale PATH Ã¢â‚¬â€ reopen it, or ensure JDK 21 bin is first in the persistent PATH. |
+| `JAVA_HOME not found in your environment` | Set `JAVA_HOME` (see Ã‚§2) and reopen your terminal. |
+| `java -version` shows an old version | Your terminal still has a stale PATH — reopen it, or ensure JDK 21 bin is first in the persistent PATH. |
 | Port 8080 already in use | Change the port in `src/main/resources/application.properties` (`server.port=8081`) or stop the process using 8080. |
 
 ---

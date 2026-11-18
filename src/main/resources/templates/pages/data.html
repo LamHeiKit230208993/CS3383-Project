@@ -1,51 +1,64 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
   <section aria-labelledby="data-title">
     <div class="page-heading">
-      <p class="eyebrow">KNOW WHAT YOU ARE COMPARING</p>
-      <h1 id="data-title">Price data, made clear.</h1>
-      <p class="intro">You choose when to refresh. A failed import keeps your last accepted data.</p>
+      <p class="eyebrow" th:text="${#messages.msg('data.eyebrow')}">KNOW WHAT YOU ARE COMPARING</p>
+      <h1 id="data-title" th:text="${#messages.msg('data.title')}">Price data, made clear.</h1>
+      <p class="intro" th:text="${#messages.msg('data.intro')}">You choose when to refresh. A failed import keeps your last accepted data.</p>
     </div>
     <div class="data-layout">
       <div class="panel">
-        <h2>Accepted catalogue</h2>
-        <p th:if="${importStatus == null}" class="helper">No catalogue has been imported yet.</p>
+        <h2 th:text="${#messages.msg('data.catalogue')}">Accepted catalogue</h2>
+        <p th:if="${importStatus == null}" class="helper" th:text="${#messages.msg('data.none')}">No catalogue has been imported yet.</p>
         <dl class="data-facts" th:if="${importStatus != null}">
-          <dt>Origin</dt>
-          <dd th:text="${importStatus.origin == 'SAMPLE' ? 'Historical sample excerpt · checked 17 Oct 2026' : 'Consumer Council live download'}"></dd>
-          <dt>Retrieved by this app</dt>
+          <dt th:text="${#messages.msg('data.origin')}">Origin</dt>
+          <dd th:text="${importStatus.origin == 'SAMPLE' ? #messages.msg('data.originSample') : #messages.msg('data.originLive')}"></dd>
+          <dt th:text="${#messages.msg('data.retrieved')}">Retrieved by this app</dt>
           <dd th:text="${format.time(importStatus.retrievedAt)}"></dd>
-          <dt>Source price date</dt>
-          <dd>Unknown — not supplied by this feed</dd>
-          <dt>Records</dt>
-          <dd th:text="${importStatus.productCount + ' products · ' + importStatus.listingCount + ' listings · ' + importStatus.offerCount + ' offers'}"></dd>
-          <dt>Source</dt>
+          <dt th:text="${#messages.msg('data.sourcePriceDate')}">Source price date</dt>
+          <dd th:text="${#messages.msg('data.unknownFeed')}">Unknown — not supplied by this feed</dd>
+          <dt th:text="${#messages.msg('data.records')}">Records</dt>
+          <dd th:text="${#messages.msg('data.recordCount', importStatus.productCount, importStatus.listingCount, importStatus.offerCount)}"></dd>
+          <dt th:text="${#messages.msg('data.source')}">Source</dt>
           <dd th:text="${importStatus.sourceUrl}" class="source-url"></dd>
         </dl>
-        <p class="source-note">A new download time does not prove a new price observation. Prices stay saved until you accept another import.</p>
+        <p class="source-note" th:text="${#messages.msg('data.recordNote')}">A new download time does not prove a new price observation. Prices stay saved until you accept another import.</p>
       </div>
       <div class="import-actions">
         <div class="panel">
-          <span class="small-tag">FIRST CHECK</span>
-          <h2>Load the checked sample</h2>
-          <p>Two original product records from 17 October 2026. Useful for checking the flow; not current shopping prices.</p>
+          <span class="small-tag" th:text="${#messages.msg('data.sampleTag')}">FIRST CHECK</span>
+          <h2 th:text="${#messages.msg('data.sampleTitle')}">Load the checked sample</h2>
+          <p th:text="${#messages.msg('data.sampleNote')}">Two original product records from 17 October 2026. Useful for checking the flow; not current shopping prices.</p>
           <form th:action="@{/data/sample}" method="post" data-import-form>
-            <label class="check-label" th:if="${importStatus != null}">
+            <label class="check-label">
               <input type="checkbox" required name="confirmSample">
-              Replace the accepted catalogue with this historical excerpt.
+              <span th:text="${#messages.msg('data.sampleConfirm')}">Replace the accepted catalogue with this historical excerpt.</span>
             </label>
-            <button class="button secondary full" type="submit">Load checked sample</button>
+            <button class="button secondary full" type="submit" th:text="${#messages.msg('data.sampleButton')}">Load checked sample</button>
           </form>
         </div>
         <div class="panel">
-          <span class="small-tag">CURRENT SOURCE</span>
-          <h2>Refresh live prices</h2>
-          <p>Download the daily file from the Consumer Council. Validate it before accepting any changes.</p>
+          <span class="small-tag" th:text="${#messages.msg('data.liveTag')}">CURRENT SOURCE</span>
+          <h2 th:text="${#messages.msg('data.liveTitle')}">Refresh live prices</h2>
+          <p th:text="${#messages.msg('data.liveNote')}">Download the daily file from the Consumer Council. Validate it before accepting any changes.</p>
           <form th:action="@{/data/refresh}" method="post" data-import-form>
-            <button class="button primary full" type="submit">Refresh live prices</button>
+            <button class="button primary full" type="submit" th:text="${#messages.msg('data.liveButton')}">Refresh live prices</button>
           </form>
-          <p class="helper">Needs a connection. No automatic refresh runs at startup.</p>
+          <p class="helper" th:text="${#messages.msg('data.liveHelper')}">Needs a connection. No automatic refresh runs at startup.</p>
         </div>
       </div>
     </div>
+    <section class="panel" aria-labelledby="demo-title">
+      <span class="small-tag" th:text="${#messages.msg('data.demoTag')}">FOR TESTING</span>
+      <h2 id="demo-title" th:text="${#messages.msg('data.demoTitle')}">Load demo history data</h2>
+      <p th:text="${#messages.msg('data.demoNote')}">Replaces the catalogue with three demo products and starts product-wide tracking. Each retailer gets dated prices over the last three weeks, with missing days and price moves, so the History, Alerts, Reminders, and Tracking screens have something to show.</p>
+      <p class="warning" th:text="${#messages.msg('data.demoWarning')}">These are synthetic prices, not live prices. They are marked demo in the History source column. Loading them replaces the accepted catalogue; you can reload the checked sample or live prices afterwards.</p>
+      <form th:action="@{/data/demo}" method="post" data-import-form>
+        <label class="check-label">
+          <input type="checkbox" required name="confirmSample">
+          <span th:text="${#messages.msg('data.demoConfirm')}">Replace the accepted catalogue with the demo data.</span>
+        </label>
+        <button class="button secondary full" type="submit" th:text="${#messages.msg('data.demoButton')}">Load demo data</button>
+      </form>
+    </section>
   </section>
 </th:block>

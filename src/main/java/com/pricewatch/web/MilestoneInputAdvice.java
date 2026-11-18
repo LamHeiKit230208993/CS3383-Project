@@ -13,18 +13,20 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class MilestoneInputAdvice {
     private final CatalogService catalog;
     private final HelloController format;
+    private final UiMessages messages;
 
-    public MilestoneInputAdvice(CatalogService catalog, HelloController format) {
+    public MilestoneInputAdvice(CatalogService catalog, HelloController format, UiMessages messages) {
         this.catalog = catalog;
         this.format = format;
+        this.messages = messages;
     }
 
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    String invalidInput(Model model) {
+    String invalidInput(Model model, jakarta.servlet.http.HttpServletRequest request) {
         model.addAttribute("scene", "error");
-        model.addAttribute("title", "Check your input");
-        model.addAttribute("error", "Check the form fields. Use whole numbers for quantities and intervals, and valid decimal amounts for prices.");
+        model.addAttribute("title", messages.get(request, "ui.title.error"));
+        model.addAttribute("error", messages.get(request, "ui.error.formFields"));
         model.addAttribute("format", format);
         model.addAttribute("importStatus", catalog.status());
         return "market-desk";

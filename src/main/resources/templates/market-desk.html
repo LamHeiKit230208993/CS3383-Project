@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${htmlLang}" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f5f7fb">
-    <title th:text="${title + ' · Market Desk'}">Market Desk</title>
+    <title th:text="${title} + ' · Market Desk'">Market Desk</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232854ce'/%3E%3Ctext x='5' y='25' fill='white' font-family='sans-serif' font-size='28' font-weight='bold'%3Em%3C/text%3E%3C/svg%3E"
@@ -12,8 +12,8 @@
     <link rel="stylesheet" th:href="@{/css/market-desk.css}">
     <script th:src="@{/js/market-desk.js}" defer></script>
   </head>
-  <body>
-    <a class="skip-link" href="#main-content">Skip to content</a>
+  <body th:attr="data-contrast=${highContrast == true ? 'high' : null}">
+    <a class="skip-link" href="#main-content" th:text="${#messages.msg('nav.skip')}">Skip to content</a>
     <th:block th:replace="~{fragments/layout :: icon-library}"></th:block>
     <div class="workspace">
       <th:block th:replace="~{fragments/navigation :: sidebar}"></th:block>
@@ -46,6 +46,12 @@
           </th:block>
           <th:block th:if="${scene == 'saved'}">
             <th:block th:replace="~{pages/saved :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'history'}">
+            <th:block th:replace="~{pages/history :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'my-data'}">
+            <th:block th:replace="~{pages/my-data :: content}"></th:block>
           </th:block>
           <th:block th:if="${scene == 'alerts'}">
             <th:block th:replace="~{pages/alerts :: content}"></th:block>

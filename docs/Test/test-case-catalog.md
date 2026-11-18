@@ -5,13 +5,13 @@ This index describes maintained checks. Detailed steps and limits belong in
 
 ## Latest recorded validation
 
-The 6 November 2026 J05â€“J08 run passed **86 Java tests**, packaging,
+The 6 November 2026 J05–J08 run passed **86 Java tests**, packaging,
 **9 baseline and 11 milestone Chrome scenarios**, and an old-to-new H2 upgrade
 check. Official PlantUML exports were rendered and visually reviewed.
 See the [dated run record](history.md). The earlier PR #15 results remain there
 as historical evidence. These local results do not close issue #17 or imply merge.
 
-## J01â€“J04 baseline scenarios
+## J01–J04 baseline scenarios
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
@@ -27,7 +27,7 @@ as historical evidence. These local results do not close issue #17 or imply merg
 
 Case descriptions state expected behaviour; they do not prove a later build passed.
 
-## J05â€“J08 milestone checks
+## J05–J08 milestone checks
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
@@ -41,7 +41,7 @@ Case descriptions state expected behaviour; they do not prove a later build pass
 The retired prototype cases and their original source links are preserved in
 [history](history.md#tc-web-002--retired-prototype-scenes-and-assets).
 
-## J09â€“J12 milestone checks
+## J09–J12 milestone checks
 
 | ID | Area | Expected result | Source |
 |---|---|---|---|
@@ -49,3 +49,8 @@ The retired prototype cases and their original source links are preserved in
 | [TC-SHARE-001](cases/TC-SHARE-001.md) | J10 separate-copy list sharing | JSON export round-trips products/quantity/checked/retailer; preview changes nothing; malformed or conflicting import rejects the whole file; unpriced retailers kept | `ListTransferServiceTest`, `HelloControllerTest` |
 | [TC-OFFLINE-001](cases/TC-OFFLINE-001.md) | J11 offline saved list | Downloaded self-contained HTML has no external resources, shows saved time and incomplete totals, opens offline, and supports local-only tick-off | `OfflineListExporterTest`, `HelloControllerTest` |
 | [TC-PHONE-001](cases/TC-PHONE-001.md) | Phone on same Wi-Fi | Loopback-only by default; a listed LAN host is served; other hosts stay blocked; cross-site writes still rejected | `LocalRequestGuardTest`, `HelloControllerTest` |
+| [TC-UI-001](cases/TC-UI-001.md) | J12 three UI languages | English, Traditional, and Simplified text render from the `LANG` cookie; product labels follow the source JSON with English fallback; search works in each language; page titles, flash notices, and service errors are translated too | `LocaleUiTest`, `LocalizedFeedbackTest`, `HelloControllerTest` |
+| [TC-UI-002](cases/TC-UI-002.md) | J12 contrast and easy-to-read | Contrast switch sets `data-contrast="high"`; readable palette, visible focus, and meaning that does not rely on colour | `LocaleUiTest`, `market-desk.css` |
+| [TC-DATA-005](cases/TC-DATA-005.md) | J12 demo history data | One action on the Price data page loads three demo products with dated prices, visible gaps, an unknown price, and one target, and starts product-wide tracking; synthetic rows are labelled `demo://synthetic-price` and the action needs confirmation when a catalogue exists | `DemoHistoryTest` |
+| [TC-DATA-004](cases/TC-DATA-004.md) | J12 local personal data | The Settings page (`/my-data`) holds the language and contrast switches plus the user-data view, JSON export, and a confirmed delete of the local user's records while the source catalogue is kept | `PersonalDataAndHistoryTest` |
+| [TC-HISTORY-001](cases/TC-HISTORY-001.md) | J12 dated history | `/history` shows only real dated records, a visible gap for missing days, and an empty state before any observation | `PersonalDataAndHistoryTest` |

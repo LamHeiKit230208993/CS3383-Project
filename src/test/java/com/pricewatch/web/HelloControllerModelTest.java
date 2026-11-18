@@ -27,12 +27,18 @@ class HelloControllerModelTest {
             mock(com.pricewatch.shopping.ListTransferService.class);
     private final com.pricewatch.shopping.OfflineListExporter offlineExporter =
             mock(com.pricewatch.shopping.OfflineListExporter.class);
+    private final org.springframework.context.support.ResourceBundleMessageSource messageSource =
+            new org.springframework.context.support.ResourceBundleMessageSource();
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         View emptyView = (model, request, response) -> {};
-        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping, chat, transfer, offlineExporter))
+        messageSource.setBasename("messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping, chat, transfer,
+                        offlineExporter, new UiMessages(messageSource),
+                        mock(com.pricewatch.tracking.DemoHistoryService.class)))
                 .setViewResolvers((name, locale) -> emptyView)
                 .build();
     }

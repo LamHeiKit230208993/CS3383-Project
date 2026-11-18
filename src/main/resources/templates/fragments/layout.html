@@ -24,6 +24,9 @@
     <symbol id="i-pack" viewBox="0 0 24 24">
       <path d="m12 3 9 5v9l-9 5-9-5V8Zm0 0v10m-9-5 9 5 9-5m-9 5v9M7.5 5.5l9 5"/>
     </symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24">
+      <path d="M4 20V4M4 20h16M8 16v-5M13 16V7M18 16v-3"/>
+    </symbol>
   </svg>
 </th:block>
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="source-banner">
@@ -32,26 +35,27 @@
     th:classappend="${importStatus != null and importStatus.origin == 'SAMPLE' ? ' sample-banner' : ''}"
   >
     <th:block th:if="${importStatus == null}">
-      <strong>No prices loaded</strong>
-      <span>Start with a checked sample or refresh the live source.</span>
+      <strong th:text="${#messages.msg('shell.noPrices')}">No prices loaded</strong>
+      <span th:text="${#messages.msg('shell.noPricesNote')}">Start with a checked sample or refresh the live source.</span>
     </th:block>
     <th:block th:if="${importStatus != null}">
-      <strong th:text="${importStatus.origin == 'SAMPLE' ? 'Historical sample · 17 Oct 2026' : 'Saved source prices'}"></strong>
-      <span th:text="${'Retrieved ' + format.time(importStatus.retrievedAt) + ' · source price date unknown'}"></span>
+      <strong th:text="${importStatus.origin == 'SAMPLE' ? #messages.msg('shell.sampleTitle') : #messages.msg('shell.liveTitle')}"></strong>
+      <span th:text="${#messages.msg('shell.retrieved', format.time(importStatus.retrievedAt))}"></span>
     </th:block>
-    <a th:href="@{/data}">View details ↗</a>
+    <a th:href="@{/data}" th:text="${#messages.msg('shell.viewDetails')}">View details ↗</a>
   </div>
 </th:block>
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="topbar">
   <header class="topbar">
     <a class="mobile-brand" th:href="@{/}">market desk<span>.</span></a>
-    <span class="breadcrumb">Your workspace <span>/</span><strong th:text="${title}"></strong></span>
-    <span class="local-state"><span class="local-dot"></span>Local baseline</span>
+    <span class="breadcrumb"><span th:text="${#messages.msg('shell.workspace')}">Your workspace</span> <span>/</span><strong th:text="${title}"></strong></span>
+    <span class="local-state"><span class="local-dot"></span><span th:text="${#messages.msg('shell.localBaseline')}">Local baseline</span></span>
   </header>
 </th:block>
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="page-footer">
   <footer class="page-footer">
-    <span>Thoughtful shopping, one list at a time.</span>
-    <a th:href="@{/data}">Price data &amp; updates</a>
+    <span th:text="${#messages.msg('shell.footerMotto')}">Thoughtful shopping, one list at a time.</span>
+    <a th:href="@{/my-data}" th:text="${#messages.msg('nav.settings')}">Settings</a>
+    <a th:href="@{/data}" th:text="${#messages.msg('nav.priceData')}">Price data &amp; updates</a>
   </footer>
 </th:block>

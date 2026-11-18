@@ -1,31 +1,32 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
   <section aria-labelledby="ask-title">
     <div class="page-heading">
-      <p class="eyebrow">CHECKED PRICE ANSWERS</p>
-      <h1 id="ask-title">Ask about a price.</h1>
-      <p class="intro">Answers use the accepted catalogue only. Search and comparison always work, even if the assistant is unavailable.</p>
+      <p class="eyebrow" th:text="${#messages.msg('ask.eyebrow')}">CHECKED PRICE ANSWERS</p>
+      <h1 id="ask-title" th:text="${#messages.msg('ask.title')}">Ask about a price.</h1>
+      <p class="intro" th:text="${#messages.msg('ask.intro')}">Answers use the accepted catalogue only. Search and comparison always work, even if the assistant is unavailable.</p>
     </div>
     <div class="ask-layout">
       <form class="panel chat-form" th:action="@{/ask}" method="post">
-        <label for="ask-question">Your price question</label>
+        <label for="ask-question" th:text="${#messages.msg('ask.questionLabel')}">Your price question</label>
         <textarea id="ask-question" name="question" rows="3" maxlength="500"
+                  th:attr="placeholder=${#messages.msg('ask.placeholder')}"
                   placeholder="What is the lowest price for fresh milk?" th:text="${question}"></textarea>
-        <button class="button primary" type="submit">Ask</button>
-        <p class="helper">We look up checked product, retailer, and amount before answering. No prices are invented.</p>
+        <button class="button primary" type="submit" th:text="${#messages.msg('ask.button')}">Ask</button>
+        <p class="helper" th:text="${#messages.msg('ask.caveat')}">We look up checked product, retailer, and amount before answering. No prices are invented.</p>
       </form>
       <div class="panel ask-answer" th:if="${reply != null}" role="status" aria-live="polite">
-        <p class="eyebrow" th:text="${reply.clarify ? 'NEED A CHOICE' : 'CHECKED ANSWER'}"></p>
+        <p class="eyebrow" th:text="${reply.clarify ? #messages.msg('ask.needChoice') : #messages.msg('ask.checkedAnswer')}"></p>
         <p class="ask-message" th:text="${reply.message}"></p>
         <details class="source-note" th:if="${reply.checkedFacts != null and !#strings.isEmpty(reply.checkedFacts)}">
-          <summary>Checked records used</summary>
+          <summary th:text="${#messages.msg('ask.checkedRecords')}">Checked records used</summary>
           <pre th:text="${reply.checkedFacts}"></pre>
         </details>
-        <p class="helper" th:if="${reply != null and !reply.clarify and !reply.answeredByModel}">Shown from checked records because the AI assistant was not available.</p>
-        <p class="source-note">This is not a purchase and not actual spending.</p>
+        <p class="helper" th:if="${reply != null and !reply.clarify and !reply.answeredByModel}" th:text="${#messages.msg('ask.fallback')}">Shown from checked records because the AI assistant was not available.</p>
+        <p class="source-note" th:text="${#messages.msg('ask.notPurchase')}">This is not a purchase and not actual spending.</p>
       </div>
       <div class="panel ask-answer" th:if="${reply == null}">
-        <p class="eyebrow">START HERE</p>
-        <p>Ask a clear price question. If the product is unclear, the assistant will ask you to choose instead of guessing.</p>
+        <p class="eyebrow" th:text="${#messages.msg('ask.startHere')}">START HERE</p>
+        <p th:text="${#messages.msg('ask.startNote')}">Ask a clear price question. If the product is unclear, the assistant will ask you to choose instead of guessing.</p>
       </div>
     </div>
   </section>

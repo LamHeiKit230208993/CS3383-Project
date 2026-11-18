@@ -25,13 +25,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 class BudgetControllerTest {
+    private static final org.springframework.context.MessageSource MESSAGES = messageSource();
+
+    private static org.springframework.context.MessageSource messageSource() {
+        var source = new org.springframework.context.support.ResourceBundleMessageSource();
+        source.setBasename("messages");
+        source.setDefaultEncoding("UTF-8");
+        return source;
+    }
+
     private final BudgetService budgets = mock(BudgetService.class);
     private final CatalogService catalog = mock(CatalogService.class);
     private final ShoppingService shopping = mock(ShoppingService.class);
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
             new BudgetController(budgets, catalog, new HelloController(catalog, shopping, mock(ChatService.class),
                     mock(com.pricewatch.shopping.ListTransferService.class),
-                    mock(com.pricewatch.shopping.OfflineListExporter.class)))).build();
+                    mock(com.pricewatch.shopping.OfflineListExporter.class),
+                    new com.pricewatch.web.UiMessages(MESSAGES),
+                    mock(com.pricewatch.tracking.DemoHistoryService.class)),
+            new com.pricewatch.web.UiMessages(MESSAGES))).build();
 
     @BeforeEach
     void defaults() {

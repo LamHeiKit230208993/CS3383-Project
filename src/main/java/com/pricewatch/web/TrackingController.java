@@ -29,38 +29,50 @@ public class TrackingController {
     private final NotificationPolicy notificationPolicy;
     private final HelloController format;
     private final Clock clock;
+    private final UiMessages messages;
 
     public TrackingController(CatalogService catalog, TrackingService tracking, AlertService alerts,
-                              NotificationPolicy notificationPolicy, HelloController format, Clock appClock) {
+                              NotificationPolicy notificationPolicy, HelloController format, Clock appClock,
+                              UiMessages messages) {
         this.catalog = catalog;
         this.tracking = tracking;
         this.alerts = alerts;
         this.notificationPolicy = notificationPolicy;
         this.format = format;
         this.clock = appClock;
+        this.messages = messages;
     }
 
     @GetMapping("/saved")
-    public String saved(@RequestParam(required = false) String code, Model model) {
+    public String saved(@RequestParam(required = false) String code, Model model,
+                        jakarta.servlet.http.HttpServletRequest request) {
         model.addAttribute("importStatus", catalog.status());
         model.addAttribute("format", format);
         model.addAttribute("savedProducts", tracking.savedProducts());
         var allRetailers = tracking.allRetailersProducts();
         model.addAttribute("allRetailersProducts", allRetailers);
         model.addAttribute("allRetailerCodes", allRetailers.stream().map(TrackingService.AllRetailersView::code).toList());
-        model.addAttribute("trackingPeriods", tracking.trackingPeriods());
+        var periods = tracking.trackingPeriods();
+        model.addAttribute("trackingPeriods", periods);
+        // One card per product: a product-wide track would otherwise repeat the
+        // product once for every retailer it covers.
+        var byProduct = new java.util.LinkedHashMap<String, java.util.List<com.pricewatch.tracking.TrackingView>>();
+        for (var period : periods) {
+            byProduct.computeIfAbsent(period.productCode(), key -> new java.util.ArrayList<>()).add(period);
+        }
+        model.addAttribute("trackingGroups", byProduct.values());
         if (code != null && !code.isBlank()) {
             try {
                 model.addAttribute("productToSave", catalog.find(code));
             } catch (IllegalArgumentException exception) {
-                model.addAttribute("productLookupError", exception.getMessage());
+                model.addAttribute("productLookupError", messages.error(request, exception));
             }
         }
-        return screen(model, "saved", "Saved products & tracking");
+        return screen(model, request, "saved", "ui.title.saved");
     }
 
     @GetMapping("/alerts")
-    public String alerts(Model model) {
+    public String alerts(Model model, jakarta.servlet.http.HttpServletRequest request) {
         var now = clock.instant();
         alerts.processDue(now);
         model.addAttribute("importStatus", catalog.status());
@@ -69,79 +81,79 @@ public class TrackingController {
         model.addAttribute("notificationSettings", notificationPolicy.settings());
         model.addAttribute("trackingPeriods", tracking.trackingPeriods().stream()
                 .filter(period -> period.enabled()).toList());
-        return screen(model, "alerts", "Price alerts");
+        return screen(model, request, "alerts", "ui.title.alerts");
     }
 
     @PostMapping("/saved/save")
-    public String save(@RequestParam String code, RedirectAttributes redirect) {
+    public String save(@RequestParam String code, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.save(code);
-            redirect.addFlashAttribute("notice", "Product saved to your wishlist.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.savedToWishlist"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/saved";
     }
 
     @PostMapping("/saved/remove")
-    public String removeSaved(@RequestParam String code, RedirectAttributes redirect) {
+    public String removeSaved(@RequestParam String code, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         tracking.removeSaved(code);
-        redirect.addFlashAttribute("notice", "Product removed from your wishlist.");
+        redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.removedFromWishlist"));
         return "redirect:/saved";
     }
 
     @PostMapping("/tracking/start")
     public String startTracking(@RequestParam String code, @RequestParam String retailerCode,
-                                RedirectAttributes redirect) {
+                                RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.start(code, retailerCode);
-            redirect.addFlashAttribute("notice", "Price tracking is on for " + retailerCode + ".");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.trackingOn", retailerCode));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/saved";
     }
 
     @PostMapping("/tracking/start-all")
-    public String startAll(@RequestParam String code, RedirectAttributes redirect) {
+    public String startAll(@RequestParam String code, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.startAll(code);
-            redirect.addFlashAttribute("notice", "Tracking all retailers for this product, including future listings.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.trackingAll"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/saved";
     }
 
     @PostMapping("/tracking/stop-all")
-    public String stopAll(@RequestParam String code, RedirectAttributes redirect) {
+    public String stopAll(@RequestParam String code, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.stopAll(code);
-            redirect.addFlashAttribute("notice", "Tracking stopped for all retailers. Saved history remains available.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.trackingAllStopped"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/saved";
     }
 
     @PostMapping("/tracking/stop")
-    public String stopTracking(@RequestParam long trackingId, RedirectAttributes redirect) {
+    public String stopTracking(@RequestParam long trackingId, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.stop(trackingId);
-            redirect.addFlashAttribute("notice", "Tracking stopped. Saved price history remains available.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.trackingStopped"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/saved";
     }
 
     @PostMapping("/tracking/history/delete")
-    public String deleteHistory(@RequestParam long trackingId, RedirectAttributes redirect) {
+    public String deleteHistory(@RequestParam long trackingId, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.deleteHistory(trackingId);
-            redirect.addFlashAttribute("notice", "Price history and its alerts were deleted.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.historyDeleted"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/saved";
     }
@@ -149,13 +161,13 @@ public class TrackingController {
     @PostMapping("/alerts/target")
     public String target(@RequestParam long trackingId,
                          @RequestParam(required = false) BigDecimal targetPrice,
-                         RedirectAttributes redirect) {
+                         RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.configureTarget(trackingId, targetPrice);
-            redirect.addFlashAttribute("notice", targetPrice == null
-                    ? "Target price alert removed." : "Target price alert saved.");
+            redirect.addFlashAttribute("notice", messages.get(request,
+                    targetPrice == null ? "ui.notice.targetRemoved" : "ui.notice.targetSaved"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/alerts";
     }
@@ -163,63 +175,64 @@ public class TrackingController {
     @PostMapping("/alerts/drop")
     public String drop(@RequestParam long trackingId,
                        @RequestParam(defaultValue = "false") boolean enabled,
-                       RedirectAttributes redirect) {
+                       RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.configureDrop(trackingId, enabled);
-            redirect.addFlashAttribute("notice", enabled
-                    ? "Price-drop alert enabled." : "Price-drop alert disabled.");
+            redirect.addFlashAttribute("notice", messages.get(request,
+                    enabled ? "ui.notice.dropEnabled" : "ui.notice.dropDisabled"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/alerts";
     }
 
     @PostMapping("/alerts/settings")
     public String settings(@RequestParam LocalTime quietStart, @RequestParam LocalTime quietEnd,
-                           @RequestParam LocalTime summaryTime, RedirectAttributes redirect) {
+                           @RequestParam LocalTime summaryTime, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             notificationPolicy.update(quietStart, quietEnd, summaryTime);
-            redirect.addFlashAttribute("notice", "Alert timing settings saved.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.timingSaved"));
         } catch (RuntimeException exception) {
-            redirect.addFlashAttribute("error", "Check the alert timing values and try again.");
+            redirect.addFlashAttribute("error", messages.get(request, "ui.error.alertTiming"));
         }
         return "redirect:/alerts";
     }
 
     @PostMapping("/alerts/events/{eventId}/read")
-    public String read(@PathVariable long eventId, RedirectAttributes redirect) {
+    public String read(@PathVariable long eventId, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             alerts.markRead(eventId);
-            redirect.addFlashAttribute("notice", "Alert marked as read.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.markedRead"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/alerts";
     }
 
     @PostMapping("/alerts/events/{eventId}/snooze")
-    public String snooze(@PathVariable long eventId, RedirectAttributes redirect) {
+    public String snooze(@PathVariable long eventId, RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             alerts.snooze(eventId);
-            redirect.addFlashAttribute("notice", "Alert snoozed for 24 hours.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.snoozed"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/alerts";
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String badInput(Model model) {
+    public String badInput(Model model, jakarta.servlet.http.HttpServletRequest request) {
         model.addAttribute("importStatus", catalog.status());
         model.addAttribute("format", format);
-        model.addAttribute("error", "Check the price, time, or tracking selection and try again.");
-        return screen(model, "error", "Check your input");
+        model.addAttribute("error", messages.get(request, "ui.error.trackingSelection"));
+        return screen(model, request, "error", "ui.title.error");
     }
 
-    private static String screen(Model model, String scene, String title) {
+    private String screen(Model model, jakarta.servlet.http.HttpServletRequest request,
+                          String scene, String titleKey) {
         model.addAttribute("scene", scene);
-        model.addAttribute("title", title);
+        model.addAttribute("title", messages.get(request, titleKey));
         return "market-desk";
     }
 }

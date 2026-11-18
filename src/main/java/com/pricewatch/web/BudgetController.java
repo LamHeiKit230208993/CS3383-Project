@@ -15,11 +15,14 @@ public class BudgetController {
     private final BudgetService budgets;
     private final CatalogService catalog;
     private final HelloController formatter;
+    private final UiMessages messages;
 
-    public BudgetController(BudgetService budgets, CatalogService catalog, HelloController formatter) {
+    public BudgetController(BudgetService budgets, CatalogService catalog, HelloController formatter,
+                            UiMessages messages) {
         this.budgets = budgets;
         this.catalog = catalog;
         this.formatter = formatter;
+        this.messages = messages;
     }
 
     @ModelAttribute
@@ -29,26 +32,31 @@ public class BudgetController {
     }
 
     @GetMapping("/budget")
-    String view(Model model) {
-        return show(model, null, null);
+    String view(Model model, jakarta.servlet.http.HttpServletRequest request) {
+        return show(model, request, null, null);
     }
 
     @PostMapping("/budget")
     String save(@RequestParam(defaultValue = "") String period,
                 @RequestParam(name = "limit", defaultValue = "") String limit,
                 Model model,
-                RedirectAttributes redirect) {
+                RedirectAttributes redirect,
+                jakarta.servlet.http.HttpServletRequest request) {
         try {
             var savedPeriod = budgets.save(period, limit);
-            redirect.addFlashAttribute("notice", savedPeriod.label() + " budget saved on this device.");
+            redirect.addFlashAttribute("notice",
+                    messages.get(request, "ui.notice.budgetSaved",
+                            messages.get(request, savedPeriod == com.pricewatch.budget.BudgetPeriod.MONTHLY
+                                    ? "budget.monthly" : "budget.weekly")));
             return "redirect:/budget";
         } catch (IllegalArgumentException exception) {
-            model.addAttribute("error", exception.getMessage());
-            return show(model, period, limit);
+            model.addAttribute("error", messages.error(request, exception));
+            return show(model, request, period, limit);
         }
     }
 
-    private String show(Model model, String periodInput, String limitInput) {
+    private String show(Model model, jakarta.servlet.http.HttpServletRequest request,
+                        String periodInput, String limitInput) {
         var budget = budgets.view();
         model.addAttribute("budget", budget);
         model.addAttribute("budgetFormPeriod", periodInput == null ? budget.period().name() : periodInput);
@@ -56,7 +64,7 @@ public class BudgetController {
                 ? budget.limitAmount() == null ? "" : budget.limitAmount().toPlainString()
                 : limitInput);
         model.addAttribute("scene", "budget");
-        model.addAttribute("title", "Budget");
+        model.addAttribute("title", messages.get(request, "ui.title.budget"));
         return "market-desk";
     }
 }

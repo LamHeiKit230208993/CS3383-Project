@@ -2,36 +2,36 @@
   <section aria-labelledby="import-title">
     <div class="page-heading heading-with-action">
       <div>
-        <p class="eyebrow">SHARE A LIST AS A SEPARATE COPY</p>
-        <h1 id="import-title">Import a shared list.</h1>
-        <p class="intro">A Market Desk list file is merged into My list after you review it. This creates a separate copy; later edits do not sync.</p>
+        <p class="eyebrow" th:text="${#messages.msg('import.eyebrow')}">SHARE A LIST AS A SEPARATE COPY</p>
+        <h1 id="import-title" th:text="${#messages.msg('import.title')}">Import a shared list.</h1>
+        <p class="intro" th:text="${#messages.msg('import.intro')}">A Market Desk list file is merged into My list after you review it. This creates a separate copy; later edits do not sync.</p>
       </div>
-      <a class="button secondary" th:href="@{/list}">Back to My list</a>
+      <a class="button secondary" th:href="@{/list}" th:text="${#messages.msg('import.backToList')}">Back to My list</a>
     </div>
     <div class="panel">
       <div th:if="${preview == null}">
-        <h2>Choose a list file</h2>
-        <p>Select a <code>.json</code> file exported from Market Desk. Nothing is saved until you review the preview.</p>
+        <h2 th:text="${#messages.msg('import.chooseTitle')}">Choose a list file</h2>
+        <p><span th:utext="${#messages.msg('import.chooseNote')}">Select a <code>.json</code> file exported from Market Desk.</span> <span th:text="${#messages.msg('import.chooseNoteRest')}">Nothing is saved until you review the preview.</span></p>
         <form class="stack-form" th:action="@{/list/import}" method="post" enctype="multipart/form-data">
           <label>
-            List file
+            <span th:text="${#messages.msg('import.fileLabel')}">List file</span>
             <input type="file" name="file" accept="application/json,.json" required>
           </label>
-          <button class="button primary" type="submit">Review file</button>
+          <button class="button primary" type="submit" th:text="${#messages.msg('import.review')}">Review file</button>
         </form>
       </div>
       <div th:if="${preview != null}">
-        <h2>Review before importing</h2>
+        <h2 th:text="${#messages.msg('import.reviewTitle')}">Review before importing</h2>
         <dl class="data-facts">
-          <dt>List</dt>
+          <dt th:text="${#messages.msg('import.listLabel')}">List</dt>
           <dd th:text="${preview.listName}"></dd>
-          <dt>Exported</dt>
+          <dt th:text="${#messages.msg('import.exportedLabel')}">Exported</dt>
           <dd th:text="${preview.exportedAt}"></dd>
-          <dt>Items</dt>
-          <dd th:text="${preview.itemCount + ' products'}"></dd>
+          <dt th:text="${#messages.msg('import.itemsLabel')}">Items</dt>
+          <dd th:text="${#messages.msg('import.itemCount', preview.itemCount)}"></dd>
         </dl>
         <div class="section-heading">
-          <h3>What this file contains</h3>
+          <h3 th:text="${#messages.msg('import.contentsTitle')}">What this file contains</h3>
         </div>
         <article class="list-item" th:each="item : ${preview.items}">
           <div class="list-item-heading">
@@ -39,18 +39,18 @@
               <h3 th:text="${item.name}"></h3>
               <p class="helper" th:text="${item.name != item.code ? item.code : ''}"></p>
             </div>
-            <strong th:text="${item.checked ? 'Checked' : 'Not checked'}"></strong>
+            <strong th:text="${item.checked ? #messages.msg('import.checked') : #messages.msg('import.notChecked')}"></strong>
           </div>
-          <p class="selection-mode" th:text="${item.retailerCode == null ? 'Automatic lowest listed price' : 'Your retailer: ' + item.retailerCode}"></p>
-          <p class="helper" th:text="${item.quantity + (item.quantity == 1 ? ' pack' : ' packs')}"></p>
+          <p class="selection-mode" th:text="${item.retailerCode == null ? #messages.msg('import.autoPrice') : #messages.msg('import.yourRetailer', item.retailerCode)}"></p>
+          <p class="helper" th:text="${item.quantity == 1 ? #messages.msg('import.packOne', item.quantity) : #messages.msg('import.packMany', item.quantity)}"></p>
         </article>
-        <p class="helper">These items will be added to My list. Products already present keep their saved retailer; a different retailer for the same product is rejected and nothing changes.</p>
+        <p class="helper" th:text="${#messages.msg('import.mergeNote')}">These items will be added to My list. Products already present keep their saved retailer; a different retailer for the same product is rejected and nothing changes.</p>
         <form class="stack-form" th:action="@{/list/import}" method="post">
           <input type="hidden" name="confirm" value="true">
-          <button class="button primary" type="submit">Import into My list</button>
+          <button class="button primary" type="submit" th:text="${#messages.msg('import.confirm')}">Import into My list</button>
         </form>
         <form th:action="@{/list/import}" method="get">
-          <button class="button secondary" type="submit">Choose another file</button>
+          <button class="button secondary" type="submit" th:text="${#messages.msg('import.chooseAnother')}">Choose another file</button>
         </form>
       </div>
     </div>

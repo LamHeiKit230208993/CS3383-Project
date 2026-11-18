@@ -1,0 +1,50 @@
+@startuml
+title Market Desk - local shopper use cases after J12
+
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+actor "Local shopper\n(one user, one device)" as Shopper
+
+rectangle "Market Desk (local web app)" {
+  usecase "Ask a checked price\nquestion (J09)" as UCAsk
+  usecase "Choose a product when\nthe question is unclear" as UCClarify
+  usecase "Export a chosen list\nas a separate copy (J10)" as UCExport
+  usecase "Import a shared list" as UCImport
+  usecase "Reopen a saved list\noffline (J11)" as UCOffline
+  usecase "Switch UI language\n(en / zh_TW / zh_CN)" as UCLang
+  usecase "Turn on high-contrast\ndisplay" as UCContrast
+  usecase "View, export and delete\nlocal personal data" as UCPersonal
+  usecase "View dated price history\nwith gaps and empty state" as UCHistory
+}
+
+actor "Consumer Council\nprice feed" as Feed
+actor "DeepSeek V4 Flash\n(server-side key)" as AI
+
+Shopper --> UCAsk
+Shopper --> UCClarify
+Shopper --> UCExport
+Shopper --> UCImport
+Shopper --> UCOffline
+Shopper --> UCLang
+Shopper --> UCContrast
+Shopper --> UCPersonal
+Shopper --> UCHistory
+
+UCAsk ..> UCClarify : <<extend>>\nunclear product
+UCAsk --> AI : explains checked facts\n(optional, never invents)
+UCExport ..> UCImport : file hand-off
+UCImport --> Feed : product labels only
+UCPersonal ..> UCExport : list sharing is\nnarrower than personal data
+
+note right of UCOffline
+  The copy is one self-contained HTML file;
+  no live price or chat is claimed.
+end note
+
+note bottom of UCHistory
+  Only stored observations are shown.
+  Missing days appear as an explicit gap.
+end note
+@enduml

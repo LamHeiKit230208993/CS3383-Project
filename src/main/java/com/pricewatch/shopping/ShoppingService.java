@@ -55,17 +55,20 @@ public class ShoppingService {
         String requestedRetailer = automaticIfBlank(retailerCode);
         mutate(() -> {
             ProductEntity product = productRepository.findById(productCode)
-                    .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
+                    .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.productNotInCatalogue",
+                            "That product is not in the accepted catalogue."));
             if (!product.isActive()) {
-                throw new IllegalArgumentException("That product is no longer in the current catalogue.");
+                throw new com.pricewatch.UiTextException("ui.error.productGone",
+                "That product is no longer in the current catalogue.");
             }
             ShoppingListEntity list = getOrCreateList();
             ShoppingListItemEntity existing = itemRepository
                     .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode).orElse(null);
             if (existing != null) {
                 if (!Objects.equals(existing.getSelectedRetailerCode(), requestedRetailer)) {
-                    throw new IllegalArgumentException("This product is already in your list with another retailer; "
-                            + "change retailer in My list.");
+                    throw new com.pricewatch.UiTextException("ui.error.retailerConflict",
+                            "This product is already in your list with another retailer; "
+                                    + "change retailer in My list.");
                 }
                 int combined = existing.getQuantity() + quantity;
                 validateQuantity(combined);
@@ -90,15 +93,16 @@ public class ShoppingService {
     private void mergeImportedItem(ImportedItem item) {
         String requestedRetailer = automaticIfBlank(item.retailerCode());
         ProductEntity product = productRepository.findById(item.code())
-                .orElseThrow(() -> new IllegalArgumentException("Product " + item.code()
-                        + " is not in the accepted catalogue."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.productNotFound",
+                        "Product " + item.code() + " is not in the accepted catalogue.", item.code()));
         ShoppingListEntity list = getOrCreateList();
         ShoppingListItemEntity existing = itemRepository
                 .findByShoppingList_NameAndProduct_Code(LIST_NAME, item.code()).orElse(null);
         if (existing != null) {
             if (!Objects.equals(existing.getSelectedRetailerCode(), requestedRetailer)) {
-                throw new IllegalArgumentException("Product " + item.code()
-                        + " is already in your list with another retailer.");
+                throw new com.pricewatch.UiTextException("ui.error.retailerConflict",
+                        "Product " + item.code() + " is already in your list with another retailer.",
+                        item.code());
             }
             int combined = existing.getQuantity() + item.quantity();
             validateQuantity(combined);
@@ -118,7 +122,7 @@ public class ShoppingService {
         mutate(() -> {
             ShoppingListItemEntity item = itemRepository
                     .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode)
-                    .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."));
+                    .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.itemNotOnList", "That item is not on your list."));
             item.setQuantity(quantity);
             item.setChecked(checked);
         });
@@ -130,7 +134,7 @@ public class ShoppingService {
         mutate(() -> {
             ShoppingListItemEntity item = itemRepository
                     .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode)
-                    .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."));
+                    .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.itemNotOnList", "That item is not on your list."));
             if (!Objects.equals(item.getSelectedRetailerCode(), requestedRetailer)) {
                 if (requestedRetailer != null) {
                     validateRetailer(item.getProduct(), requestedRetailer);
@@ -182,7 +186,8 @@ public class ShoppingService {
         boolean available = product.getListings().stream()
                 .anyMatch(listing -> listing.getRetailerCode().equals(retailerCode) && listing.getPrice() != null);
         if (!available) {
-            throw new IllegalArgumentException("Choose a retailer with a current price for this product.");
+            throw new com.pricewatch.UiTextException("ui.error.retailerNoPrice",
+                "Choose a retailer with a current price for this product.");
         }
     }
 

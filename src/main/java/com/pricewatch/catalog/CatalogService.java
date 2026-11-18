@@ -107,11 +107,13 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public ProductView find(String code) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("A product code is required.");
+            throw new com.pricewatch.UiTextException("ui.error.productCodeRequired",
+                "A product code is required.");
         }
         return productRepository.findWithListingsByCode(code)
                 .map(ProductView::from)
-                .orElseThrow(() -> new IllegalArgumentException("Product " + code + " was not found."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.productNotFound",
+                        "Product " + code + " was not found.", code));
     }
 
     /** All active products with listings, for the Ask chat to reason over the whole catalogue. */
@@ -136,6 +138,11 @@ public class CatalogService {
 
     public ImportStatus refreshLive() {
         return accept(sourceClient.fetch(), "LIVE", sourceClient.sourceUrl());
+    }
+
+    /** Test-only hook: accept a fixture catalogue with an explicit origin. */
+    public ImportStatus importTestCatalogue(byte[] bytes, String origin, String sourceUrl) {
+        return accept(bytes, origin, sourceUrl);
     }
 
     ImportStatus accept(byte[] bytes, String origin, String sourceUrl) {

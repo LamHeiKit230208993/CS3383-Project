@@ -1,0 +1,100 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="mydata-title">
+    <div class="page-heading">
+      <p class="eyebrow" th:text="${#messages.msg('settings.eyebrow')}">YOUR DEVICE</p>
+      <h1 id="mydata-title" th:text="${#messages.msg('settings.title')}">Settings</h1>
+      <p class="intro" th:text="${#messages.msg('settings.intro')}">Language, display, and the data stored on this device.</p>
+    </div>
+
+    <div class="data-layout settings-preferences">
+      <section class="panel" aria-labelledby="settings-language-title">
+        <h2 id="settings-language-title" th:text="${#messages.msg('settings.languageTitle')}">Language</h2>
+        <p th:text="${#messages.msg('settings.languageNote')}">Choose the language for the whole app. It is remembered on this device.</p>
+        <div class="language-switch" role="group" th:attr="aria-label=${#messages.msg('settings.languageTitle')}">
+          <a th:each="choice : ${localeChoices}"
+             th:href="@{/lang(code=${choice.code},back=${currentPath})}"
+             th:attr="aria-current=${activeLanguage == choice.code ? 'true' : null},
+                      aria-label=${choice.ariaLabel}"
+             th:text="${choice.label}"
+             th:classappend="${activeLanguage == choice.code ? ' is-active' : ''}">English</a>
+        </div>
+      </section>
+      <section class="panel" aria-labelledby="settings-contrast-title">
+        <h2 id="settings-contrast-title" th:text="${#messages.msg('settings.contrastTitle')}">Display</h2>
+        <p th:text="${#messages.msg('settings.contrastNote')}">A high-contrast display improves readability. It is remembered on this device.</p>
+        <a class="contrast-switch"
+           th:href="@{/contrast(mode=${highContrast == true ? 'off' : 'high'},back=${currentPath})}"
+           th:attr="aria-pressed=${highContrast == true ? 'true' : 'false'}"
+           th:classappend="${highContrast == true ? ' is-active' : ''}"><span th:text="${#messages.msg('contrast.label')}">High contrast</span><small th:text="${highContrast == true ? #messages.msg('contrast.on') : #messages.msg('contrast.off')}">Off</small></a>
+      </section>
+    </div>
+
+    <section class="panel settings-storage" aria-labelledby="mydata-table-title">
+      <div class="section-heading">
+        <h2 id="mydata-table-title" th:text="${#messages.msg('mydata.tableTitle')}">This device's user data</h2>
+      </div>
+      <table class="history-table">
+        <caption class="sr-only" th:text="${#messages.msg('mydata.tableTitle')}">This device's user data</caption>
+        <thead>
+          <tr>
+            <th scope="col" th:text="${#messages.msg('mydata.colArea')}">Area</th>
+            <th scope="col" th:text="${#messages.msg('mydata.colCount')}">Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaList')}">My list</th>
+            <td th:text="${#messages.msg('mydata.rows', overview.listItems)}">0 rows</td>
+          </tr>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaWishlist')}">Wishlist</th>
+            <td th:text="${#messages.msg('mydata.rows', overview.savedProducts)}">0 rows</td>
+          </tr>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaTracking')}">Price tracking</th>
+            <td th:text="${#messages.msg('mydata.rows', overview.trackingPeriods)}">0 rows</td>
+          </tr>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaObservations')}">Price observations</th>
+            <td th:text="${#messages.msg('mydata.rows', overview.priceObservations)}">0 rows</td>
+          </tr>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaAlerts')}">Price alerts</th>
+            <td th:text="${#messages.msg('mydata.rows', overview.alertEvents)}">0 rows</td>
+          </tr>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaSettings')}">Alert settings</th>
+            <td th:text="${overview.alertSettings ? #messages.msg('mydata.settingsSaved') : #messages.msg('mydata.settingsDefault')}">Saved</td>
+          </tr>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaReminders')}">Replenishment reminders</th>
+            <td th:text="${#messages.msg('mydata.rows', overview.reminders)}">0 rows</td>
+          </tr>
+          <tr>
+            <th scope="row" th:text="${#messages.msg('mydata.areaBudget')}">Budget</th>
+            <td th:text="${overview.budgetSettings ? #messages.msg('mydata.settingsSaved') : #messages.msg('mydata.settingsDefault')}">Saved</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="source-note" th:text="${#messages.msg('mydata.catalogueNote')}">The accepted price catalogue comes from the source and is not your personal data, so it is never deleted here.</p>
+    </section>
+
+    <div class="data-layout settings-data-actions">
+      <section class="panel" aria-labelledby="mydata-export-title">
+        <h2 id="mydata-export-title" th:text="${#messages.msg('mydata.exportTitle')}">Export</h2>
+        <p th:text="${#messages.msg('mydata.exportNote')}">Download everything above as one JSON file. List sharing exports only the chosen list, not all personal data.</p>
+        <a class="button primary" th:href="@{/my-data/export}" th:text="${#messages.msg('mydata.export')}">Export my data</a>
+      </section>
+      <section class="panel" aria-labelledby="mydata-delete-title">
+        <h2 id="mydata-delete-title" th:text="${#messages.msg('mydata.deleteTitle')}">Delete</h2>
+        <p th:text="${#messages.msg('mydata.deleteNote')}">This deletes all of the local user's data listed above. The accepted price catalogue is kept. This cannot be undone and cannot remove copies you already shared with someone else.</p>
+        <form class="stack-form" th:action="@{/my-data/delete}" method="post">
+          <label for="delete-confirm" th:text="${#messages.msg('mydata.deleteConfirmLabel')}">Type DELETE to confirm</label>
+          <input id="delete-confirm" type="text" name="confirm" autocomplete="off" required
+                 pattern="DELETE" th:attr="placeholder=${#messages.msg('mydata.deleteWord')}">
+          <button class="button danger" type="submit" th:text="${#messages.msg('mydata.deleteButton')}">Delete my data permanently</button>
+        </form>
+      </section>
+    </div>
+  </section>
+</th:block>

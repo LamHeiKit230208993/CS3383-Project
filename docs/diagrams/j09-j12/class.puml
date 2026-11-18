@@ -1,0 +1,64 @@
+@startuml
+title J09-J12 records and the personal-data boundary
+
+skinparam shadowing false
+hide circle
+
+class "LocalUserData\n(one user, no account)" as User <<owner>> {
+  -- deleted by /my-data/delete --
+  MyList
+  Wishlist
+  TrackingPeriod (with PriceObservation)
+  AlertEvent, NotificationSettings
+  Reminder
+  BudgetSettings
+}
+
+class "SourceCatalogue\n(imported, kept)" as Source <<source>> {
+  Product, RetailerListing, Offer
+  AcceptedImport (retrievedAt, source URL, checksum)
+}
+
+class ShoppingListEntity
+class ShoppingListItemEntity
+class SavedProductEntity
+class TrackingEntity
+class PriceObservationEntity
+class AlertEventEntity
+class NotificationSettingsEntity
+class ReminderEntity
+class BudgetSettingsEntity
+class ProductEntity
+class RetailerListingEntity
+class OfferEntity
+class AcceptedImportEntity
+
+User --> ShoppingListEntity
+User --> ShoppingListItemEntity
+User --> SavedProductEntity
+User --> TrackingEntity
+User --> PriceObservationEntity
+User --> AlertEventEntity
+User --> NotificationSettingsEntity
+User --> ReminderEntity
+User --> BudgetSettingsEntity
+Source --> ProductEntity
+Source --> RetailerListingEntity
+Source --> OfferEntity
+Source --> AcceptedImportEntity
+
+ProductEntity "1" --> "*" RetailerListingEntity
+TrackingEntity "1" --> "*" PriceObservationEntity
+
+note bottom of Source
+  Personal-data export includes only the
+  LocalUserData side. Deleting local data
+  keeps this side so comparisons still work.
+end note
+
+note right of PriceObservationEntity
+  observedAt is when this app retrieved the price.
+  The feed supplies no source price date, so
+  /history never invents daily values.
+end note
+@enduml

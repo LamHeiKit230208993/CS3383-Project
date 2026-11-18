@@ -59,13 +59,16 @@ public class ReminderService {
     @Transactional
     public void create(String productCode, int quantity, int intervalDays, String retailerCode) {
         if (quantity < MIN_QUANTITY || quantity > MAX_QUANTITY) {
-            throw new IllegalArgumentException("Quantity must be a whole number from 1 to 999.");
+            throw new com.pricewatch.UiTextException("ui.error.quantityRange",
+                "Quantity must be a whole number from 1 to 999.");
         }
         if (intervalDays < 1) {
-            throw new IllegalArgumentException("Choose an interval of at least 1 day.");
+            throw new com.pricewatch.UiTextException("ui.error.intervalMinimum",
+                "Choose an interval of at least 1 day.");
         }
         if (productCode == null || productCode.isBlank()) {
-            throw new IllegalArgumentException("Choose a product from the current catalogue.");
+            throw new com.pricewatch.UiTextException("ui.error.chooseProduct",
+                "Choose a product from the current catalogue.");
         }
 
         ProductEntity product = products.findWithListingsByCode(productCode)
@@ -74,7 +77,8 @@ public class ReminderService {
         String selectedRetailer = retailerCode == null || retailerCode.isBlank() ? null : retailerCode.strip();
         if (selectedRetailer != null && product.getListings().stream()
                 .map(RetailerListingEntity::getRetailerCode).noneMatch(selectedRetailer::equals)) {
-            throw new IllegalArgumentException("Choose a listed retailer for this product, or use Automatic lowest.");
+            throw new com.pricewatch.UiTextException("ui.error.retailerNotListed",
+                "Choose a listed retailer for this product, or use Automatic lowest.");
         }
 
         Instant now = clock.instant();
@@ -82,7 +86,8 @@ public class ReminderService {
             reminders.save(new ReminderEntity(product, quantity, intervalDays, selectedRetailer,
                     now.plus(intervalDays, ChronoUnit.DAYS)));
         } catch (DateTimeException exception) {
-            throw new IllegalArgumentException("That interval is outside the supported date range.", exception);
+            throw new com.pricewatch.UiTextException("ui.error.intervalRange",
+                    "That interval is outside the supported date range.", exception);
         }
     }
 
@@ -133,6 +138,6 @@ public class ReminderService {
     }
 
     private static IllegalArgumentException notFound() {
-        return new IllegalArgumentException("That reminder no longer exists.");
+        return new com.pricewatch.UiTextException("ui.error.reminderMissing", "That reminder no longer exists.");
     }
 }

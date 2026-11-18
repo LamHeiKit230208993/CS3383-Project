@@ -53,7 +53,8 @@ public class ListTransferService {
     public ImportResult importFile(byte[] bytes) {
         ListTransfer transfer = parse(bytes);
         if (transfer.items().isEmpty()) {
-            throw new IllegalArgumentException("That list is empty; there is nothing to import.");
+            throw new com.pricewatch.UiTextException("ui.error.listEmpty",
+                "That list is empty; there is nothing to import.");
         }
         try {
             shopping.mergeImported(transfer.items().stream()
@@ -61,7 +62,8 @@ public class ListTransferService {
                             item.retailerCode()))
                     .toList());
         } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Import failed; your list was not changed. " + exception.getMessage());
+            throw new com.pricewatch.UiTextException("ui.error.importRolledBack",
+                    "Import failed; your list was not changed. " + exception.getMessage());
         }
         return new ImportResult(transfer.items().size());
     }
@@ -83,7 +85,7 @@ public class ListTransferService {
 
     ListTransfer parse(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
-            throw new IllegalArgumentException("The file is empty.");
+            throw new com.pricewatch.UiTextException("ui.error.fileEmpty", "The file is empty.");
         }
         try {
             ListTransfer transfer = objectMapper.readerFor(ListTransfer.class)
@@ -95,31 +97,36 @@ public class ListTransferService {
             if (exception instanceof IllegalArgumentException iae) {
                 throw iae;
             }
-            throw new IllegalArgumentException("The file is not a valid Market Desk list export.");
+            throw new com.pricewatch.UiTextException("ui.error.fileNotValid",
+                "The file is not a valid Market Desk list export.");
         }
     }
 
     private void validate(ListTransfer transfer) {
         if (transfer == null || !ListTransfer.FORMAT.equals(transfer.format())) {
-            throw new IllegalArgumentException("This is not a Market Desk list export.");
+            throw new com.pricewatch.UiTextException("ui.error.fileNotMarketDesk",
+                "This is not a Market Desk list export.");
         }
         if (transfer.items() == null) {
-            throw new IllegalArgumentException("The file has no item list.");
+            throw new com.pricewatch.UiTextException("ui.error.fileNoItems", "The file has no item list.");
         }
         if (transfer.items().size() > MAX_ITEMS) {
-            throw new IllegalArgumentException("The file has too many items.");
+            throw new com.pricewatch.UiTextException("ui.error.fileTooManyItems", "The file has too many items.");
         }
         for (ListTransfer.ListTransferItem item : transfer.items()) {
             if (item == null || item.code() == null || item.code().isBlank()
                     || item.code().length() > MAX_CODE_LENGTH
                     || !item.code().equals(item.code().trim())) {
-                throw new IllegalArgumentException("The file contains an invalid product code.");
+                throw new com.pricewatch.UiTextException("ui.error.fileBadCode",
+                "The file contains an invalid product code.");
             }
             if (item.quantity() < MIN_QUANTITY || item.quantity() > MAX_QUANTITY) {
-                throw new IllegalArgumentException("The file contains an invalid quantity.");
+                throw new com.pricewatch.UiTextException("ui.error.fileBadQuantity",
+                "The file contains an invalid quantity.");
             }
             if (item.retailerCode() != null && item.retailerCode().length() > MAX_RETAILER_LENGTH) {
-                throw new IllegalArgumentException("The file contains an invalid retailer code.");
+                throw new com.pricewatch.UiTextException("ui.error.fileBadRetailer",
+                "The file contains an invalid retailer code.");
             }
         }
     }

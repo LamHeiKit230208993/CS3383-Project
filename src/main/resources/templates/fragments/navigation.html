@@ -1,37 +1,41 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="sidebar">
   <aside class="sidebar">
-    <a class="wordmark" th:href="@{/}" aria-label="Market Desk home"><span class="brand-mark">m.</span><span>market desk<small>BY PRICEWATCH</small></span></a>
-    <nav class="main-nav" aria-label="Main navigation">
-      <p class="sidebar-label">SHOPPING</p>
-      <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Discover</a>
-      <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>My list</a>
-      <a th:href="@{/saved}" th:attr="aria-current=${scene == 'saved' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg>Saved</a>
-      <a th:href="@{/budget}" th:attr="aria-current=${scene == 'budget' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>Budget</a>
-      <p class="sidebar-label">ASSISTANCE</p>
-      <a th:href="@{/alerts}" th:attr="aria-current=${scene == 'alerts' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Alerts</a>
-      <a th:href="@{/reminders}" th:attr="aria-current=${scene == 'reminders' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Reminders</a>
-      <a th:href="@{/ask}" th:attr="aria-current=${scene == 'ask' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>Ask</a>
-      <p class="sidebar-label">APP</p>
-      <a class="data-nav-link" th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span>Price data &amp; updates</span></a>
+    <a class="wordmark" th:href="@{/}" th:attr="aria-label=${#messages.msg('nav.home')}"><span class="brand-mark">m.</span><span>market desk<small>BY PRICEWATCH</small></span></a>
+    <nav class="main-nav" th:attr="aria-label=${#messages.msg('nav.main')}">
+      <p class="sidebar-label" th:text="${#messages.msg('nav.groupShopping')}">SHOPPING</p>
+      <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span th:text="${#messages.msg('nav.discover')}">Discover</span></a>
+      <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span th:text="${#messages.msg('nav.list')}">My list</span></a>
+      <a th:href="@{/saved}" th:attr="aria-current=${scene == 'saved' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg><span th:text="${#messages.msg('nav.saved')}">Saved</span></a>
+      <a th:href="@{/budget}" th:attr="aria-current=${scene == 'budget' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span th:text="${#messages.msg('nav.budget')}">Budget</span></a>
+      <p class="sidebar-label" th:text="${#messages.msg('nav.groupAssistance')}">ASSISTANCE</p>
+      <a th:href="@{/alerts}" th:attr="aria-current=${scene == 'alerts' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span th:text="${#messages.msg('nav.alerts')}">Alerts</span></a>
+      <a th:href="@{/reminders}" th:attr="aria-current=${scene == 'reminders' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span th:text="${#messages.msg('nav.reminders')}">Reminders</span></a>
+      <a th:href="@{/ask}" th:attr="aria-current=${scene == 'ask' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span th:text="${#messages.msg('nav.ask')}">Ask</span></a>
+      <p class="sidebar-label" th:text="${#messages.msg('nav.groupApp')}">APP</p>
+      <a class="data-nav-link" th:href="@{/history}" th:attr="aria-current=${scene == 'history' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span th:text="${#messages.msg('nav.history')}">History</span></a>
+      <a class="data-nav-link" th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span th:text="${#messages.msg('nav.priceData')}">Price data &amp; updates</span></a>
+      <a class="data-nav-link" th:href="@{/my-data}" th:attr="aria-current=${scene == 'my-data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span th:text="${#messages.msg('nav.settings')}">Settings</span></a>
     </nav>
     <div class="sidebar-bottom">
-      <p><span class="local-dot"></span>One local user<small>No account · saved on this device</small></p>
+      <p><span class="local-dot"></span><span th:text="${#messages.msg('nav.oneUser')}">One local user</span><small th:text="${#messages.msg('nav.oneUserNote')}">No account · saved on this device</small></p>
     </div>
   </aside>
 </th:block>
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="mobile-navigation">
-  <nav class="mobile-nav" aria-label="Mobile navigation">
-    <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Discover</a>
-    <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>My list</a>
-    <a th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg>Price data</a>
+  <nav class="mobile-nav" th:attr="aria-label=${#messages.msg('nav.mobile')}">
+    <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span th:text="${#messages.msg('nav.discover')}">Discover</span></a>
+    <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span th:text="${#messages.msg('nav.list')}">My list</span></a>
+    <a th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span th:text="${#messages.msg('nav.priceDataShort')}">Price data</span></a>
     <details class="mobile-more">
-      <summary th:classappend="${scene == 'ask' or scene == 'planned' or scene == 'saved' or scene == 'alerts' or scene == 'budget' or scene == 'reminders' ? ' current' : ''}"><span aria-hidden="true">•••</span>More</summary>
+      <summary th:classappend="${scene == 'ask' or scene == 'planned' or scene == 'saved' or scene == 'alerts' or scene == 'budget' or scene == 'reminders' or scene == 'history' or scene == 'my-data' ? ' current' : ''}"><span aria-hidden="true">•••</span><span th:text="${#messages.msg('nav.more')}">More</span></summary>
       <div class="more-destinations">
-        <a th:href="@{/saved}">Saved</a>
-        <a th:href="@{/budget}">Budget</a>
-        <a th:href="@{/alerts}">Alerts</a>
-        <a th:href="@{/reminders}">Reminders</a>
-        <a th:href="@{/ask}">Ask</a>
+        <a th:href="@{/saved}" th:text="${#messages.msg('nav.saved')}">Saved</a>
+        <a th:href="@{/budget}" th:text="${#messages.msg('nav.budget')}">Budget</a>
+        <a th:href="@{/alerts}" th:text="${#messages.msg('nav.alerts')}">Alerts</a>
+        <a th:href="@{/reminders}" th:text="${#messages.msg('nav.reminders')}">Reminders</a>
+        <a th:href="@{/ask}" th:text="${#messages.msg('nav.ask')}">Ask</a>
+        <a th:href="@{/history}" th:text="${#messages.msg('nav.history')}">History</a>
+        <a th:href="@{/my-data}" th:text="${#messages.msg('nav.settings')}">Settings</a>
       </div>
     </details>
   </nav>
