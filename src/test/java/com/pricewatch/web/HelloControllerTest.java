@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.annotation.Transactional;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -22,6 +23,39 @@ class HelloControllerTest {
     @Autowired CatalogService catalog;
     @Autowired ShoppingService shopping;
 
+    @Test void offlineReviewIsReadOnlyAndBlocksOnlineActionsForThatSession() throws Exception {
+        catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
+        shopping.update("P000000124", 2, true);
+        var session = new MockHttpSession();
+        mvc.perform(post("/offline/enter").session(session)).andExpect(redirectedUrl("/offline"));
+        mvc.perform(get("/offline").session(session)).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(content().string(containsString("Prices retrieved")))
+                .andExpect(content().string(containsString("JASONS")))
+                .andExpect(content().string(containsString("Checked")))
+                .andExpect(content().string(containsString("25.00")))
+                .andExpect(content().string(not(containsString("Save changes"))));
+        for (String route : new String[]{"/data/refresh", "/ask", "/list/items/P000000124/remove", "/offline/enter"}) {
+            mvc.perform(post(route).session(session)).andExpect(status().isForbidden());
+        }
+        mvc.perform(get("/ask").session(session)).andExpect(redirectedUrl("/offline"));
+        mvc.perform(get("/ask")).andExpect(status().isOk());
+        mvc.perform(post("/offline/exit").session(session).header("Origin", "http://example.com"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/offline/exit").session(session)).andExpect(redirectedUrlPattern("/list?listId=*"));
+        mvc.perform(get("/ask").session(session)).andExpect(status().isOk());
+        assertEquals(2, shopping.items().getFirst().quantity());
+    }
+
+    @Test void offlineReviewShowsMissingRetrievalTime() throws Exception {
+        var session = new MockHttpSession();
+        mvc.perform(get("/offline")).andExpect(redirectedUrl("/list"));
+        mvc.perform(post("/offline/enter").session(session)).andExpect(redirectedUrl("/offline"));
+        mvc.perform(get("/offline").session(session)).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Price retrieval time is unavailable.")));
+    }
+
     @Test void emptyStartDoesNotPretendToHavePrices() throws Exception {
         mvc.perform(get("/"))
                 .andExpect(status().isOk()).andExpect(view().name("market-desk"))
@@ -29,6 +63,64 @@ class HelloControllerTest {
                 .andExpect(content().string(containsString("Find a product")))
                 .andExpect(content().string(not(containsString("DEMO-MILK"))));
         assertNull(catalog.status());
+    }
+    @Test void askKeepsTheExactPackForRetailerFollowUpsWithoutAProviderKey() throws Exception {
+        var session = new MockHttpSession();
+        mvc.perform(get("/ask").session(session)).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Ask about prices")));
+        catalog.importSample();
+        String firstChat = mvc.perform(post("/ask").session(session)
+                        .param("question", "Where is Kowloon Dairy’s 236 mL fresh milk cheapest?"))
+                .andExpect(redirectedUrlPattern("/ask?chatId=*")).andReturn().getResponse().getRedirectedUrl();
+        String firstId = firstChat.substring(firstChat.indexOf('=') + 1);
+        mvc.perform(get(firstChat).session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("AEON · HK$7.50 · Lowest listed")))
+                .andExpect(content().string(containsString("JASONS")))
+                .andExpect(content().string(containsString("12.50")))
+                .andExpect(content().string(containsString("AI explanation is unavailable")));
+        mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "What about Wellcome?"))
+                .andExpect(redirectedUrl(firstChat));
+        mvc.perform(get(firstChat).session(session))
+                .andExpect(content().string(containsString("What about Wellcome?")))
+                .andExpect(content().string(containsString("236mL at WELLCOME · HK$12.00")));
+        mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "no-such-product"))
+                .andExpect(redirectedUrl(firstChat));
+        mvc.perform(get(firstChat).session(session))
+                .andExpect(content().string(containsString("The last matched pack is Kowloon Dairy · 100 %Fresh Milk 236mL")));
+        mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "And at AEON?"))
+                .andExpect(redirectedUrl(firstChat));
+        mvc.perform(get(firstChat).session(session))
+                .andExpect(content().string(containsString("236mL at AEON · HK$7.50")));
+        mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "Which is cheapest?"))
+                .andExpect(redirectedUrl(firstChat));
+        mvc.perform(get(firstChat).session(session))
+                .andExpect(content().string(containsString("Which is cheapest?")))
+                .andExpect(content().string(containsString("AEON · HK$7.50 · Lowest listed")));
+        mvc.perform(get("/ask").session(session))
+                .andExpect(content().string(not(containsString("What about Wellcome?"))));
+        String secondChat = mvc.perform(post("/ask").session(session).param("question", "no-such-product"))
+                .andExpect(redirectedUrlPattern("/ask?chatId=*")).andReturn().getResponse().getRedirectedUrl();
+        assertNotEquals(firstChat, secondChat);
+        mvc.perform(get(secondChat).session(session))
+                .andExpect(content().string(containsString("No matching product")));
+        mvc.perform(get(firstChat).session(session))
+                .andExpect(content().string(containsString("236mL at WELLCOME · HK$12.00")));
+        mvc.perform(get(firstChat).session(new MockHttpSession()))
+                .andExpect(content().string(not(containsString("What about Wellcome?"))));
+    }
+
+    @Test void aStaleChatIdStartsFreshWithoutLosingTheSubmittedQuestion() throws Exception {
+        catalog.importSample();
+        var session = new MockHttpSession();
+        String oldChatId = "17efcb62-d81d-4bd1-b62b-c8e2cf207259";
+        String chatUrl = mvc.perform(post("/ask").session(session)
+                        .param("chatId", oldChatId).param("question", "P000000124"))
+                .andExpect(redirectedUrlPattern("/ask?chatId=*")).andReturn().getResponse().getRedirectedUrl();
+        assertNotEquals("/ask?chatId=" + oldChatId, chatUrl);
+        mvc.perform(get(chatUrl).session(session)).andExpect(status().isOk())
+                .andExpect(content().string(containsString("P000000124")))
+                .andExpect(content().string(containsString("AEON · HK$7.50 · Lowest listed")));
     }
     @Test void sampleImportAndThreeLanguageSearchRenderSourceIdentity() throws Exception {
         mvc.perform(post("/data/sample")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/data"));

@@ -15,6 +15,34 @@
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   font-size: 16px;
 }
+.high-contrast {
+  --page: #f3f5f8;
+  --ink: #0a101a;
+  --muted: #293445;
+  --line: #5d697a;
+  --blue: #183d9e;
+  --blue-soft: #e3ebff;
+  --green: #08482d;
+  --green-soft: #edf7ee;
+  --amber: #543300;
+}
+.high-contrast :focus-visible,
+.high-contrast .retailer-option:has(input:focus-visible) {
+  outline: 3px solid #111;
+  outline-offset: 4px;
+}
+.high-contrast :is(.main-nav, .mobile-nav, .match-tabs) [aria-current],
+.high-contrast .mobile-more > summary.current {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.high-contrast :is(.search-box, .secondary),
+.high-contrast :is(input:not([type=checkbox]):not([type=radio]), select, textarea) {
+  border-color: var(--line);
+}
+.high-contrast .sample-banner { color: var(--amber); border-color: var(--amber); }
+.high-contrast .notice { color: var(--green); border-color: var(--green); }
+.high-contrast .notice.error, .high-contrast .danger { color: #702019; border-color: #702019; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--page); color: var(--ink); line-height: 1.6; }
 a { color: var(--blue); text-underline-offset: 3px; }
@@ -308,6 +336,30 @@ dd { margin: 0; }
 .inline-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
 .inline-actions form { min-width: 0; }
 .inline-actions .button { white-space: normal; }
+.list-transfer { margin-bottom: 20px; }
+.list-transfer .inline-actions { align-items: center; }
+.list-transfer input[type="file"] { max-width: 100%; }
+.workspace.offline-workspace { display: block; max-width: 980px; margin-inline: auto; }
+.offline-item h2 { margin: 0; font-size: 1.1rem; }
+.offline-item-details { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 12px 0 0; }
+.offline-item-details dt { color: var(--muted); font-size: .875rem; }
+.offline-item-details dd { margin: 3px 0 0; }
+.price-history { width: 100%; margin-top: 1rem; border-collapse: collapse; text-align: start; }
+.price-history :is(th, td) { padding: .65rem .5rem; border-bottom: 1px solid var(--line); text-align: start; overflow-wrap: anywhere; }
+.price-history thead { background: var(--blue-soft); }
+@media (max-width: 480px) {
+  .price-history { table-layout: fixed; font-size: .875rem; }
+  .price-history :is(th, td) { padding: .55rem .35rem; }
+  .price-history thead th:first-child { width: 35%; }
+  .price-history thead th:last-child { width: 28%; }
+}
+.preferences-panel { max-width: 520px; }
+form.preferences-panel { display: grid; gap: 24px; }
+.preferences-panel .button { justify-self: start; }
+.preference-field { display: grid; gap: 6px; }
+.preference-field > label { font-weight: 600; }
+.preference-field .check-label { min-height: 44px; }
+.preference-field input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--blue); }
 section[aria-labelledby="alerts-title"] > .panel + .panel { margin-top: 24px; }
 .panel > h2 + p { color: var(--muted); margin-top: 12px; }
 .status-pill { display: inline-block; padding: 5px 10px; border-radius: 7px; font-size: 12px; color: var(--blue); background: var(--blue-soft); }

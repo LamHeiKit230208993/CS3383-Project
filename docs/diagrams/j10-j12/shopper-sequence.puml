@@ -1,0 +1,78 @@
+@startuml
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam arrowColor #4b5563
+skinparam sequenceParticipantBackgroundColor #f3f4f6
+skinparam sequenceParticipantBorderColor #4b5563
+skinparam sequenceLifeLineBorderColor #4b5563
+hide footbox
+title Market Desk | local shopper data
+
+actor Shopper
+participant "Market Desk\nweb layer" as Web
+participant "Local services" as Service
+database "H2" as DB
+
+== Share a selected list ==
+
+Shopper -> Web: Export selected list
+Web -> Service: exportList(listId)
+Service -> DB: Read list with items and retailer choices
+Service --> Web: Versioned list records
+Web --> Shopper: JSON download
+Shopper -> Web: Upload file on receiving device
+Web -> Service: importList(file)
+Service -> Service: Validate all records
+alt Valid file
+  Service -> DB: Save named copy and inactive references as needed
+  Web --> Shopper: Open the editable copy with local estimates
+else Invalid file
+  Web --> Shopper: Show import error
+end
+
+== Review offline ==
+
+Shopper -> Web: Enter offline review for selected list
+Web -> Web: Save list ID in browser session
+Web -> Service: Read selected list and accepted import status
+Service -> DB: Read items, prices and retrieval time
+Web --> Shopper: Show read-only list and price age
+Shopper -> Web: Attempt to edit, refresh or chat
+Web --> Shopper: Reject request while offline
+Shopper -> Web: Exit offline review
+Web -> Web: Clear offline session state
+Web --> Shopper: Reopen the list
+
+== View saved preferences and prices ==
+
+Shopper -> Web: Choose language and contrast
+Web -> Service: Save display preferences
+Service -> DB: Update the local preference record
+Shopper -> Web: Open price history for an exact pack
+Web -> Service: Read the pack's retained observations
+Service -> DB: Select records inside the 90-day window
+Web --> Shopper: Show dates, retailers and Unknown gaps
+
+== Export or reset personal data ==
+
+Shopper -> Web: Export personal data
+Web -> Web: Read the current session's chats
+Web -> Service: Export saved personal records
+Service -> DB: Read personal records
+Web --> Shopper: Download JSON with personal records and session chats
+Shopper -> Web: Confirm personal-data reset
+Web -> Service: reset()
+Service -> DB: Clear personal records and product-wide tracking in one transaction
+alt Commit succeeds
+  Service --> Web: Reset committed
+  Web -> Web: Invalidate the current session
+  Web --> Shopper: Show reset result
+else Database failure
+  Service --> Web: Reset rolled back
+  Web --> Shopper: Show reset error
+end
+note over Service,DB: The accepted catalogue and import metadata stay available.
+@enduml

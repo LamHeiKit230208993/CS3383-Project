@@ -1,0 +1,30 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="history-title">
+  <a class="back-link" th:href="@{/products/{code}(code=${product.code})}" th:text="#{history.back}"></a>
+  <header class="page-heading">
+    <h1 id="history-title" th:text="#{app.scene.history}"></h1>
+    <p class="intro"><strong th:text="${product.name.forLocale(#locale)}"></strong> · <span th:text="${product.code}"></span></p>
+  </header>
+  <div class="panel">
+    <p th:if="${observations.isEmpty()}" th:text="#{history.empty}"></p>
+    <th:block th:unless="${observations.isEmpty()}">
+      <p class="helper" th:text="#{history.help}"></p>
+      <table class="price-history">
+        <thead>
+          <tr>
+            <th scope="col" th:text="#{history.retailer}"></th>
+            <th scope="col" th:text="#{history.retrieved}"></th>
+            <th scope="col" th:text="#{history.price}"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="entry : ${observations}">
+            <th scope="row" th:text="${entry.retailerCode}"></th>
+            <td><time th:datetime="${entry.retrievedAt}" th:text="${format.time(entry.retrievedAt)}"></time></td>
+            <td th:if="${entry.price != null}" th:text="${format.money(entry.price)}"></td>
+            <td th:unless="${entry.price != null}" th:text="#{common.unknown}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </th:block>
+  </div>
+</section>

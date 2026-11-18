@@ -203,6 +203,11 @@ public class TrackingService {
         return trackingRepository.findAllByOrderByStartedAtDescIdDesc().stream().map(this::toView).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PriceHistoryEntry> priceHistory(String code) {
+        return observationRepository.historyForProduct(code, clock.instant().minus(HISTORY_RETENTION));
+    }
+
     /** Called from the catalogue replacement transaction, after the new listings have been stored. */
     @Transactional
     public void recordLiveImport(ImportedCatalog catalog, Instant retrievedAt, String sourceUrl, String checksum) {

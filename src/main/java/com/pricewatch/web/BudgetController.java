@@ -2,6 +2,7 @@ package com.pricewatch.web;
 
 import com.pricewatch.budget.BudgetService;
 import com.pricewatch.catalog.CatalogService;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,16 +11,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import static com.pricewatch.web.MilestoneMessages.inputError;
+import static com.pricewatch.web.MilestoneMessages.text;
+
 @Controller
 public class BudgetController {
     private final BudgetService budgets;
     private final CatalogService catalog;
     private final HelloController formatter;
+    private final MessageSource messages;
 
-    public BudgetController(BudgetService budgets, CatalogService catalog, HelloController formatter) {
+    public BudgetController(BudgetService budgets, CatalogService catalog, HelloController formatter,
+                            MessageSource messages) {
         this.budgets = budgets;
         this.catalog = catalog;
         this.formatter = formatter;
+        this.messages = messages;
     }
 
     @ModelAttribute
@@ -40,10 +47,10 @@ public class BudgetController {
                 RedirectAttributes redirect) {
         try {
             var savedPeriod = budgets.save(period, limit);
-            redirect.addFlashAttribute("notice", savedPeriod.label() + " budget saved on this device.");
+            redirect.addFlashAttribute("notice", text(messages, "budget.saved", text(messages, "budget.period." + savedPeriod.name())));
             return "redirect:/budget";
         } catch (IllegalArgumentException exception) {
-            model.addAttribute("error", exception.getMessage());
+            model.addAttribute("error", inputError(messages, exception));
             return show(model, period, limit);
         }
     }
@@ -56,7 +63,7 @@ public class BudgetController {
                 ? budget.limitAmount() == null ? "" : budget.limitAmount().toPlainString()
                 : limitInput);
         model.addAttribute("scene", "budget");
-        model.addAttribute("title", "Budget");
+        model.addAttribute("title", text(messages, "budget.title"));
         return "market-desk";
     }
 }

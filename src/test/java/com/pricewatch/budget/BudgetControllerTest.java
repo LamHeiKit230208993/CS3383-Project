@@ -6,6 +6,7 @@ import com.pricewatch.web.BudgetController;
 import com.pricewatch.web.HelloController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -27,8 +28,17 @@ class BudgetControllerTest {
     private final BudgetService budgets = mock(BudgetService.class);
     private final CatalogService catalog = mock(CatalogService.class);
     private final ShoppingService shopping = mock(ShoppingService.class);
+    private final ResourceBundleMessageSource messages = messageSource();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
-            new BudgetController(budgets, catalog, new HelloController(catalog, shopping))).build();
+            new BudgetController(budgets, catalog, new HelloController(catalog, shopping, messages), messages)).build();
+
+    private static ResourceBundleMessageSource messageSource() {
+        var messages = new ResourceBundleMessageSource();
+        messages.setBasename("shopping-messages");
+        messages.setDefaultEncoding("UTF-8");
+        messages.setFallbackToSystemLocale(false);
+        return messages;
+    }
 
     @BeforeEach
     void defaults() {

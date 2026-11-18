@@ -274,6 +274,34 @@ class TrackingServiceTest {
     }
 
     @Test
+    void productHistoryShowsRetainedPricesAndUnknownGapsWithoutChangingRecords() throws Exception {
+        String priced = "[{\"supermarketCode\":\"STORE-A\",\"price\":\"5.00\"}]";
+        String gap = "[{\"supermarketCode\":\"STORE-A\",\"price\":null}]";
+        catalog.accept(json(product("TRACK-TABLE", priced)), "LIVE", "fixture-live");
+        TrackingView period = tracking.start("TRACK-TABLE", "STORE-A");
+        now.set(START.plusSeconds(3600));
+        catalog.accept(json(product("TRACK-TABLE", gap)), "LIVE", "fixture-live");
+        observationRepository.save(new com.pricewatch.tracking.persistence.PriceObservationEntity(
+                trackingRepository.findById(period.id()).orElseThrow(), new BigDecimal("1.0000"),
+                START.minusSeconds(91L * 24 * 60 * 60), "fixture", "fixture-checksum"));
+
+        var rows = tracking.priceHistory("TRACK-TABLE");
+        assertEquals(2, rows.size());
+        assertEquals(now.get(), rows.getFirst().retrievedAt());
+        assertEquals("STORE-A", rows.getFirst().retailerCode());
+        assertNull(rows.getFirst().price());
+        assertEquals(new BigDecimal("5.0000"), rows.getLast().price());
+        mvc.perform(get("/products/TRACK-TABLE/history")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Unknown")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("HK$5.00")));
+        assertEquals(3, observationRepository.count());
+
+        catalog.accept(json(product("UNTRACKED-PACK", priced)), "SAMPLE", "fixture");
+        mvc.perform(get("/products/UNTRACKED-PACK/history")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("No saved price observations")));
+    }
+
+    @Test
     void unchangedImportAfterRetentionDoesNotCreateHistoryAndChangedPriceStartsNewBaseline() {
         catalog.accept(json(product("TRACK-6", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"5.00\"}]")),
                 "LIVE", "fixture-live");

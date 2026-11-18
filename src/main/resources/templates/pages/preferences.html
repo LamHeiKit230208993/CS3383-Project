@@ -1,0 +1,27 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="preferences-title">
+  <header class="page-heading">
+    <h1 id="preferences-title" th:text="#{app.scene.preferences}">Display settings</h1>
+    <p class="intro" th:text="#{preferences.intro}">These settings are saved on this device.</p>
+  </header>
+  <div th:if="${displayFeedback}" class="notice preferences-panel" role="status" th:text="#{${displayFeedback}}"></div>
+  <div th:if="${displayError}" class="notice error preferences-panel" role="alert" th:text="#{${displayError}}"></div>
+  <form class="panel preferences-panel" th:action="@{/preferences}" method="post">
+    <div class="preference-field">
+      <label for="display-language" th:text="#{preferences.language}">Language</label>
+      <select id="display-language" name="language">
+        <option value="en" lang="en" th:selected="${displayPreferences.language == 'en'}">English</option>
+        <option value="zh-Hant" lang="zh-Hant" th:selected="${displayPreferences.language == 'zh-Hant'}">繁體中文</option>
+        <option value="zh-Hans" lang="zh-Hans" th:selected="${displayPreferences.language == 'zh-Hans'}">简体中文</option>
+      </select>
+    </div>
+    <div class="preference-field">
+      <label class="check-label">
+        <input type="checkbox" name="highContrast" value="true" aria-describedby="contrast-help"
+               th:checked="${displayPreferences.highContrast}">
+        <span th:text="#{preferences.highContrast}">High contrast</span>
+      </label>
+      <p id="contrast-help" class="helper" th:text="#{preferences.contrastHelp}">Use darker text and stronger borders and focus outlines.</p>
+    </div>
+    <button class="button primary" type="submit" th:text="#{preferences.save}">Save settings</button>
+  </form>
+</section>

@@ -79,12 +79,13 @@ J04 completes the first milestone. UI work can start as a small sketch while J01
 
 ## 5. Following baseline jobs
 
-**Current milestone: J05–J08 in issue #17, locally implemented and checked; review/merge pending.** Read the
+**J05–J08 in issue #17 formed the previous milestone.** Read the
 [milestone execution plan](tracking-alerts-budgets-reminders-j05-j08.md) before
 assigning or implementing any of these jobs. It defines workstreams, shared
 contracts, the D01–D07 rules agreed on 6 November 2026, and combined completion checks. The issue
 can use separate linked PRs; grouping jobs does not remove their dependencies.
-J09–J12 remain later work. Conditional scope rows keep their existing conditions.
+The [issue #21 workflow checks](issue-21-workflow-checks.md) cover J09–J12.
+Conditional scope rows keep their existing conditions.
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
@@ -93,15 +94,14 @@ J09–J12 remain later work. Conditional scope rows keep their existing conditio
 | J07 | List totals, planned budgets, and category totals | Preserve explicit retailer choices; Automatic lowest applies only in that mode; quantities affect totals; missing prices keep the result incomplete; estimates are not actual spending | J04 |
 | J08 | User-set reminders, add-to-list, clear, and snooze | Reminders run only in the active app; actions set the agreed next due date and preserve product/quantity | J04, J06 |
 | J09 | Text chat using checked search/comparison operations | The answer uses checked product, retailer, and amount; unclear requests ask for a choice; AI failure still leaves the normal comparison usable | J03 |
-| J10 | Separate-copy list sharing | Export and import a chosen list; preserve product/quantity/checked state; invalid input leaves existing lists unchanged | J04 |
-| J11 | Read-only saved-list view without a connection | Save on the viewing device, disconnect, and reopen the list; no fresh-price or remote-chat claim; saved amounts show their age | J04 |
+| J10 | Separate-copy list sharing | Transfer a chosen list as versioned JSON. Preserve products, quantities, checked states, and retailer choices. Invalid input leaves existing lists unchanged. | J04 |
+| J11 | Read-only saved-list view without a connection | Reopen the selected list with the local app running. Show the saved prices and their retrieval time. Editing and online actions require exiting offline review. | J10 |
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
 Within this milestone, J05 and J07 can proceed in parallel under the agreed
 D01–D07 rules. J06 follows J05; J08 uses the saved list and J06's
 agreed notification behaviour. Integrate and check the four jobs together before
 closing the issue. J09 does not need history, but is outside this milestone.
-J10's transfer format remains a later decision.
 
 Use the [agreed decision register](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
 for retention, periods, target/drop rules, repeat reset, timing, budgets, and
@@ -118,8 +118,10 @@ use the [J01–J04 implementation guide](../implementation-baseline-j01-j04.md).
 For current J05–J08 routes, records, operations, and limits, use the
 [extension implementation guide](../implementation-j05-j08.md). The
 [milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#shared-records-and-operations)
-defines its approved rules and acceptance checks. J09 chat contracts remain later work.
-App code must search and calculate before sending checked facts to an LLM.
+defines its approved rules and acceptance checks. The [setup guide](../SETUP.md)
+describes the current chat, sharing, offline, display, personal-data and history workflows.
+Ask uses the configured provider to interpret questions. The app searches and
+calculates the answer from accepted listings.
 
 ## 7. Checks and current state
 
@@ -134,8 +136,8 @@ J04 includes the minimum effective-price subtotal needed to review the list.
 This branch now adds J05–J08 wishlist/tracking, alerts, planned budgets/category
 totals, and reminders. Local validation on 6 November passed 86 Java tests,
 20 browser scenarios and an old-to-new database upgrade check; use the
-[test catalogue](../Test/test-case-catalog.md) for current evidence. AI chat,
-list transfer, offline reopening, and full UI translation remain J09–J12 work.
-Neither a working screen nor the earlier baseline test results close issue #17.
+[test catalogue](../Test/test-case-catalog.md) for the latest local results.
+J12 price history lists retained records for the selected pack. A combined chart
+and the separate product-wide alert rule change remain follow-ups under issue #21.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

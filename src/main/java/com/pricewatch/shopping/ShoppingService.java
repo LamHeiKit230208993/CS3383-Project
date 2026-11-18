@@ -2,18 +2,24 @@ package com.pricewatch.shopping;
 
 import com.pricewatch.catalog.ListingView;
 import com.pricewatch.catalog.ProductView;
+import com.pricewatch.catalog.persistence.LocalizedLabel;
 import com.pricewatch.catalog.persistence.ProductEntity;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.shopping.persistence.ShoppingListEntity;
 import com.pricewatch.shopping.persistence.ShoppingListItemEntity;
 import com.pricewatch.shopping.repository.ShoppingListItemRepository;
 import com.pricewatch.shopping.repository.ShoppingListRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,25 +32,118 @@ public class ShoppingService {
     private final ShoppingListRepository listRepository;
     private final ShoppingListItemRepository itemRepository;
     private final ProductRepository productRepository;
+    private final EntityManager entityManager;
     private final TransactionTemplate transactionTemplate;
     private final Object mutationLock = new Object();
 
     public ShoppingService(ShoppingListRepository listRepository,
                            ShoppingListItemRepository itemRepository,
                            ProductRepository productRepository,
+                           EntityManager entityManager,
                            PlatformTransactionManager transactionManager) {
         this.listRepository = listRepository;
         this.itemRepository = itemRepository;
         this.productRepository = productRepository;
+        this.entityManager = entityManager;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     @Transactional(readOnly = true)
     public List<ItemView> items() {
-        return itemRepository.findAllByShoppingList_NameOrderByIdAsc(LIST_NAME).stream()
+        return items(null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ItemView> items(Long listId) {
+        return itemRepository.findAllByShoppingList_NameOrderByIdAsc(listName(listId)).stream()
                 .map(this::toView)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<ListChoice> lists() {
+        var lists = listRepository.findAll().stream()
+                .map(list -> new ListChoice(list.getId(), list.getName()))
+                .sorted(Comparator.comparing((ListChoice list) -> !LIST_NAME.equals(list.name()))
+                        .thenComparing(ListChoice::name, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        if (!lists.isEmpty() && LIST_NAME.equals(lists.getFirst().name())) return lists;
+        var choices = new ArrayList<ListChoice>();
+        choices.add(new ListChoice(null, LIST_NAME));
+        choices.addAll(lists);
+        return List.copyOf(choices);
+    }
+
+    @Transactional(readOnly = true)
+    public ListTransfer exportList(Long listId) {
+        String name = listName(listId);
+        var rows = itemRepository.findAllByShoppingList_NameOrderByIdAsc(name).stream()
+                .map(item -> new ListTransfer.Item(item.getProductCode(), displayName(item.getProduct()),
+                        item.getQuantity(), item.isChecked(), item.getSelectedRetailerCode()))
+                .toList();
+        return ListTransfer.forExport(name, rows);
+    }
+
+    public long importList(InputStream input) {
+        var transfer = ListTransfer.read(input);
+        synchronized (mutationLock) {
+            return Objects.requireNonNull(transactionTemplate.execute(status -> saveImportedList(transfer)));
+        }
+    }
+
+    private long saveImportedList(ListTransfer transfer) {
+        var list = listRepository.save(new ShoppingListEntity(availableName(transfer.name())));
+        var products = new HashMap<String, ProductEntity>();
+        productRepository.findAllById(transfer.items().stream().map(ListTransfer.Item::productCode).toList())
+                .forEach(product -> products.put(product.getCode(), product));
+        var items = new ArrayList<ShoppingListItemEntity>();
+        for (ListTransfer.Item row : transfer.items()) {
+            var product = products.get(row.productCode());
+            if (product == null) {
+                product = new ProductEntity(row.productCode());
+                product.setName(new LocalizedLabel(row.displayName(), "", ""));
+                product.setImportedListReference(true);
+                // An insert cannot overwrite a source product added by a concurrent catalogue refresh.
+                entityManager.persist(product);
+            }
+            items.add(new ShoppingListItemEntity(list, product, row.quantity(), row.checked(), row.retailerCode()));
+        }
+        itemRepository.saveAll(items);
+        return list.getId();
+    }
+
+    private String availableName(String requested) {
+        if (!LIST_NAME.equals(requested) && listRepository.findByName(requested).isEmpty()) return requested;
+        for (int number = 2; ; number++) {
+            String suffix = " (" + number + ")";
+            String base = requested.substring(0, Math.min(requested.length(), 100 - suffix.length())).stripTrailing();
+            if (Character.isHighSurrogate(base.charAt(base.length() - 1))) {
+                base = base.substring(0, base.length() - 1).stripTrailing();
+            }
+            String candidate = base + suffix;
+            if (listRepository.findByName(candidate).isEmpty()) return candidate;
+        }
+    }
+
+    private String displayName(ProductEntity product) {
+        var label = product.getName();
+        if (label != null) {
+            for (String name : new String[]{label.getEn(), label.getZhHant(), label.getZhHans()}) {
+                if (name == null) continue;
+                String displayName = name.replaceAll("\\p{IsControl}", " ").strip();
+                if (!displayName.isBlank()) return displayName;
+            }
+        }
+        return product.getCode();
+    }
+
+    private String listName(Long listId) {
+        if (listId == null) return LIST_NAME;
+        return listRepository.findById(listId).map(ShoppingListEntity::getName)
+                .orElseThrow(() -> new IllegalArgumentException("That shopping list does not exist."));
+    }
+
+    public record ListChoice(Long id, String name) {}
 
     public void add(String productCode, int quantity) {
         add(productCode, quantity, null);
@@ -91,11 +190,15 @@ public class ShoppingService {
     }
 
     public void update(String productCode, int quantity, boolean checked, String retailerCode) {
+        update(null, productCode, quantity, checked, retailerCode);
+    }
+
+    public void update(Long listId, String productCode, int quantity, boolean checked, String retailerCode) {
         validateQuantity(quantity);
         String requestedRetailer = automaticIfBlank(retailerCode);
         mutate(() -> {
             ShoppingListItemEntity item = itemRepository
-                    .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode)
+                    .findByShoppingList_NameAndProduct_Code(listName(listId), productCode)
                     .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."));
             if (!Objects.equals(item.getSelectedRetailerCode(), requestedRetailer)) {
                 if (requestedRetailer != null) {
@@ -109,7 +212,11 @@ public class ShoppingService {
     }
 
     public void remove(String productCode) {
-        mutate(() -> itemRepository.deleteByShoppingList_NameAndProduct_Code(LIST_NAME, productCode));
+        remove(null, productCode);
+    }
+
+    public void remove(Long listId, String productCode) {
+        mutate(() -> itemRepository.deleteByShoppingList_NameAndProduct_Code(listName(listId), productCode));
     }
 
     @Transactional(readOnly = true)

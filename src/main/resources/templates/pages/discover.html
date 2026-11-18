@@ -1,14 +1,14 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
   <section aria-labelledby="discover-title">
     <div class="page-heading">
-      <p class="eyebrow">LESS CHECKING. BETTER CHOICES.</p>
-      <h1 id="discover-title">Everyday essentials.<br>A clearer way to shop.</h1>
-      <p class="intro">Find the exact pack. Compare listed prices. Keep a list that lasts.</p>
+      <p class="eyebrow" th:text="#{discover.eyebrow}">LESS CHECKING. BETTER CHOICES.</p>
+      <h1 id="discover-title"><th:block th:text="#{discover.title}">Everyday essentials.</th:block><br><th:block th:text="#{discover.subtitle}">A clearer way to shop.</th:block></h1>
+      <p class="intro" th:text="#{discover.intro}">Find the exact pack. Compare listed prices. Keep a list that lasts.</p>
     </div>
     <div class="discovery-layout">
       <div>
         <form class="search-box" role="search" th:action="@{/}" method="get">
-          <label for="product-search">Find a product</label>
+          <label for="product-search" th:text="#{discover.searchLabel}">Find a product</label>
           <div class="search-controls">
             <svg class="icon" aria-hidden="true">
               <use href="#i-search"/>
@@ -17,36 +17,38 @@
               id="product-search"
               name="q"
               th:value="${q}"
-              placeholder="Try milk, a brand, or 鮮牛奶…"
+              th:placeholder="#{discover.placeholder}"
               autocomplete="off"
               maxlength="200"
             >
-            <button class="button primary" type="submit">Search</button>
+            <button class="button primary" type="submit" th:text="#{discover.search}">Search</button>
           </div>
           <div class="search-filters">
             <label for="category-filter">
-              Category
+              <th:block th:text="#{discover.category}">Category</th:block>
               <select id="category-filter" name="category">
-                <option value="">All categories</option>
-                <option th:each="c : ${categories}" th:value="${c}" th:text="${c}" th:selected="${c == category}"></option>
+                <option value="" th:text="#{discover.categories}">All categories</option>
+                <option th:each="c : ${categories}" th:with="label=${categoryLabels.get(c)}"
+                        th:value="${c}" th:selected="${c == category}"
+                        th:text="${label == null ? c : label.forLocale(#locale)}"></option>
               </select>
             </label>
           </div>
-          <p class="helper">Product names and specific categories come first. Broad-category matches are shown separately.</p>
+          <p class="helper" th:text="#{discover.ranking}">Product names and specific categories come first. Broad-category matches are shown separately.</p>
         </form>
         <div class="section-heading">
-          <h2 th:text="${related ? 'Related category matches' : (q.isBlank() ? 'The accepted catalogue' : 'Search results')}"></h2>
-          <span th:text="${resultCount + ' products'}"></span>
+          <h2 th:text="${related} ? #{discover.relatedTitle} : (${q.isBlank()} ? #{discover.catalogueTitle} : #{discover.results})"></h2>
+          <span th:text="#{common.productCount(${resultCount})}"></span>
         </div>
-        <div class="match-tabs" th:if="${!q.isBlank()}"><a th:href="@{/(q=${q},category=${category})}" th:attr="aria-current=${!related ? 'page' : null}" th:text="${'Best matches (' + directCount + ')'}"></a><a th:if="${relatedCount > 0}" th:href="@{/(q=${q},category=${category},related=true)}" th:attr="aria-current=${related ? 'page' : null}" th:text="${'Related categories (' + relatedCount + ')'}"></a></div>
-        <p class="helper related-explanation" th:if="${related}">These items match a broad source category, not necessarily the product you named.</p>
+        <div class="match-tabs" th:if="${!q.isBlank()}"><a th:href="@{/(q=${q},category=${category})}" th:attr="aria-current=${!related ? 'page' : null}" th:text="#{discover.matchesCount(${directCount})}"></a><a th:if="${relatedCount > 0}" th:href="@{/(q=${q},category=${category},related=true)}" th:attr="aria-current=${related ? 'page' : null}" th:text="#{discover.relatedCount(${relatedCount})}"></a></div>
+        <p class="helper related-explanation" th:if="${related}" th:text="#{discover.relatedHelp}">These items match a broad source category, not necessarily the product you named.</p>
         <div class="empty-state panel" th:if="${resultCount == 0}">
           <svg class="icon large" aria-hidden="true">
             <use href="#i-pack"/>
           </svg>
-          <h2 th:text="${importStatus == null ? 'Your next shop starts here.' : 'No matching products.'}"></h2>
-          <p th:text="${importStatus == null ? 'Load price data to compare an exact product across retailers.' : 'Try a shorter name, a brand, or a different language label.'}"></p>
-          <a class="button primary" th:href="${importStatus == null ? '/data' : '/'}" th:text="${importStatus == null ? 'Load price data' : 'Clear search'}"></a>
+          <h2 th:text="${importStatus == null} ? #{discover.emptyCatalogue} : #{discover.emptySearch}"></h2>
+          <p th:text="${importStatus == null} ? #{discover.emptyCatalogueHelp} : #{discover.emptySearchHelp}"></p>
+          <a class="button primary" th:href="${importStatus == null ? '/data' : '/'}" th:text="${importStatus == null} ? #{discover.load} : #{discover.clear}"></a>
         </div>
         <div class="product-grid" th:unless="${products.isEmpty()}">
           <article class="product-card" th:each="p : ${products}">
@@ -54,32 +56,32 @@
               <svg class="pack-icon" aria-hidden="true">
                 <use href="#i-pack"/>
               </svg>
-              <span class="small-tag" th:text="${p.category2.en}"></span>
+              <span class="small-tag" th:text="${p.category2.forLocale(#locale)}"></span>
             </div>
             <div class="product-details">
-              <p class="product-brand" th:text="${p.brand.en}" translate="no"></p>
-              <h3><a th:href="@{/products/{code}(code=${p.code})}" th:text="${p.name.en}"></a></h3>
-              <p class="alternate-name" lang="zh-Hant" th:text="${p.name.zhHant}"></p>
+              <p class="product-brand" th:text="${p.brand.forLocale(#locale)}" translate="no"></p>
+              <h3><a th:href="@{/products/{code}(code=${p.code})}" th:text="${p.name.forLocale(#locale)}"></a></h3>
+              <p class="alternate-name" lang="zh-Hant" th:if="${#locale.language == 'en' and p.name.zhHant != p.name.forLocale(#locale)}" th:text="${p.name.zhHant}"></p>
               <p class="product-code" th:text="${p.code}" translate="no"></p>
               <div class="product-price-row">
-                <div><span class="helper">Lowest listed price</span><strong class="product-price" th:text="${format.money(p.lowestPrice)}"></strong><span class="retailer-label" th:if="${p.lowestListings.size() > 1}" th:text="${p.lowestListings.size() + ' retailers tied'}"></span><span class="retailer-label" th:if="${p.lowestListings.size() == 1}" th:text="${p.lowestListings[0].retailerCode}"></span></div>
-                <a class="compare-link" th:href="@{/products/{code}(code=${p.code})}" th:attr="aria-label=${'Compare ' + p.name.en}">Compare →</a>
+                <div><span class="helper" th:text="#{discover.lowest}">Lowest listed price</span><strong class="product-price" th:text="${p.lowestPrice == null} ? #{common.notListed} : ${format.money(p.lowestPrice)}"></strong><span class="retailer-label" th:if="${p.lowestListings.size() > 1}" th:text="#{discover.ties(${p.lowestListings.size()})}"></span><span class="retailer-label" th:if="${p.lowestListings.size() == 1}" th:text="${p.lowestListings[0].retailerCode}"></span></div>
+                <a class="compare-link" th:href="@{/products/{code}(code=${p.code})}" th:attr="aria-label=#{discover.compareLabel(${p.name.forLocale(#locale)})}" th:text="#{discover.compare}">Compare →</a>
               </div>
             </div>
           </article>
         </div>
-        <nav class="pagination" aria-label="Search pages" th:if="${pageCount > 1}"><a class="button secondary" th:if="${pageNumber > 1}" th:href="@{/(q=${q},category=${category},related=${related},page=${pageNumber - 1})}">Previous</a><span th:text="${'Page ' + pageNumber + ' of ' + pageCount}"></span><a class="button secondary" th:if="${pageNumber < pageCount}" th:href="@{/(q=${q},category=${category},related=${related},page=${pageNumber + 1})}">Next</a></nav>
-        <p class="source-note">Same product, same pack. Listed prices exclude delivery and do not establish stock availability.</p>
+        <nav class="pagination" th:attr="aria-label=#{discover.pages}" th:if="${pageCount > 1}"><a class="button secondary" th:if="${pageNumber > 1}" th:href="@{/(q=${q},category=${category},related=${related},page=${pageNumber - 1})}" th:text="#{discover.previous}">Previous</a><span th:text="#{discover.pageNumber(${pageNumber},${pageCount})}"></span><a class="button secondary" th:if="${pageNumber < pageCount}" th:href="@{/(q=${q},category=${category},related=${related},page=${pageNumber + 1})}" th:text="#{discover.next}">Next</a></nav>
+        <p class="source-note" th:text="#{discover.sourceNote}">Same product, same pack. Listed prices exclude delivery and do not establish stock availability.</p>
       </div>
       <aside class="panel basket-preview">
-        <p class="eyebrow">A LITTLE PLANNING GOES A LONG WAY</p>
-        <h2>Your next shop</h2>
-        <p>One list, saved on this device.</p>
-        <div class="summary-total"><span th:text="${summary.unknownItemCount > 0 ? 'Known subtotal' : 'Estimated list cost'}"></span><strong th:text="${format.money(summary.knownSubtotal)}"></strong></div>
-        <p class="helper" th:text="${summary.totalQuantity + ' packs on your list'}"></p>
-        <p class="warning" th:if="${summary.unknownItemCount > 0}" th:text="${summary.unknownItemCount + ' items have no current price. Total is incomplete.'}"></p>
-        <a class="button primary full" th:href="@{/list}">Review my list →</a>
-        <p class="helper">A shopping plan, not a purchase record.</p>
+        <p class="eyebrow" th:text="#{discover.basketEyebrow}">A LITTLE PLANNING GOES A LONG WAY</p>
+        <h2 th:text="#{discover.basketTitle}">Your next shop</h2>
+        <p th:text="#{discover.basketLocal}">One list, saved on this device.</p>
+        <div class="summary-total"><span th:text="${summary.unknownItemCount > 0} ? #{common.subtotal} : #{common.estimate}"></span><strong th:text="${format.money(summary.knownSubtotal)}"></strong></div>
+        <p class="helper" th:text="#{discover.basketPacks(${summary.totalQuantity})}"></p>
+        <p class="warning" th:if="${summary.unknownItemCount > 0}" th:text="#{common.missingPrices(${summary.unknownItemCount})}"></p>
+        <a class="button primary full" th:href="@{/list}" th:text="#{discover.basketLink}">Review my list →</a>
+        <p class="helper" th:text="#{discover.basketHelp}">A shopping plan, not a purchase record.</p>
       </aside>
     </div>
   </section>

@@ -22,12 +22,15 @@ import java.text.Normalizer;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 @Service
 public class CatalogService {
@@ -63,12 +66,15 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public SearchResults searchResults(String query, String category) {
         List<ProductEntity> products = productRepository.findAllByActiveTrue();
-        List<String> categories = products.stream()
+        Map<String, LocalizedText> categoryLabels = products.stream()
                 .map(ProductEntity::getCategory2)
                 .filter(Objects::nonNull)
-                .map(LocalizedLabel::getEn)
-                .filter(value -> value != null && !value.isBlank())
-                .distinct()
+                .filter(label -> label.getEn() != null && !label.getEn().isBlank())
+                .collect(Collectors.toMap(LocalizedLabel::getEn,
+                        label -> new LocalizedText(label.getEn(), label.getZhHant(), label.getZhHans()),
+                        (first, next) -> new LocalizedText(first.en(), preferSourceLabel(first.zhHant(), next.zhHant()),
+                                preferSourceLabel(first.zhHans(), next.zhHans()))));
+        List<String> categories = categoryLabels.keySet().stream()
                 .sorted(Comparator.comparing(CatalogService::normalize).thenComparing(Comparator.naturalOrder()))
                 .toList();
 
@@ -101,7 +107,11 @@ public class CatalogService {
         related.sort(ranking);
 
         return new SearchResults(matches.stream().map(hit -> ProductView.from(hit.product())).toList(),
-                related.stream().map(hit -> ProductView.from(hit.product())).toList(), categories);
+                related.stream().map(hit -> ProductView.from(hit.product())).toList(), categories, categoryLabels);
+    }
+
+    private static String preferSourceLabel(String label, String fallback) {
+        return label == null || label.isBlank() ? fallback : label;
     }
 
     @Transactional(readOnly = true)
@@ -113,6 +123,23 @@ public class CatalogService {
                 .map(ProductView::from)
                 .orElseThrow(() -> new IllegalArgumentException("Product " + code + " was not found."));
     }
+
+    @Transactional(readOnly = true)
+    public Map<String, ProductLabel> localizedLabels(Collection<String> productCodes, Locale locale) {
+        if (!"zh".equals(locale.getLanguage()) || productCodes.isEmpty()) return Map.of();
+        return productRepository.findAllById(productCodes.stream().distinct().toList()).stream()
+                .collect(Collectors.toUnmodifiableMap(ProductEntity::getCode, product -> {
+                    var name = localizedLabel(product.getName(), locale);
+                    return new ProductLabel(name.isBlank() ? product.getCode() : name,
+                            localizedLabel(product.getBrand(), locale));
+                }));
+    }
+
+    private String localizedLabel(LocalizedLabel label, Locale locale) {
+        return label == null ? "" : new LocalizedText(label.getEn(), label.getZhHant(), label.getZhHans()).forLocale(locale);
+    }
+
+    public record ProductLabel(String name, String brand) {}
 
     @Transactional(readOnly = true)
     public ImportStatus status() {

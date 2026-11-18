@@ -1,0 +1,65 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="personal-title">
+  <header class="page-heading">
+    <h1 id="personal-title" th:text="${confirmingReset} ? #{personal.resetTitle} : #{personal.title}">Personal data</h1>
+    <p class="intro" th:unless="${confirmingReset}" th:text="#{personal.intro}">View the records saved on this device.</p>
+  </header>
+
+  <div class="notice" role="status" th:if="${personalFeedback}" th:text="#{${personalFeedback}}"></div>
+  <div class="notice error" role="alert" th:if="${personalError}" th:text="#{${personalError}}"></div>
+
+  <div class="data-layout" th:unless="${confirmingReset}">
+    <section class="panel" aria-labelledby="personal-records">
+      <h2 id="personal-records" th:text="#{personal.records}">Saved records</h2>
+      <dl class="data-facts">
+        <dt><a th:href="@{/list}" th:text="#{personal.lists}">Lists</a></dt>
+        <dd th:text="#{personal.listCount(${overview.lists},${overview.listEntries})}"></dd>
+        <dt><a th:href="@{/saved}" th:text="#{personal.wishlist}">Wishlist</a></dt>
+        <dd th:text="${overview.wishlist}"></dd>
+        <dt><a th:href="@{/saved}" th:text="#{personal.tracking}">Tracking</a></dt>
+        <dd th:text="#{personal.trackingCount(${overview.tracking},${overview.observations})}"></dd>
+        <dt><a th:href="@{/alerts}" th:text="#{personal.alerts}">Alerts</a></dt>
+        <dd th:text="${overview.alerts}"></dd>
+        <dt><a th:href="@{/reminders}" th:text="#{personal.reminders}">Reminders</a></dt>
+        <dd th:text="${overview.reminders}"></dd>
+        <dt><a th:href="@{/budget}" th:text="#{personal.budgets}">Budgets</a></dt>
+        <dd th:text="${overview.budgets}"></dd>
+        <dt th:text="#{personal.preferences}">Preferences</dt>
+        <dd>
+          <a th:href="@{/preferences}" th:text="#{personal.display}">Display</a>
+          <span aria-hidden="true"> · </span>
+          <a th:href="@{/alerts}" th:text="#{personal.notifications}">Notifications</a>
+        </dd>
+        <dt><a th:href="@{/ask}" th:text="#{personal.chats}">Chats in this session</a></dt>
+        <dd th:text="${chatCount}"></dd>
+      </dl>
+    </section>
+    <div class="import-actions">
+      <section class="panel" aria-labelledby="personal-export">
+        <h2 id="personal-export" th:text="#{personal.exportTitle}">Export</h2>
+        <p th:text="#{personal.exportHelp}">Download these records as one JSON file, including chats from this browser session.</p>
+        <a class="button primary full" th:href="@{/personal-data/export}" th:text="#{personal.export}">Export personal data</a>
+      </section>
+      <section class="panel" aria-labelledby="personal-reset">
+        <h2 id="personal-reset" th:text="#{personal.resetTitle}">Reset personal data</h2>
+        <p th:text="#{personal.resetSummary}">Clear your saved records and this session's chats. The saved price catalogue stays available.</p>
+        <a class="button secondary full" th:href="@{/personal-data/reset}" th:text="#{personal.reviewReset}">Review reset</a>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel preferences-panel" th:if="${confirmingReset}" aria-labelledby="personal-confirm">
+    <h2 id="personal-confirm" th:text="#{personal.confirmTitle}">Permanently delete saved records?</h2>
+    <p th:text="#{personal.resetDetail}">This clears your lists, wishlist, tracking and history, alerts, reminders, budgets, preferences and chats in this session.</p>
+    <p th:text="#{personal.resetKeeps}">The price catalogue and its import details remain available. Downloaded and shared copies remain on the devices that received them.</p>
+    <form th:action="@{/personal-data/reset}" method="post">
+      <label class="check-label">
+        <input type="checkbox" name="confirm" value="true" required>
+        <span th:text="#{personal.confirmChoice}">I understand that this deletes my local personal data.</span>
+      </label>
+      <div class="inline-actions">
+        <a class="button secondary" th:href="@{/personal-data}" th:text="#{personal.cancel}">Cancel</a>
+        <button class="button danger" type="submit" th:text="#{personal.confirm}">Confirm reset</button>
+      </div>
+    </form>
+  </section>
+</section>

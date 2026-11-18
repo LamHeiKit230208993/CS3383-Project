@@ -3,6 +3,9 @@ package com.pricewatch.web;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.reminder.ReminderService;
+import com.pricewatch.reminder.ReminderView;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,16 +15,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import static com.pricewatch.web.MilestoneMessages.inputError;
+import static com.pricewatch.web.MilestoneMessages.text;
+
 @Controller
 public class ReminderController {
     private final ReminderService reminders;
     private final CatalogService catalog;
     private final HelloController formatter;
+    private final MessageSource messages;
 
-    public ReminderController(ReminderService reminders, CatalogService catalog, HelloController formatter) {
+    public ReminderController(ReminderService reminders, CatalogService catalog, HelloController formatter,
+                              MessageSource messages) {
         this.reminders = reminders;
         this.catalog = catalog;
         this.formatter = formatter;
+        this.messages = messages;
     }
 
     @ModelAttribute
@@ -37,7 +46,7 @@ public class ReminderController {
             try {
                 candidate = reminders.candidate(code);
             } catch (IllegalArgumentException exception) {
-                model.addAttribute("error", exception.getMessage());
+                model.addAttribute("error", inputError(messages, exception));
             }
         }
         return show(model, candidate);
@@ -48,9 +57,9 @@ public class ReminderController {
                   @RequestParam(defaultValue = "") String retailerCode, RedirectAttributes redirect) {
         try {
             reminders.create(code, quantity, intervalDays, retailerCode);
-            redirect.addFlashAttribute("notice", "Reminder saved on this device.");
+            redirect.addFlashAttribute("notice", text(messages, "reminders.notice.saved"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
             redirect.addAttribute("code", code);
             return "redirect:/reminders";
         }
@@ -59,42 +68,45 @@ public class ReminderController {
 
     @PostMapping("/reminders/{id}/clear")
     String clear(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder cleared. The next due date uses the interval from now.", redirect,
+        return act("reminders.notice.cleared", redirect,
                 () -> reminders.clear(id));
     }
 
     @PostMapping("/reminders/{id}/snooze")
     String snooze(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder snoozed for 24 hours. Its interval is unchanged.", redirect,
+        return act("reminders.notice.snoozed", redirect,
                 () -> reminders.snooze(id));
     }
 
     @PostMapping("/reminders/{id}/add")
     String addToList(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Added the reminder quantity to My list. The reminder is still active.", redirect,
+        return act("reminders.notice.added", redirect,
                 () -> reminders.addToList(id));
     }
 
     @PostMapping("/reminders/{id}/delete")
     String delete(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder deleted.", redirect, () -> reminders.delete(id));
+        return act("reminders.notice.deleted", redirect, () -> reminders.delete(id));
     }
 
-    private String act(long id, String success, RedirectAttributes redirect, Runnable action) {
+    private String act(String successKey, RedirectAttributes redirect, Runnable action) {
         try {
             action.run();
-            redirect.addFlashAttribute("notice", success);
+            redirect.addFlashAttribute("notice", text(messages, successKey));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/reminders";
     }
 
     private String show(Model model, ProductView candidate) {
-        model.addAttribute("overview", reminders.overview());
+        var overview = reminders.overview();
+        model.addAttribute("overview", overview);
+        model.addAttribute("productLabels", catalog.localizedLabels(overview.reminders().stream()
+                .map(ReminderView::productCode).toList(), LocaleContextHolder.getLocale()));
         model.addAttribute("candidate", candidate);
         model.addAttribute("scene", "reminders");
-        model.addAttribute("title", "Reminders");
+        model.addAttribute("title", text(messages, "reminders.title"));
         return "market-desk";
     }
 }

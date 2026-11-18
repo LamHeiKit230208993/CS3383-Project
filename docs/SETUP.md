@@ -106,8 +106,8 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Alerts, Budget, and Reminders now have working forms in the J05–J08
-implementation. Local integration checks passed on 6 November 2026; Ask remains planned.
+Saved, Alerts, Budget, and Reminders have working forms in the J05–J08
+implementation. Open Ask for the price assistant described below.
 See the [baseline guide](implementation-baseline-j01-j04.md) and
 [extension guide](implementation-j05-j08.md) for behaviour and limits.
 
@@ -164,7 +164,77 @@ isolated databases and do not need your normal data file.
 The default server binds to `127.0.0.1`. It is a local app, not a shared cloud
 service. Saved data on this computer does not by itself make a phone work offline.
 
+### Share or review a saved list
+
+Open **My list**, choose a list, and select **Open list**. **Export JSON**
+downloads the open list. **Import JSON** creates a separate editable copy.
+The file keeps each pack, quantity, checked state, and retailer choice.
+The receiving app gets prices from its own catalogue. Missing products or
+retailer prices appear as **Unknown**. Quick-add, budgets, and reminders use
+the default **My list**.
+
+Choose a list and select **View offline** while Spring Boot is running on
+the device. The read-only page shows the saved estimates and retrieval time.
+This mode applies to the current browser session. Select **Exit offline review**
+to edit the list, refresh prices, or use Ask.
+
+### Display settings, personal data, and history
+
+Open **Display settings** to choose English, Traditional Chinese, or
+Simplified Chinese, and to enable high contrast. The choice is saved on this
+device. Product names use the matching source labels when available.
+
+Open **Personal data** to review saved record counts, find the relevant
+screens, or download a JSON copy. **Review reset** opens a confirmation
+screen. A confirmed reset clears local personal records and the current
+session's chats. The accepted catalogue and its import details stay available.
+Previously exported files remain on the devices that received them.
+
+Open **Price history** from a product comparison. The table shows retained
+observations for that exact pack, with a retailer, the retrieval time, and
+the listed price or **Unknown**. An untracked pack can have no records.
+The table uses the existing 90-day window. Tracking is separate from
+wishlist saving or list editing.
+
 ---
+
+### Ask about prices
+
+J09 uses the CityU OpenAI-compatible endpoint at `https://llm.cs.cityu.edu.hk/v1`.
+Set `DEEPSEEK_API_KEY_SKU` in Windows and launch the app from a terminal that
+inherits it. The key stays server-side. The default model ID is
+`CS3383/DeepSeek-V4-Flash`. Override it with `PRICEWATCH_CHAT_MODEL` if CityU
+advertises a different ID. `PRICEWATCH_CHAT_BASE_URL` overrides the base URL.
+
+Open **Ask** and enter a product name or code, or a question such as
+“Where is Kowloon Dairy’s 236 mL fresh milk cheapest?” with the sample loaded.
+Then ask “What about Wellcome?” to check the same pack at that retailer.
+The current browser session keeps up to 12 chats, each with 24 recent messages
+and its own selected product. Use **New chat** to start a separate conversation.
+Open any retained chat under **Recent chats** to continue it during the session.
+The message appears as soon as you send it. Ask saves your message before
+requesting a reply and shows its progress in the chat. You can draft the next
+message while you wait. A failed send restores the draft. If the reply is
+interrupted, use **Try reply again**. Press **Enter** to send or
+**Shift+Enter** to start a new line.
+
+DeepSeek interprets the question and recent chat context. It can request a
+catalogue search, ask for a missing detail, or compare the selected pack at
+another retailer. The server runs the lookup, asks the shopper to choose when
+several packs match, and builds the price answer from checked listings.
+Without the provider, Ask still supports direct catalogue terms and common
+price questions. The recent conversation is sent to the configured CityU
+endpoint when the key is available.
+
+If Windows can reach CityU but Java reports a TLS handshake error, launch
+the app with Windows' trusted certificate store. Certificate and hostname
+verification remain enabled.
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.jvmArguments=-Djavax.net.ssl.trustStoreType=Windows-ROOT -Djavax.net.ssl.trustStore=NONE'
+```
+
+For a packaged JAR, put both `-D` options before `-jar`.
 
 ## Troubleshooting
 
@@ -222,7 +292,9 @@ Remove-Item Env:BROWSER_CHANNEL
 
 The checks cover native forms with JavaScript disabled, saved retailer choices,
 missing selected prices, exact price previews, multilingual search, category URL
-state, keyboard navigation, and four viewport widths. Synthetic source records
+state, keyboard navigation, and four viewport widths. The combined workflow
+checks Ask, sharing, offline review, translated history, and personal-data reset.
+Synthetic source records
 exercise relevance and decimal boundaries; they are test data, not real prices.
 The script stops its own app and test server on completion or failure. It saves
 screenshots and the app log under ignored `target/browser-checks/`.
@@ -252,6 +324,11 @@ $env:BASELINE_JAR = 'D:/path/to/earlier-pricewatch.jar'
 npm run test:persistence
 Remove-Item Env:BASELINE_JAR
 ```
+
+When the earlier build supports J05–J08 tracking, also set
+`$env:UPGRADE_TRACKING = '1'`. This adds a controlled live source and checks
+that retailer tracking and a recorded price survive reopening the legacy
+database. Clear the setting with `Remove-Item Env:UPGRADE_TRACKING`.
 
 Neither check uses the normal `data/pricewatch` database. An upgrade result is
 valid only for the two supplied JAR versions; a current-to-current restart does

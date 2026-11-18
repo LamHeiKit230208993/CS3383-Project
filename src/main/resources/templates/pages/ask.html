@@ -1,0 +1,73 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section class="ask-workspace" data-ask-workspace th:attr="aria-label=#{chat.label},data-ask-url=@{/ask},
+      data-you=#{chat.you},data-sending=#{chat.sending},data-checking=#{chat.checking},data-received=#{chat.received},
+      data-failed=#{chat.sendFailed},data-interrupted=#{chat.replyInterrupted}">
+    <aside class="ask-history" th:attr="aria-label=#{chat.history}">
+      <a class="button secondary ask-new" th:href="@{/ask}" th:text="#{chat.new}">+ New chat</a>
+      <details class="ask-recent">
+        <summary id="recent-chats" th:text="#{chat.recent}">Recent chats</summary>
+        <div class="ask-history-items" data-ask-history>
+          <p class="helper" th:if="${chatHistory.isEmpty()}" th:text="#{chat.historyEmpty}">Your chats will appear here.</p>
+          <nav aria-labelledby="recent-chats" class="ask-history-list">
+            <a th:each="chat : ${chatHistory}" th:href="@{/ask(chatId=${chat.id})}"
+               th:attr="aria-current=${chat.id == chatId ? 'page' : null}"
+               th:text="${chat.title.isBlank()} ? #{chat.newTitle} : ${chat.title}"></a>
+          </nav>
+        </div>
+      </details>
+    </aside>
+    <div class="ask-main">
+      <header class="ask-header">
+        <div>
+          <h1 th:text="#{chat.heading}">Ask about prices</h1>
+          <p class="ask-source" th:text="${importStatus == null} ? #{source.empty} :
+              (${importStatus.origin == 'SAMPLE'} ? #{source.sample} : #{source.saved})"></p>
+        </div>
+        <a th:href="@{/data}" th:text="#{app.nav.data}">Price data</a>
+      </header>
+      <div class="ask-thread" tabindex="0" data-ask-thread
+           th:attr="aria-label=#{chat.conversation},data-awaiting-reply=${awaitingReply == true}">
+        <div class="ask-empty" th:if="${messages.isEmpty()}">
+          <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
+          <h2 th:text="#{chat.empty}">What are you shopping for?</h2>
+          <p th:text="#{chat.emptyHelp}">Ask for the lowest listed price, or check a specific retailer.</p>
+          <form th:action="@{/ask}" method="post">
+            <button class="button secondary" type="submit" name="question" th:value="#{chat.exampleQuery}" th:text="#{chat.example}"></button>
+          </form>
+        </div>
+        <ol class="chat-messages" role="list">
+          <li class="chat-message" th:each="message : ${messages}" th:classappend="${message.shopper ? 'chat-shopper' : ''}">
+            <strong th:text="${message.shopper} ? #{chat.you} : 'Market Desk'">Market Desk</strong>
+            <p th:text="${message.text}"></p>
+          </li>
+        </ol>
+        <form class="ask-choice" th:unless="${candidates.isEmpty()}" th:action="@{/ask/choose}" method="post">
+          <input type="hidden" name="chatId" th:value="${chatId}">
+          <label for="ask-product" th:text="#{chat.choose}">Choose the exact product and pack</label>
+          <select id="ask-product" name="code" required>
+            <option value="" selected disabled th:text="#{chat.select}">Select a pack</option>
+            <option th:each="candidate : ${candidates}" th:value="${candidate.code}" th:text="${candidate.label}"></option>
+          </select>
+          <button class="button secondary" type="submit" th:text="#{chat.compare}">Compare this pack</button>
+        </form>
+        <div class="ask-working" aria-hidden="true" th:hidden="${awaitingReply != true}" data-ask-working>
+          <span class="ask-working-dot"></span>
+          <span th:text="#{chat.checking}">Checking your request…</span>
+        </div>
+      </div>
+      <div class="ask-compose">
+        <p class="ask-status" role="status" data-ask-status></p>
+        <button class="button secondary ask-retry" type="button" data-ask-retry hidden
+                th:text="#{chat.retryReply}">Try reply again</button>
+        <form class="ask-composer" th:action="@{/ask}" method="post">
+          <input type="hidden" name="chatId" th:value="${chatId}">
+          <label class="sr-only" for="price-question" th:text="#{chat.question}">Your price question</label>
+          <textarea id="price-question" name="question" rows="1" maxlength="240" required
+                    th:placeholder="#{chat.placeholder}"></textarea>
+          <button class="button primary" type="submit" th:text="#{chat.send}">Send</button>
+        </form>
+        <p class="ask-disclosure" th:text="#{chat.footer}">Prices come from the accepted catalogue. Chat history stays in this session.</p>
+      </div>
+    </div>
+  </section>
+</th:block>

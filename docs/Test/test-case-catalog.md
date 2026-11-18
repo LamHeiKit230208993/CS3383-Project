@@ -1,15 +1,23 @@
 # Test Case Catalog
 
+[TC-CHAT-001](cases/TC-CHAT-001.md) covers checked prices, follow-up context,
+chat history, message acceptance before replies, draft recovery, and the provider contract.
+
+[TC-SHARE-001](cases/TC-SHARE-001.md) checks list export, editable copies, missing prices, and rejected imports.
+[TC-OFFLINE-001](cases/TC-OFFLINE-001.md) checks saved estimates, local review, and server-side blocking.
+[TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks saved languages, contrast, labels, and keyboard use.
+[TC-HISTORY-001](cases/TC-HISTORY-001.md) checks the exact pack, recorded prices, gaps, and retention.
+[TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
+
 This index describes maintained checks. Detailed steps and limits belong in
 `cases/`; dated results belong in [test history](history.md).
 
 ## Latest recorded validation
 
-The 6 November 2026 J05–J08 run passed **86 Java tests**, packaging,
-**9 baseline and 11 milestone Chrome scenarios**, and an old-to-new H2 upgrade
-check. Official PlantUML exports were rendered and visually reviewed.
-See the [dated run record](history.md). The earlier PR #15 results remain there
-as historical evidence. These local results do not close issue #17 or imply merge.
+The 18 November 2026 run passed **101 Java tests**, packaging,
+**15 shopper and 11 milestone Chrome scenarios**, and the J01–J08 to J12 H2
+upgrade check. The J10–J12 PlantUML sequence was rendered and visually reviewed.
+See the [dated run record](history.md).
 
 ## J01–J04 baseline scenarios
 

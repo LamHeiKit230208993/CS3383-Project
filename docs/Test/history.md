@@ -4,6 +4,88 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Ask message delivery and conversational prompts — 18 November 2026
+
+- Maven packaging passed **105 Java tests**. The focused turn checks verified
+  that Ask saves the shopper's message before calling the provider and
+  requests the reply once, even if two requests arrive together.
+- Chrome opened Ask in a fresh session and held the reply request. The sent
+  bubble was already visible and present in a separate server read. The user
+  could type the next draft while waiting. The checks covered send failure,
+  interrupted replies, and retry without a second shopper bubble.
+- The CityU preview verified the two-stage flow with “who are u,” a natural
+  milk question, and a Wellcome follow-up for the same pack. The preview used
+  historical sample prices.
+
+## Ask conversation and layout fixes — 18 November 2026
+
+- Focused Java tests reproduced three failures. An unmatched search cleared
+  the selected pack, incomplete provider output cleared pending choices, and
+  a stale chat ID dropped the submitted question. All 18 focused tests passed
+  after the fixes. Maven packaging passed all **102 Java tests**.
+- Chrome passed **15 shopper scenarios** and **11 milestone scenarios**.
+  The Ask check held the first send to observe pending feedback, restored
+  the draft after a failed send, and retried. It reopened the original chat
+  at 375 by 667 px with at least three messages partly or fully in view and
+  the composer above mobile navigation.
+- The CityU DeepSeek preview answered two separate sample chats in one browser
+  session. Reopening the first chat preserved the exact pack for a retailer
+  follow-up. The test used the historical sample catalogue.
+
+## J10–J12 combined validation — 18 November 2026
+
+- JDK 21 Maven package passed **101 Java tests** with no failures, errors, or
+  skips. Focused checks covered transfer validation, the offline session guard,
+  both Chinese variants, retained history, and personal reset. An injected
+  foreign-key failure rolled back the reset and kept the session intact.
+- Chrome passed **15 shopper scenarios** and **11 milestone scenarios**.
+  The shopper suite used the 236 mL milk pack across Ask, sharing, offline
+  review, language switching, and history. It checked keyboard operation and
+  contrast on desktop and at 375 px, and confirmed a known price stayed on one
+  line at that width. The personal-data flow exported each record type, kept
+  records on cancellation, and cleared them after confirmation while the
+  accepted catalogue remained available.
+- The Chrome persistence check upgraded a temporary H2 file from the
+  J01–J08 build at `219cc5b`. The catalogue, default list, two checked packs,
+  pinned JASONS choice, product-wide tracking, and recorded price survived.
+- The browser checks used a controlled price feed and local Ask fallback.
+  See the earlier J09 record for the live CityU check. The J10–J12 PlantUML
+  sequence passed syntax checking, SVG and PNG rendering, and visual review.
+
+## J10 sharing and J11 offline review — 18 November 2026
+
+The J10 focused Java checks passed. Chrome transferred a versioned file
+between two isolated apps, retained a checked item and a pinned retailer,
+showed Unknown without local prices, and saved independent edits. Invalid
+JSON left the existing lists intact.
+
+The J11 focused Java suite passed 16 checks. Chrome reopened the imported
+list with non-local browser requests blocked. It verified the cached estimates
+and retrieval time, tested server rejection of edits, refresh, and chat, and
+restored editing after exit. All 12 Chrome scenarios passed at this stage.
+
+## J09 chat layout and session history — 17 November 2026
+
+Maven packaging passed all 90 Java tests. The Chrome baseline suite passed
+10 scenarios, including the new Ask workflow. The shopper sent a question,
+followed up at Wellcome, started a second chat, and reopened the first on
+a 375 px viewport. After shortening the mobile chat panel, a Chrome rerun
+verified the Send button sits above the bottom navigation.
+The browser used the historical sample and disabled the provider key.
+Desktop and mobile screenshots are under `target/browser-checks/`.
+
+## J09 conversation check — 17 November 2026
+
+The packaged app was started on loopback with an isolated in-memory catalogue,
+the checked historical sample and the CityU model `CS3383/DeepSeek-V4-Flash`.
+The live flow asked which product “How much is it?” referred to, found AEON
+at HK$7.50 for Kowloon Dairy's 236 mL fresh milk, and answered a follow-up for
+the same pack at Wellcome with HK$12.00. Those prices came from the sample.
+
+Java initially rejected the TLS chain. The Windows trusted certificate store
+resolved the connection while preserving certificate and hostname verification.
+See the [setup guide](../SETUP.md) for the launch options.
+
 ## PR #18 review follow-up — 12 November 2026
 
 - Maven package on JDK 21 with the Byte Buddy startup agent passed 88 tests

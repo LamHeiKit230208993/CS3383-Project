@@ -17,7 +17,7 @@ document.querySelectorAll("[data-import-form]").forEach(form => {
     const button = form.querySelector("button[type=submit]");
     button.dataset.label = button.textContent;
     button.disabled = true;
-    button.textContent = "Importing…";
+    button.textContent = form.dataset.busyLabel || "Importing…";
     form.setAttribute("aria-busy", "true");
   });
 });
@@ -41,12 +41,12 @@ if (estimateForm) {
     const store = estimateForm.querySelector("[data-selected-store]");
     const amount = estimateForm.querySelector("[data-listed-estimate]");
     if (![...radios].some(radio => !radio.disabled)) {
-      store.textContent = "No priced retailer listing. You can keep this item with an unknown estimate.";
-      amount.textContent = "Unknown";
+      store.textContent = estimateForm.dataset.estimateUnknownStore;
+      amount.textContent = estimateForm.dataset.estimateUnknownPrice;
       return;
     }
     if (!selected || !quantity.validity.valid || !/^\d+$/.test(quantity.value)) {
-      store.textContent = selected ? "Enter a whole quantity from 1 to 999." : "Choose a retailer in the comparison.";
+      store.textContent = selected ? estimateForm.dataset.estimateInvalidQuantity : estimateForm.dataset.estimateChooseStore;
       amount.textContent = "—";
       return;
     }
@@ -55,7 +55,7 @@ if (estimateForm) {
     const total = unit * BigInt(quantity.value);
     const fraction = String(total % 10000n).padStart(4, "0").replace(/0+$/, "").padEnd(2, "0");
     const integer = new Intl.NumberFormat("en-HK", { style: "currency", currency: "HKD", maximumFractionDigits: 0 }).format(total / 10000n);
-    store.textContent = selected.value + " · " + quantity.value + " packs";
+    store.textContent = selected.value + " · " + quantity.value + " " + estimateForm.dataset.estimatePacks;
     amount.textContent = integer + "." + fraction;
   }
   quantity.addEventListener("input", refreshEstimate);

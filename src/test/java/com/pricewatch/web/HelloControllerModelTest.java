@@ -6,6 +6,7 @@ import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.support.StaticMessageSource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.View;
@@ -26,13 +27,14 @@ class HelloControllerModelTest {
     @BeforeEach
     void setUp() {
         View emptyView = (model, request, response) -> {};
-        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping))
+        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping, new StaticMessageSource()))
                 .setViewResolvers((name, locale) -> emptyView)
                 .build();
     }
 
     @Test
     void listUsesOneReadForRowsAndSummary() throws Exception {
+        when(shopping.lists()).thenReturn(List.of(new ShoppingService.ListChoice(null, "My list")));
         var items = List.of(new ItemView(null, 2, false, new BigDecimal("12.50"),
                 "JASONS", new BigDecimal("25.00"), "JASONS"),
                 new ItemView(null, 3, false, null, "AEON", null, "AEON"));
@@ -44,6 +46,7 @@ class HelloControllerModelTest {
 
         assertSame(items, result.getModelAndView().getModel().get("items"));
         verify(shopping).items();
+        verify(shopping).lists();
         verifyNoMoreInteractions(shopping);
     }
 

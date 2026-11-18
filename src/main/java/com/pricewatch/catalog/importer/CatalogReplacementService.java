@@ -60,6 +60,7 @@ public class CatalogReplacementService {
             product.setCategory2(toLabel(source.category2()));
             product.setCategory3(toLabel(source.category3()));
             product.setActive(true);
+            product.setImportedListReference(false);
             importedProducts.add(product);
         }
         List<ProductEntity> savedProducts = productRepository.saveAllAndFlush(importedProducts);
