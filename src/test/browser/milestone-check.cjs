@@ -13,6 +13,7 @@ const jar = path.join(root, "target/pricewatch-0.0.1-SNAPSHOT.jar");
 const artifacts = path.join(root, "target/browser-milestone");
 const label = value => ({ en: value, "zh-Hant": value, "zh-Hans": value });
 let milkPrice = "10.00";
+let secondMilkPrice = "11.00";
 let child;
 let browser;
 let source;
@@ -25,7 +26,8 @@ function products() {
     {
       code: "E2E-MILK", brand: label("Browser Test"), name: label("Fresh Milk 236mL"),
       cat1Name: label("Food / Drinks"), cat2Name: label("Milk"), cat3Name: label("Fresh milk"),
-      prices: [{ supermarketCode: "TEST-STORE", price: milkPrice }], offers: []
+      prices: [{ supermarketCode: "TEST-STORE", price: milkPrice },
+        { supermarketCode: "OTHER-STORE", price: secondMilkPrice }], offers: []
     },
     {
       code: "E2E-NOODLE", brand: label("Browser Test"), name: label("Instant Noodles 70g"),
@@ -113,76 +115,74 @@ async function main() {
     assert.match(await page.locator(".source-banner").innerText(), /Saved source prices/);
   });
 
-  await check("wishlist save is separate from tracking", async () => {
+  await check("wishlist save starts price tracking and exposes row actions", async () => {
     await go("/saved?code=E2E-MILK");
     await submit(page.getByRole("button", { name: "Save to wishlist" }), "/saved");
-    assert.match(await page.locator("main").innerText(), /E2E-MILK/);
-    assert.match(await page.locator("main").innerText(), /No tracking yet/);
-    await go("/saved?code=E2E-MILK");
-    await submit(page.locator('section[aria-labelledby="save-product-title"]').getByRole("button", { name: "Track TEST-STORE" }), "/saved");
-    assert.match(await page.locator("main").innerText(), /TEST-STORE · E2E-MILK/);
+    await page.locator(".wishlist-row summary").click();
+    await page.locator(".wishlist-actions").getByRole("link", { name: "Price history" }).click();
+    assert.match(await page.locator("main").innerText(), /TEST-STORE/);
   });
 
-  await check("live target and drop alerts use changed source prices", async () => {
-    await go("/alerts");
-    await page.locator('[action="/alerts/settings"] [name="quietStart"]').fill("00:00");
-    await page.locator('[action="/alerts/settings"] [name="quietEnd"]').fill("00:00");
-    await page.locator('[action="/alerts/settings"] [name="summaryTime"]').fill("00:00");
-    await submit(page.getByRole("button", { name: "Save timing" }), "/alerts");
-    assert.equal(await page.locator('[action="/alerts/settings"] [name="quietStart"]').inputValue(), "00:00");
-    assert.equal(await page.locator('[action="/alerts/settings"] [name="quietEnd"]').inputValue(), "00:00");
-
-    await page.locator('[action="/alerts/target"] [name="targetPrice"]').fill("9.00");
-    await submit(page.getByRole("button", { name: "Save target" }), "/alerts");
-    await page.locator('[action="/alerts/drop"] [name="enabled"]').check();
-    await submit(page.getByRole("button", { name: "Save drop rule" }), "/alerts");
-
+  await check("one product target groups retailers and keeps legacy drop evidence", async () => {
+    const exportData = await (await page.request.get(base + "/personal-data/export")).json();
+    const trackingId = String(exportData.tracking.find(period => period.retailerCode === "TEST-STORE").id);
+    const seeded = await page.request.post(base + "/alerts/drop", { form: { trackingId, enabled: "true" } });
+    assert.equal(seeded.status(), 200);
+    await go("/saved?code=E2E-MILK");
+    await page.getByRole("link", { name: "Set rules", exact: true }).click();
+    await page.waitForURL(url => url.pathname === "/alerts/rules");
+    await page.locator('[action="/alerts/product-target"] [name="targetPrice"]').fill("9.00");
+    await submit(page.locator('[action="/alerts/product-target"] button'), "/alerts/rules");
+    assert.match(await page.locator("main").innerText(), /Retailer-specific rules/);
     milkPrice = "8.00";
+    secondMilkPrice = "8.50";
     await go("/data");
     await submit(page.getByRole("button", { name: "Refresh live prices" }), "/data");
     await go("/alerts");
-    assert.match(await page.locator("main").innerText(), /TARGET PRICE/);
+    const grouped = page.locator(".alert-row").filter({ has: page.locator(".alert-retailers") });
+    assert.equal(await grouped.count(), 1);
+    assert.equal(await grouped.locator(".alert-retailers div").count(), 2);
+    assert.match(await grouped.innerText(), /OTHER-STORE\s+HK\$8\.50/);
+    assert.match(await grouped.innerText(), /TEST-STORE\s+HK\$8\.00/);
     assert.match(await page.locator("main").innerText(), /PRICE DROP/);
     assert.match(await page.locator("main").innerText(), /Previous: HK\$10\.00/);
     assert.match(await page.locator("main").innerText(), /Current: HK\$8\.00/);
     await capture("alerts");
   });
 
-  await check("reminder create, add, clear, and snooze keep their separate effects", async () => {
+  await check("time reminders can be created, edited, and deleted in item rules", async () => {
     await go("/products/E2E-NOODLE");
-    await page.getByRole("link", { name: "Set a replenishment reminder" }).click();
-    await page.waitForURL(url => url.pathname === "/reminders");
-    await page.locator("#reminder-quantity").fill("2");
-    await page.locator("#reminder-interval").fill("7");
-    await page.locator("#reminder-retailer").selectOption("NOODLE-STORE");
-    await submit(page.getByRole("button", { name: "Save reminder" }), "/reminders");
-    const reminder = page.locator("article.list-item").filter({ hasText: "E2E-NOODLE" });
-    assert.match(await reminder.innerText(), /2 packs · every 7 days/);
-    await submit(reminder.getByRole("button", { name: /^Add 2 packs of .* to My list$/ }), "/reminders");
-    assert.match(await page.locator("main").innerText(), /The reminder is still active/);
-    await go("/list");
-    assert.match(await page.locator("main").innerText(), /E2E-NOODLE/);
-    await go("/reminders");
-    const currentReminder = page.locator("article.list-item").filter({ hasText: "E2E-NOODLE" });
-    await submit(currentReminder.getByRole("button", { name: "Clear" }), "/reminders");
-    assert.match(await page.locator("main").innerText(), /next due date uses the interval from now/);
-    const clearedReminder = page.locator("article.list-item").filter({ hasText: "E2E-NOODLE" });
-    await submit(clearedReminder.getByRole("button", { name: /^Snooze reminder/ }), "/reminders");
-    assert.match(await page.locator("main").innerText(), /snoozed/);
+    await page.getByRole("link", { name: "Set rules" }).click();
+    await page.waitForURL(url => url.pathname === "/alerts/rules");
+    await page.getByText("Add time reminder", { exact: true }).click();
+    const create = page.locator('form[action="/reminders/create"]');
+    await create.locator('[name="quantity"]').fill("2");
+    await create.locator('[name="retailerCode"]').selectOption("NOODLE-STORE");
+    await submit(create.getByRole("button", { name: "Save reminder" }), "/alerts/rules");
+    await page.getByText("2 packs · every 7 days", { exact: true }).click();
+    const edit = page.locator('form[action$="/update"]');
+    await edit.locator('[name="intervalDays"]').fill("14");
+    await submit(edit.getByRole("button", { name: "Save reminder" }), "/alerts/rules");
+    await page.getByText("2 packs · every 14 days", { exact: true }).click();
     await capture("reminders");
+    await submit(page.getByRole("button", { name: "Delete reminder" }), "/alerts/rules");
+    assert.equal(await page.locator('form[action$="/update"]').count(), 0);
+    await go("/products/E2E-NOODLE");
+    await page.locator(".retailer-option").first().click();
+    await page.locator("#quantity").fill("2");
+    await submit(page.getByRole("button", { name: "Add to Cart" }), "/list");
   });
 
   await check("budget reflects the known current list estimate", async () => {
     await go("/products/E2E-MILK");
-    await page.locator(".retailer-option").first().click();
+    await page.locator(".retailer-choice").filter({ hasText: "TEST-STORE" }).click();
     await page.locator("#quantity").fill("1");
-    await submit(page.getByRole("button", { name: "Add to my list" }), "/list");
+    await submit(page.getByRole("button", { name: "Add to Cart" }), "/list");
     await go("/budget");
     await page.locator('[name="period"]').selectOption("MONTHLY");
     await page.locator('[name="limit"]').fill("15.00");
-    await submit(page.getByRole("button", { name: "Save budget" }), "/budget");
+    await submit(page.getByRole("button", { name: "Save budget" }), "/personal-data");
     assert.match(await page.locator("main").innerText(), /known subtotal is already above your limit/i);
-    assert.match(await page.locator("main").innerText(), /Known estimate by category/);
     assert.match(await page.locator(".summary-total").innerText(), /HK\$18\.00/);
     await capture("budget");
   });
@@ -201,6 +201,15 @@ async function main() {
     const events = page.locator('section[aria-labelledby="events-title"] article');
     assert.equal(await events.filter({ hasText: "TARGET PRICE" }).count(), 1);
     assert.equal(await events.filter({ hasText: "PRICE DROP" }).count(), 2);
+    milkPrice = "10.00";
+    secondMilkPrice = "11.00";
+    await go("/data");
+    await submit(page.getByRole("button", { name: "Refresh live prices" }), "/data");
+    milkPrice = "8.00";
+    await submit(page.getByRole("button", { name: "Refresh live prices" }), "/data");
+    await submit(page.getByRole("button", { name: "Refresh live prices" }), "/data");
+    await go("/alerts");
+    assert.equal(await page.locator(".alert-retailers").count(), 2);
   });
 
   await check("invalid form parameters return client errors or validation redirects, never 500", async () => {
@@ -208,7 +217,7 @@ async function main() {
       form: { code: "E2E-NOODLE", quantity: "0", intervalDays: "7" }, maxRedirects: 0
     });
     assert.equal(invalidReminder.status(), 302);
-    await go("/alerts");
+    await go("/alerts/rules?code=E2E-MILK");
     const trackingId = await page.locator('[action="/alerts/target"] [name="trackingId"]').inputValue();
     const invalidTarget = await context.request.post(`${base}/alerts/target`, {
       form: { trackingId, targetPrice: "not-a-price" }, maxRedirects: 0
@@ -230,34 +239,36 @@ async function main() {
     await cleanReload;
 
     await go("/reminders?code=E2E-NOODLE");
+    await page.getByText("Add time reminder", { exact: true }).click();
     let navigations = 0;
     const countNavigation = frame => { if (frame === page.mainFrame()) navigations++; };
     page.on("framenavigated", countNavigation);
-    await page.locator("#reminder-quantity").fill("3");
+    const reminderQuantity = page.locator('form[action="/reminders/create"] [name="quantity"]');
+    await reminderQuantity.fill("3");
     await page.locator("h1").click();
     await page.clock.fastForward(120_000);
     await new Promise(resolve => setTimeout(resolve, 250));
     assert.equal(navigations, 0, "An edited form must not reload even after focus leaves it.");
-    assert.equal(await page.locator("#reminder-quantity").inputValue(), "3");
+    assert.equal(await reminderQuantity.inputValue(), "3");
     page.off("framenavigated", countNavigation);
   });
 
   await check("all four milestone routes fit desktop and mobile", async () => {
     for (const width of [375, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const route of ["/saved", "/alerts", "/budget", "/reminders"]) {
+      for (const route of ["/saved", "/alerts", "/budget", "/reminders?code=E2E-MILK"]) {
         await go(route);
         assert.equal(await page.locator("h1").count(), 1, route);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
           `Horizontal overflow at ${width}px on ${route}`);
         if (route === "/alerts") {
-          assert.equal(await page.locator(".list-item-heading > strong").evaluateAll(prices => prices.every(price => {
+          assert.equal(await page.locator(".alert-retailers dd").evaluateAll(prices => prices.every(price => {
             const range = document.createRange();
             range.selectNodeContents(price);
             return range.getClientRects().length === 1;
           })), true, `Short alert prices wrapped at ${width}px`);
         }
-        await capture(route.slice(1) + (width === 375 ? "-mobile" : ""));
+        await capture(route.slice(1).split("?")[0] + (width === 375 ? "-mobile" : ""));
       }
     }
   });

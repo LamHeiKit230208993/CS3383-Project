@@ -2,36 +2,36 @@
   <section aria-labelledby="list-title">
     <div class="page-heading heading-with-action">
       <div>
-        <p class="eyebrow" th:text="#{list.eyebrow}">READY WHEN YOU ARE</p>
-        <h1 id="list-title" th:text="#{list.title}">Your next shop, sorted.</h1>
-        <p class="intro" th:text="#{list.intro}">Quantities and checked items stay saved after restart.</p>
+        <h1 id="list-title" th:text="#{app.scene.list}">Cart</h1>
       </div>
       <a class="button primary" th:href="@{/}" th:text="#{list.find}">Find an item +</a>
     </div>
-    <section class="panel list-transfer" th:attr="aria-label=#{list.tools}">
-      <form class="inline-actions" th:action="@{/list}" method="get">
+    <div class="cart-tools">
+      <form class="inline-actions" th:action="@{/list}" method="get" data-cart-picker>
         <label for="list-picker" th:text="#{list.picker}">Shopping list</label>
         <select id="list-picker" name="listId">
           <option th:each="choice : ${lists}" th:value="${choice.id == null ? '' : choice.id}"
                   th:text="${choice.name == 'My list'} ? #{app.scene.list} : ${choice.name}" th:selected="${choice.id == selectedList.id}"></option>
         </select>
         <button class="button secondary" type="submit" th:text="#{list.open}">Open list</button>
-        <button class="button secondary" type="submit" formmethod="post" th:formaction="@{/offline/enter}" th:text="#{list.viewOffline}">View offline</button>
-        <a class="button secondary" th:href="@{/list/export(listId=${listId})}" th:text="#{list.export}">Export JSON</a>
       </form>
-      <form class="inline-actions" th:action="@{/list/import}" method="post" enctype="multipart/form-data">
-        <label for="list-file" th:text="#{list.importLabel}">Import a separate list</label>
-        <input id="list-file" name="file" type="file" accept=".json,application/json" required>
-        <button class="button secondary" type="submit" th:text="#{list.import}">Import JSON</button>
-      </form>
-      <p class="helper" th:text="#{list.importHelp}">Import a Market Desk JSON file up to 1 MB. Prices come from this device’s catalogue.</p>
-    </section>
+      <details class="cart-files">
+        <summary class="button secondary" th:text="#{cart.files}">List files</summary>
+        <div class="panel cart-file-menu">
+          <a th:href="@{/list/offline(listId=${listId})}" th:text="#{cart.download}">Download offline checklist</a>
+          <a th:href="@{/list/export(listId=${listId})}" th:text="#{list.export}">Export JSON</a>
+          <form th:action="@{/list/import}" method="post" enctype="multipart/form-data">
+            <label for="list-file" th:text="#{list.importLabel}">Import a separate list</label>
+            <input id="list-file" name="file" type="file" accept=".json,application/json" required>
+            <button class="button secondary" type="submit" th:text="#{list.import}">Import JSON</button>
+          </form>
+        </div>
+      </details>
+    </div>
+    <p class="sr-only" role="status" data-cart-status
+       th:attr="data-saved=#{feedback.list.saved},data-failed=#{cart.checkFailed}"></p>
     <div class="list-layout">
       <div class="panel">
-        <div class="section-heading">
-          <h2 th:text="${selectedList.name == 'My list'} ? #{app.scene.list} : ${selectedList.name}">My list</h2>
-          <span th:text="#{common.productCount(${items.size()})}"></span>
-        </div>
         <div class="empty-state" th:if="${items.isEmpty()}">
           <h2 th:text="#{list.empty}">A fresh start for your next shop.</h2>
           <p th:text="#{list.emptyHelp}">Find a product and choose how many packs you need.</p>
@@ -39,18 +39,29 @@
         </div>
         <article class="list-item" th:each="item : ${items}" th:classappend="${item.checked ? ' is-checked' : ''}">
           <div class="list-item-heading">
+            <form class="cart-check" th:action="@{/list/items/check(listId=${listId})}" method="post" data-cart-check>
+              <input type="hidden" name="code" th:value="${item.product.code}">
+              <label class="check-label">
+                <input type="checkbox" name="checked" value="true" th:checked="${item.checked}"
+                       th:attr="aria-label=#{cart.checkItem(${item.product.name.forLocale(#locale)})}">
+              </label>
+              <button class="button secondary" type="submit" th:text="#{list.saveChanges}">Save changes</button>
+            </form>
             <div>
               <h3>
                 <a th:if="${item.product.active}" th:href="@{/products/{code}(code=${item.product.code})}" th:text="${item.product.name.forLocale(#locale)}"></a>
                 <span th:unless="${item.product.active}" th:text="${item.product.name.forLocale(#locale)}"></span>
               </h3>
               <p class="helper" th:text="${item.product.brand.forLocale(#locale) + ' · ' + item.product.code}"></p>
+              <p class="helper" th:text="#{cart.quantity(${item.quantity})}"></p>
             </div>
             <strong class="line-total" th:text="${item.lineTotal == null} ? #{common.unknown} : ${format.money(item.lineTotal)}"></strong>
           </div>
           <p class="selection-mode" th:text="${item.selectedRetailerCode == null} ? #{common.automaticPrice} : #{list.chosen(${item.selectedRetailerCode})}"></p>
           <p class="helper" th:text="${item.unitPrice == null} ? #{list.noPrice} : #{list.perPack(${format.money(item.unitPrice)},${item.retailerCode})}"></p>
-          <form class="list-edit-form" th:action="@{/list/items/update(listId=${listId})}" method="post">
+          <details class="cart-edit">
+            <summary th:text="#{cart.edit}">Edit item</summary>
+          <form class="list-edit-form" th:action="@{/list/items/details(listId=${listId})}" method="post">
             <input type="hidden" name="code" th:value="${item.product.code}">
             <label th:for="${'qty-' + item.product.code}">
               <th:block th:text="#{common.packs}">Packs</th:block>
@@ -75,9 +86,6 @@
                 <option th:each="choice : ${item.product.listings}" th:if="${choice.price != null}" th:value="${choice.retailerCode}" th:selected="${choice.retailerCode == item.selectedRetailerCode}" th:text="${choice.retailerCode + ' · ' + format.money(choice.price)}"></option>
               </select>
             </label>
-            <label class="check-label">
-              <input type="checkbox" name="checked" value="true" th:checked="${item.checked}"> <span th:text="#{common.checked}">Checked</span>
-            </label>
             <button class="button secondary" type="submit" th:attr="aria-label=#{list.saveItem(${item.product.name.forLocale(#locale)})}" th:text="#{list.saveChanges}">Save changes</button>
           </form>
           <details class="remove-item">
@@ -88,13 +96,12 @@
               <button class="button danger" type="submit" th:attr="aria-label=#{list.confirmItem(${item.product.name.forLocale(#locale)})}" th:text="#{list.confirmRemoval}">Confirm removal</button>
             </form>
           </details>
+          </details>
         </article>
         <p class="source-note" th:text="#{list.sourceNote}">Checking an item does not record a purchase. Checked items remain included in the estimated list cost.</p>
       </div>
       <aside class="panel basket-preview">
-        <p class="eyebrow" th:text="#{list.summaryEyebrow}">YOUR PLAN AT A GLANCE</p>
         <h2 th:text="#{list.summary}">List summary</h2>
-        <p th:if="${selectedList.name == 'My list'}"><a th:href="@{/budget}" th:text="#{list.reviewBudget}">Review budget &amp; categories</a></p>
         <div class="summary-total"><span th:text="${summary.unknownItemCount > 0} ? #{common.subtotal} : #{common.estimate}"></span><strong th:text="${format.money(summary.knownSubtotal)}"></strong></div>
         <p class="warning" th:if="${summary.unknownItemCount > 0}" th:text="#{common.missingPrices(${summary.unknownItemCount})}"></p>
         <p class="helper" th:text="#{list.priceHelp}">Uses your saved retailer choices. Automatic items use the current lowest listing. A missing selected price stays unknown; we do not switch your retailer.</p>

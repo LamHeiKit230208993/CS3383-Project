@@ -1,18 +1,15 @@
-# TC-OFFLINE-001 · Review a saved list offline
+# TC-OFFLINE-001 · Use a downloaded checklist offline
 
-Use an isolated app and the controlled price fixture. Open an imported list and
-enter offline review. In Chrome, allow only the local app origin. Reload the
-offline view and check the items, quantities, checked states, retailer choice,
-saved estimates, and price retrieval time against the normal view.
+1. Use an isolated app and controlled live price fixture. Import a list and
+   choose **List files → Download offline checklist**.
+2. Stop that app, disconnect the Chrome context from the network, and open
+   the file by its local path. Verify quantities, checked states, retailer
+   choices, estimates, and retrieval time against the Cart. Check that the
+   file makes zero HTTP requests.
+3. Use the keyboard to check another row. Its name is crossed out and its
+   price remains visible. The browser test checks the mobile layout.
+4. The HTTP tests check an empty cart, a missing retrieval time, safe HTML
+   escaping, and redirects for the old offline routes.
 
-Attempt edit, refresh, and chat requests from the same session. Verify the
-server rejects writes, the price endpoint receives no requests, and links to
-other screens return to offline review. Exit and verify the same list reopens
-with normal controls. The HTTP tests also check a second session, cross-origin
-exit, and the message when there is no known retrieval time.
-
-Offline review requires the local Spring Boot process. The test keeps
-localhost available and blocks other origins in the browser context.
-
-Sources: [browser suite](../../../src/test/browser/market-desk.cjs),
+Sources [browser suite](../../../src/test/browser/market-desk.cjs) and
 [HelloControllerTest](../../../src/test/java/com/pricewatch/web/HelloControllerTest.java).

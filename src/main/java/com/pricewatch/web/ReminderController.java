@@ -1,15 +1,9 @@
 package com.pricewatch.web;
 
-import com.pricewatch.catalog.CatalogService;
-import com.pricewatch.catalog.ProductView;
 import com.pricewatch.reminder.ReminderService;
-import com.pricewatch.reminder.ReminderView;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,92 +15,87 @@ import static com.pricewatch.web.MilestoneMessages.text;
 @Controller
 public class ReminderController {
     private final ReminderService reminders;
-    private final CatalogService catalog;
-    private final HelloController formatter;
     private final MessageSource messages;
 
-    public ReminderController(ReminderService reminders, CatalogService catalog, HelloController formatter,
-                              MessageSource messages) {
+    public ReminderController(ReminderService reminders, MessageSource messages) {
         this.reminders = reminders;
-        this.catalog = catalog;
-        this.formatter = formatter;
         this.messages = messages;
     }
 
-    @ModelAttribute
-    void common(Model model) {
-        model.addAttribute("importStatus", catalog.status());
-        model.addAttribute("format", formatter);
-    }
-
     @GetMapping("/reminders")
-    String view(@RequestParam(defaultValue = "") String code, Model model) {
-        ProductView candidate = null;
-        if (!code.isBlank()) {
-            try {
-                candidate = reminders.candidate(code);
-            } catch (IllegalArgumentException exception) {
-                model.addAttribute("error", inputError(messages, exception));
-            }
-        }
-        return show(model, candidate);
+    String view(@RequestParam(defaultValue = "") String code, RedirectAttributes redirect) {
+        return redirectToRules(code, redirect);
     }
 
     @PostMapping("/reminders/create")
     String create(@RequestParam String code, @RequestParam int quantity, @RequestParam int intervalDays,
                   @RequestParam(defaultValue = "") String retailerCode, RedirectAttributes redirect) {
-        try {
-            reminders.create(code, quantity, intervalDays, retailerCode);
-            redirect.addFlashAttribute("notice", text(messages, "reminders.notice.saved"));
-        } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", inputError(messages, exception));
-            redirect.addAttribute("code", code);
-            return "redirect:/reminders";
-        }
-        return "redirect:/reminders";
+        act("reminders.notice.saved", redirect, () -> reminders.create(code, quantity, intervalDays, retailerCode));
+        return redirectToRules(code, redirect);
+    }
+
+    @PostMapping("/reminders/{id}/update")
+    String update(@PathVariable long id, @RequestParam String code, @RequestParam int quantity,
+                  @RequestParam int intervalDays, @RequestParam(defaultValue = "") String retailerCode,
+                  RedirectAttributes redirect) {
+        act("reminders.notice.saved", redirect, () -> reminders.update(id, quantity, intervalDays, retailerCode));
+        return redirectToRules(code, redirect);
     }
 
     @PostMapping("/reminders/{id}/clear")
     String clear(@PathVariable long id, RedirectAttributes redirect) {
-        return act("reminders.notice.cleared", redirect,
-                () -> reminders.clear(id));
+        act("reminders.notice.cleared", redirect, () -> reminders.clear(id));
+        return "redirect:/alerts";
     }
 
     @PostMapping("/reminders/{id}/snooze")
     String snooze(@PathVariable long id, RedirectAttributes redirect) {
-        return act("reminders.notice.snoozed", redirect,
-                () -> reminders.snooze(id));
+        act("reminders.notice.snoozed", redirect, () -> reminders.snooze(id));
+        return "redirect:/alerts";
     }
 
     @PostMapping("/reminders/{id}/add")
     String addToList(@PathVariable long id, RedirectAttributes redirect) {
-        return act("reminders.notice.added", redirect,
-                () -> reminders.addToList(id));
+        act("reminders.notice.added", redirect, () -> reminders.addToList(id));
+        return "redirect:/alerts";
     }
 
     @PostMapping("/reminders/{id}/delete")
-    String delete(@PathVariable long id, RedirectAttributes redirect) {
-        return act("reminders.notice.deleted", redirect, () -> reminders.delete(id));
+    String delete(@PathVariable long id, @RequestParam(defaultValue = "") String code, RedirectAttributes redirect) {
+        act("reminders.notice.deleted", redirect, () -> reminders.delete(id));
+        return redirectToRules(code, redirect);
     }
 
-    private String act(String successKey, RedirectAttributes redirect, Runnable action) {
+    @PostMapping("/alerts/reminders/{id}/clear")
+    String clearOccurrence(@PathVariable long id, RedirectAttributes redirect) {
+        act("reminders.notice.cleared", redirect, () -> reminders.clearOccurrence(id));
+        return "redirect:/alerts";
+    }
+
+    @PostMapping("/alerts/reminders/{id}/snooze")
+    String snoozeOccurrence(@PathVariable long id, RedirectAttributes redirect) {
+        act("reminders.notice.snoozed", redirect, () -> reminders.snoozeOccurrence(id));
+        return "redirect:/alerts";
+    }
+
+    @PostMapping("/alerts/reminders/{id}/add")
+    String addOccurrence(@PathVariable long id, RedirectAttributes redirect) {
+        act("reminders.notice.added", redirect, () -> reminders.addOccurrence(id));
+        return "redirect:/alerts";
+    }
+
+    private void act(String successKey, RedirectAttributes redirect, Runnable action) {
         try {
             action.run();
             redirect.addFlashAttribute("notice", text(messages, successKey));
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute("error", inputError(messages, exception));
         }
-        return "redirect:/reminders";
     }
 
-    private String show(Model model, ProductView candidate) {
-        var overview = reminders.overview();
-        model.addAttribute("overview", overview);
-        model.addAttribute("productLabels", catalog.localizedLabels(overview.reminders().stream()
-                .map(ReminderView::productCode).toList(), LocaleContextHolder.getLocale()));
-        model.addAttribute("candidate", candidate);
-        model.addAttribute("scene", "reminders");
-        model.addAttribute("title", text(messages, "reminders.title"));
-        return "market-desk";
+    private String redirectToRules(String code, RedirectAttributes redirect) {
+        if (code.isBlank()) return "redirect:/alerts";
+        redirect.addAttribute("code", code);
+        return "redirect:/alerts/rules";
     }
 }

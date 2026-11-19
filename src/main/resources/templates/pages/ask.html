@@ -23,7 +23,7 @@
           <p class="ask-source" th:text="${importStatus == null} ? #{source.empty} :
               (${importStatus.origin == 'SAMPLE'} ? #{source.sample} : #{source.saved})"></p>
         </div>
-        <a th:href="@{/data}" th:text="#{app.nav.data}">Price data</a>
+        <th:block th:replace="~{fragments/navigation :: settings-gear}"></th:block>
       </header>
       <div class="ask-thread" tabindex="0" data-ask-thread
            th:attr="aria-label=#{chat.conversation},data-awaiting-reply=${awaitingReply == true}">
@@ -39,6 +39,22 @@
           <li class="chat-message" th:each="message : ${messages}" th:classappend="${message.shopper ? 'chat-shopper' : ''}">
             <strong th:text="${message.shopper} ? #{chat.you} : 'Market Desk'">Market Desk</strong>
             <p th:text="${message.text}"></p>
+            <section class="chat-prices" th:each="card : ${message.priceCards}" th:attr="aria-label=#{chat.checkedPrices}">
+              <p class="chat-price-caption" th:text="#{chat.checkedPrices}">Checked catalogue prices</p>
+              <a th:href="@{/products/{code}(code=${card.productCode})}" th:text="${card.productLabel}"></a>
+              <p class="helper" th:if="${card.rows.isEmpty()}" th:text="#{common.notListed}">Not listed</p>
+              <dl th:unless="${card.rows.isEmpty()}">
+                <div th:each="row : ${card.rows}">
+                  <dt th:text="${row.retailer}"></dt>
+                  <dd>
+                    <span th:text="${row.price == null} ? #{common.unknown} : ${format.money(row.price)}"></span>
+                    <small th:if="${row.lowest}" th:text="#{chat.lowest}">Lowest listed</small>
+                  </dd>
+                </div>
+              </dl>
+              <p class="chat-price-time" th:if="${card.retrievedAt != null}"
+                 th:text="#{alerts.retrievedAt(${format.time(card.retrievedAt)})}"></p>
+            </section>
           </li>
         </ol>
         <form class="ask-choice" th:unless="${candidates.isEmpty()}" th:action="@{/ask/choose}" method="post">
@@ -50,7 +66,7 @@
           </select>
           <button class="button secondary" type="submit" th:text="#{chat.compare}">Compare this pack</button>
         </form>
-        <div class="ask-working" aria-hidden="true" th:hidden="${awaitingReply != true}" data-ask-working>
+        <div class="ask-working" aria-hidden="true" th:hidden="${awaitingReply != true or replyFailed == true}" data-ask-working>
           <span class="ask-working-dot"></span>
           <span th:text="#{chat.checking}">Checking your request…</span>
         </div>
@@ -59,12 +75,19 @@
         <p class="ask-status" role="status" data-ask-status></p>
         <button class="button secondary ask-retry" type="button" data-ask-retry hidden
                 th:text="#{chat.retryReply}">Try reply again</button>
+        <noscript th:if="${awaitingReply}">
+          <p class="ask-status" th:if="${replyFailed}" th:text="#{chat.replyInterrupted}"></p>
+          <form th:action="@{/ask/retry}" method="post">
+            <input type="hidden" name="chatId" th:value="${chatId}">
+            <button class="button secondary ask-retry" type="submit" th:text="#{chat.retryReply}">Try reply again</button>
+          </form>
+        </noscript>
         <form class="ask-composer" th:action="@{/ask}" method="post">
           <input type="hidden" name="chatId" th:value="${chatId}">
           <label class="sr-only" for="price-question" th:text="#{chat.question}">Your price question</label>
           <textarea id="price-question" name="question" rows="1" maxlength="240" required
                     th:placeholder="#{chat.placeholder}"></textarea>
-          <button class="button primary" type="submit" th:text="#{chat.send}">Send</button>
+          <button class="button primary" type="submit" th:disabled="${awaitingReply}" th:text="#{chat.send}">Send</button>
         </form>
         <p class="ask-disclosure" th:text="#{chat.footer}">Prices come from the accepted catalogue. Chat history stays in this session.</p>
       </div>

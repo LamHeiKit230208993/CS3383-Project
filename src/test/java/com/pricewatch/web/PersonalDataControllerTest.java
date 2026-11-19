@@ -1,5 +1,7 @@
 package com.pricewatch.web;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pricewatch.budget.BudgetService;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.repository.ProductRepository;
@@ -20,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.ByteArrayInputStream;
@@ -27,18 +30,24 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalTime;
+import java.util.Optional;
+import java.util.function.BiFunction;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:personal-data;DB_CLOSE_DELAY=-1",
-        "spring.main.web-application-type=servlet", "DEEPSEEK_API_KEY_SKU="})
+        "spring.main.web-application-type=servlet"})
 @AutoConfigureMockMvc
 class PersonalDataControllerTest {
     private static final String MILK = "P000000124";
@@ -57,6 +66,7 @@ class PersonalDataControllerTest {
     @Autowired NotificationPolicy notificationPolicy;
     @Autowired DisplayPreferencesService display;
     @Autowired ProductRepository products;
+    @MockitoBean DeepSeekChatClient chatProvider;
 
     @Test
     void exportsAcceptedCategoriesAndKeepsStateUntilResetCommits() throws Exception {
@@ -85,7 +95,15 @@ class PersonalDataControllerTest {
 
         var activeSession = new MockHttpSession();
         var otherSession = new MockHttpSession();
-        addChat(activeSession, "What is the price of Kowloon Dairy 236mL?");
+        when(chatProvider.reply(anyString(), anyList(), anyList(), any())).thenAnswer(invocation -> {
+            BiFunction<String, JsonNode, Object> tool = invocation.getArgument(3);
+            var json = new ObjectMapper();
+            tool.apply("search_products", json.createObjectNode().put("query", MILK));
+            tool.apply("get_product_prices", json.createObjectNode().put("product_code", MILK));
+            return Optional.of("Here are the saved prices for this pack.");
+        });
+        mvc.perform(post("/ask").param("question", "What is the price of Kowloon Dairy 236mL?").session(activeSession))
+                .andExpect(redirectedUrlPattern("/ask?chatId=*"));
         addChat(otherSession, "Compare bread");
 
         mvc.perform(get("/personal-data").session(activeSession))
@@ -113,6 +131,11 @@ class PersonalDataControllerTest {
                 .andExpect(jsonPath("$.preferences.notifications.summaryTime").value("09:00:00"))
                 .andExpect(jsonPath("$.chats", hasSize(1)))
                 .andExpect(jsonPath("$.chats[0].messages[0].text").value("What is the price of Kowloon Dairy 236mL?"))
+                .andExpect(jsonPath("$.chats[0].messages[1].text").value("Here are the saved prices for this pack."))
+                .andExpect(jsonPath("$.chats[0].messages[1].priceCards[0].productCode").value(MILK))
+                .andExpect(jsonPath("$.chats[0].messages[1].priceCards[0].retrievedAt").value(accepted.retrievedAt().toString()))
+                .andExpect(jsonPath("$.chats[0].messages[1].priceCards[0].rows[0].retailer").value("AEON"))
+                .andExpect(jsonPath("$.chats[0].messages[1].priceCards[0].rows[0].price").value(7.5))
                 .andExpect(jsonPath("$.catalogue").doesNotExist());
 
         mvc.perform(get("/personal-data/reset").session(activeSession))
@@ -164,6 +187,6 @@ class PersonalDataControllerTest {
     }
 
     private void addChat(MockHttpSession session, String question) throws Exception {
-        mvc.perform(post("/ask").param("question", question).session(session)).andExpect(status().is3xxRedirection());
+        mvc.perform(post("/ask/send").param("question", question).session(session)).andExpect(status().is3xxRedirection());
     }
 }

@@ -37,6 +37,9 @@ public class TrackingEntity {
     @Column(name = "stopped_at")
     private Instant stoppedAt;
 
+    @Column(name = "wishlist_paused")
+    private Boolean wishlistPaused;
+
     @Column(name = "target_price", precision = 19, scale = 4)
     private BigDecimal targetPrice;
 
@@ -82,6 +85,18 @@ public class TrackingEntity {
     public void stop(Instant stoppedAt) {
         this.enabled = false;
         this.stoppedAt = stoppedAt;
+    }
+
+    public void pauseForWishlist(Instant stoppedAt) {
+        stop(stoppedAt);
+        wishlistPaused = true;
+    }
+
+    public void resumeRulesInto(TrackingEntity next) {
+        next.targetPrice = targetPrice;
+        next.targetArmed = targetArmed;
+        next.dropEnabled = dropEnabled;
+        wishlistPaused = false;
     }
 
     public void setTargetPrice(BigDecimal targetPrice) {

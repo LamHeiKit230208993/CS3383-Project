@@ -8,7 +8,7 @@ in-memory H2 database and local test feed. It never uses the normal saved databa
 or a running app. The original sample records are combined with explicit synthetic
 records for search relevance and decimal boundaries.
 
-Nine scenarios cover:
+The baseline screen checks cover:
 
 1. Empty start and sample import.
 2. Card-name, price, badge, and padding clicks; selected markers, keyboard selection, accessible price/availability descriptions, and independent offer disclosures at 375/1440 px.
@@ -17,8 +17,14 @@ Nine scenarios cover:
 5. Search normalization, both Chinese source labels, Related results, and category URL state. A new query from Related returns to Best matches; clearing it restores the catalogue, including when opening a stale blank Related URL.
 6. Exact four-decimal and large-price previews; invalid exponent quantities.
 7. A disappeared selected price stays unknown without retailer fallback; its card clearly reports unavailable pricing.
-8. Five-route layouts at four widths, unclipped prices, mobile navigation to the working Saved page, and keyboard skip link.
-9. No JavaScript or console errors in the main browser context.
+8. Check desktop and mobile layouts at four widths and keep prices in view.
+   Verify the five mobile tabs, open Settings by keyboard, and reach Price
+   data from Settings. Check disabled transitions with reduced motion on
+   and use the keyboard skip link.
+9. In Wishlist, open an exact pack by keyboard at phone width and check its
+   Cart, product, history and rule actions. Batch-add an existing Cart item
+   and a new one. Check that the existing retailer choice stays in the Cart.
+10. No JavaScript or console errors in the main browser context.
 
 The script stops its app and feed server on completion or failure. Artifacts go
 to ignored `target/browser-checks/`. A missing Java executable was also checked:

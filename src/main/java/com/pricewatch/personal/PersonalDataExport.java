@@ -17,7 +17,10 @@ public record PersonalDataExport(
         List<Reminder> reminders,
         List<Budget> budgets,
         Preferences preferences,
-        List<Chat> chats
+        List<Chat> chats,
+        List<PriceTarget> priceTargets,
+        List<ProductPriceAlert> productPriceAlerts,
+        List<TimeAlert> timeAlerts
 ) {
     public record ShoppingList(long id, String name, List<ListEntry> entries) {}
 
@@ -40,6 +43,17 @@ public record PersonalDataExport(
     public record Reminder(long id, String productCode, int quantity, int intervalDays,
                            String retailerCode, Instant nextDueAt, Instant snoozedUntil) {}
 
+    public record PriceTarget(String productCode, BigDecimal target, boolean armed) {}
+
+    public record ProductPriceAlert(long id, String productCode, BigDecimal target,
+                                    Instant retrievedAt, Instant createdAt, List<RetailerPrice> retailers,
+                                    Instant readAt, Instant snoozedUntil) {}
+
+    public record RetailerPrice(String retailerCode, BigDecimal price) {}
+
+    public record TimeAlert(long id, long reminderId, String productCode, int quantity, String retailerCode,
+                            Instant dueAt, Instant createdAt, Instant readAt, Instant snoozedUntil) {}
+
     public record Budget(String period, BigDecimal limitAmount) {}
 
     public record Preferences(Display display, Notifications notifications) {}
@@ -53,5 +67,9 @@ public record PersonalDataExport(
 
     public record Choice(String productCode, String label) {}
 
-    public record Message(boolean shopper, String text) {}
+    public record Message(boolean shopper, String text, List<PriceCard> priceCards) {}
+
+    public record PriceCard(String productCode, String productLabel, List<PriceRow> rows, Instant retrievedAt) {}
+
+    public record PriceRow(String retailer, BigDecimal price, boolean lowest) {}
 }

@@ -88,7 +88,7 @@ public class HelloController {
         model.addAttribute("listId", listId);
         model.addAttribute("items", items);
         model.addAttribute("summary", Summary.from(items));
-        return screen(model, "list", "My list");
+        return screen(model, "list", "Cart");
     }
     @GetMapping(value = "/list/export", produces = "application/json")
     ResponseEntity<ListTransfer> exportList(
@@ -116,6 +116,8 @@ public class HelloController {
     }
     @GetMapping("/data")
     String data(Model model) { return screen(model, "data", "Price data & updates"); }
+    @GetMapping("/settings")
+    String settings(Model model) { return screen(model, "settings", "Settings"); }
     @GetMapping("/planned/{feature}")
     String planned(@PathVariable String feature, Model model) {
         if (feature.equals("saved")) return "redirect:/saved";
@@ -164,6 +166,37 @@ public class HelloController {
             redirect.addFlashAttribute("notice", text("feedback.list.saved"));
         } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", shoppingError(exception)); }
         return listRedirect(listId);
+    }
+
+    @PostMapping("/list/items/details")
+    String editCartItem(@RequestParam String code, @RequestParam int quantity,
+                        @RequestParam(defaultValue = "") String retailerCode,
+                        @RequestParam(required = false) Long listId, RedirectAttributes redirect) {
+        try {
+            shopping.editDetails(listId, code, quantity, retailerCode);
+            redirect.addFlashAttribute("notice", text("feedback.list.saved"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", shoppingError(exception));
+        }
+        return listRedirect(listId);
+    }
+
+    @PostMapping(value = "/list/items/check", params = "!inline")
+    String checkCartItem(@RequestParam String code, @RequestParam(defaultValue = "false") boolean checked,
+                         @RequestParam(required = false) Long listId) {
+        checkCartItemInline(code, checked, listId);
+        return listRedirect(listId);
+    }
+
+    @PostMapping(value = "/list/items/check", params = "inline=true")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void checkCartItemInline(@RequestParam String code, @RequestParam(defaultValue = "false") boolean checked,
+                             @RequestParam(required = false) Long listId) {
+        try {
+            shopping.checkOff(listId, code, checked);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
     @PostMapping({"/list/items/{pathCode}/remove", "/list/items/remove"})
     String remove(@PathVariable(required = false) String pathCode, @RequestParam(required = false) String code,

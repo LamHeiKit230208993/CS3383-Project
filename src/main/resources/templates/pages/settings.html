@@ -1,0 +1,25 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" class="settings" aria-labelledby="settings-heading">
+  <header class="page-heading">
+    <h1 id="settings-heading" th:text="#{app.scene.settings}">Settings</h1>
+  </header>
+  <div class="action-rows">
+    <a class="action-row" th:href="@{/data}">
+      <svg class="icon" aria-hidden="true"><use href="#i-data"/></svg>
+      <span><strong th:text="#{app.scene.data}">Price data &amp; updates</strong>
+        <small th:text="#{settings.dataHelp}"></small></span>
+      <span aria-hidden="true">›</span>
+    </a>
+    <a class="action-row" th:href="@{/preferences}">
+      <svg class="icon" aria-hidden="true"><use href="#i-display"/></svg>
+      <span><strong th:text="#{app.scene.preferences}">Display settings</strong>
+        <small th:text="#{settings.displayHelp}"></small></span>
+      <span aria-hidden="true">›</span>
+    </a>
+    <a class="action-row" th:href="@{/personal-data}">
+      <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>
+      <span><strong th:text="#{personal.title}">Personal data</strong>
+        <small th:text="#{settings.personalHelp}"></small></span>
+      <span aria-hidden="true">›</span>
+    </a>
+  </div>
+</section>

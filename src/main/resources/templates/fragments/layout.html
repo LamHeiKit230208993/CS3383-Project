@@ -7,6 +7,12 @@
     <symbol id="i-list" viewBox="0 0 24 24">
       <path d="M8 5h12M8 12h12M8 19h12M3 5h.01M3 12h.01M3 19h.01"/>
     </symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24">
+      <path d="M3 4h2l2.4 11h10.8l2.4-8H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>
+    </symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <path d="m10 3-.5 2.2-2 .9-2-.9-2 3.5 1.6 1.5v2.4L3.5 14l2 3.5 2-.7 2 1 .5 2.2h4l.5-2.2 2-1 2 .7 2-3.5-1.6-1.4v-2.4l1.6-1.5-2-3.5-2 .9-2-.9L14 3z"/><circle cx="12" cy="11.5" r="3"/>
+    </symbol>
     <symbol id="i-heart" viewBox="0 0 24 24">
       <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>
     </symbol>
@@ -49,13 +55,6 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="topbar">
   <header class="topbar">
     <a class="mobile-brand" th:href="@{/}">market desk<span>.</span></a>
-    <span class="breadcrumb"><th:block th:text="#{app.workspace}">Your workspace</th:block> <span>/</span><strong th:text="${sceneTitle}"></strong></span>
-    <span class="local-state"><span class="local-dot" aria-hidden="true"></span><th:block th:text="#{app.localState}">Local baseline</th:block></span>
+    <th:block th:replace="~{fragments/navigation :: settings-gear}"></th:block>
   </header>
-</th:block>
-<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="page-footer">
-  <footer class="page-footer">
-    <span th:text="#{app.footer}">Thoughtful shopping, one list at a time.</span>
-    <a th:href="@{/data}" th:text="#{app.scene.data}">Price data &amp; updates</a>
-  </footer>
 </th:block>

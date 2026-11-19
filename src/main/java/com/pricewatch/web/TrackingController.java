@@ -2,12 +2,9 @@ package com.pricewatch.web;
 
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.notifications.AlertService;
-import com.pricewatch.notifications.NotificationPolicy;
+import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.tracking.TrackingService;
-import com.pricewatch.notifications.AlertEventView;
-import com.pricewatch.tracking.TrackingView;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,12 +18,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalTime;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.List;
 
 import static com.pricewatch.web.MilestoneMessages.inputError;
 import static com.pricewatch.web.MilestoneMessages.text;
@@ -36,64 +28,36 @@ public class TrackingController {
     private final CatalogService catalog;
     private final TrackingService tracking;
     private final AlertService alerts;
-    private final NotificationPolicy notificationPolicy;
+    private final ShoppingService shopping;
     private final HelloController format;
-    private final Clock clock;
     private final MessageSource messages;
 
     public TrackingController(CatalogService catalog, TrackingService tracking, AlertService alerts,
-                              NotificationPolicy notificationPolicy, HelloController format, Clock appClock,
-                              MessageSource messages) {
+                              HelloController format,
+                              MessageSource messages, ShoppingService shopping) {
         this.catalog = catalog;
         this.tracking = tracking;
         this.alerts = alerts;
-        this.notificationPolicy = notificationPolicy;
         this.format = format;
-        this.clock = appClock;
         this.messages = messages;
+        this.shopping = shopping;
     }
 
     @GetMapping("/saved")
     public String saved(@RequestParam(required = false) String code, Model model) {
         model.addAttribute("importStatus", catalog.status());
         model.addAttribute("format", format);
-        model.addAttribute("savedProducts", tracking.savedProducts());
-        var allRetailers = tracking.allRetailersProducts();
-        model.addAttribute("allRetailersProducts", allRetailers);
-        model.addAttribute("allRetailerCodes", allRetailers.stream().map(TrackingService.AllRetailersView::code).toList());
-        var periods = tracking.trackingPeriods();
-        model.addAttribute("trackingPeriods", periods);
-        model.addAttribute("productLabels", catalog.localizedLabels(Stream.concat(
-                allRetailers.stream().map(TrackingService.AllRetailersView::code),
-                periods.stream().map(TrackingView::productCode)).toList(), LocaleContextHolder.getLocale()));
-        if (code != null && !code.isBlank()) {
+        var products = tracking.savedProducts();
+        model.addAttribute("savedProducts", products);
+        model.addAttribute("openCode", code);
+        if (code != null && !code.isBlank() && products.stream().noneMatch(saved -> saved.product().code().equals(code))) {
             try {
                 model.addAttribute("productToSave", catalog.find(code));
             } catch (IllegalArgumentException exception) {
                 model.addAttribute("productLookupError", text(messages, "milestone.error.productMissing"));
             }
         }
-        return screen(model, "saved", "Saved products & tracking");
-    }
-
-    @GetMapping("/alerts")
-    public String alerts(Model model) {
-        var now = clock.instant();
-        alerts.processDue(now);
-        model.addAttribute("importStatus", catalog.status());
-        model.addAttribute("format", format);
-        var events = alerts.events(now);
-        var periods = tracking.trackingPeriods().stream().filter(TrackingView::enabled).toList();
-        var labels = catalog.localizedLabels(Stream.concat(events.stream().map(AlertEventView::productCode),
-                periods.stream().map(TrackingView::productCode)).filter(Objects::nonNull).toList(),
-                LocaleContextHolder.getLocale());
-        model.addAttribute("alertEvents", events);
-        model.addAttribute("eventMessages", events.stream().collect(Collectors.toMap(
-                AlertEventView::id, event -> alertMessage(event, labels))));
-        model.addAttribute("notificationSettings", notificationPolicy.settings());
-        model.addAttribute("trackingPeriods", periods);
-        model.addAttribute("productLabels", labels);
-        return screen(model, "alerts", "Price alerts");
+        return screen(model, "saved", "Wishlist");
     }
 
     @PostMapping("/saved/save")
@@ -111,6 +75,19 @@ public class TrackingController {
     public String removeSaved(@RequestParam String code, RedirectAttributes redirect) {
         tracking.removeSaved(code);
         redirect.addFlashAttribute("notice", text(messages, "saved.notice.removed"));
+        return "redirect:/saved";
+    }
+
+    @PostMapping("/saved/cart")
+    public String addToCart(@RequestParam(name = "codes", required = false) List<String> codes,
+                            RedirectAttributes redirect) {
+        if (codes == null || codes.isEmpty()) {
+            redirect.addFlashAttribute("error", text(messages, "wishlist.choose"));
+        } else {
+            var result = shopping.addMissingProducts(codes);
+            redirect.addFlashAttribute("notice", text(messages, "wishlist.added",
+                    result.added(), result.existing(), result.unavailable()));
+        }
         return "redirect:/saved";
     }
 
@@ -173,6 +150,7 @@ public class TrackingController {
     @PostMapping("/alerts/target")
     public String target(@RequestParam long trackingId,
                          @RequestParam(required = false) BigDecimal targetPrice,
+                         @RequestParam(required = false) String code,
                          RedirectAttributes redirect) {
         try {
             tracking.configureTarget(trackingId, targetPrice);
@@ -181,12 +159,13 @@ public class TrackingController {
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute("error", inputError(messages, exception));
         }
-        return "redirect:/alerts";
+        return ruleDestination(code, redirect);
     }
 
     @PostMapping("/alerts/drop")
     public String drop(@RequestParam long trackingId,
                        @RequestParam(defaultValue = "false") boolean enabled,
+                       @RequestParam(required = false) String code,
                        RedirectAttributes redirect) {
         try {
             tracking.configureDrop(trackingId, enabled);
@@ -195,19 +174,18 @@ public class TrackingController {
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute("error", inputError(messages, exception));
         }
-        return "redirect:/alerts";
+        return ruleDestination(code, redirect);
     }
 
     @PostMapping("/alerts/settings")
-    public String settings(@RequestParam LocalTime quietStart, @RequestParam LocalTime quietEnd,
-                           @RequestParam LocalTime summaryTime, RedirectAttributes redirect) {
-        try {
-            notificationPolicy.update(quietStart, quietEnd, summaryTime);
-            redirect.addFlashAttribute("notice", text(messages, "alerts.notice.timingSaved"));
-        } catch (RuntimeException exception) {
-            redirect.addFlashAttribute("error", text(messages, "alerts.error.timing"));
-        }
+    public String retiredSettings() {
         return "redirect:/alerts";
+    }
+
+    private static String ruleDestination(String code, RedirectAttributes redirect) {
+        if (code == null) return "redirect:/alerts";
+        redirect.addAttribute("code", code);
+        return "redirect:/alerts/rules";
     }
 
     @PostMapping("/alerts/events/{eventId}/read")
@@ -239,18 +217,6 @@ public class TrackingController {
         model.addAttribute("format", format);
         model.addAttribute("error", text(messages, "alerts.error.input"));
         return screen(model, "error", text(messages, "error.input.title"));
-    }
-
-    private String alertMessage(AlertEventView event, Map<String, CatalogService.ProductLabel> labels) {
-        var label = event.productCode() == null ? null : labels.get(event.productCode());
-        String name = label == null ? event.productName() : label.name();
-        return switch (event.type()) {
-            case "TARGET" -> text(messages, "alerts.message.target", name, event.retailerCode());
-            case "DROP" -> text(messages, "alerts.message.drop", name, event.retailerCode());
-            case "SUMMARY" -> text(messages, event.summaryCount() == 1
-                    ? "alerts.message.summaryOne" : "alerts.message.summaryMany", event.summaryCount().toString());
-            default -> event.message();
-        };
     }
 
     private static String screen(Model model, String scene, String title) {

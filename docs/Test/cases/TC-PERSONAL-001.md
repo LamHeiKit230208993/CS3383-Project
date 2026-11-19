@@ -9,7 +9,9 @@ that is absent from the catalogue.
 1. Open Personal data and export its JSON. Check all record categories, the
    saved quantity, checked state, retailer choice, and missing-product
    display name. Check that the export contains the requesting session's
-   chat and that a catalogue is absent from the file.
+   chat, including DeepSeek text and the saved price card with its exact
+   product, retailer, amount and retrieval time. Check that a full catalogue
+   is absent from the file.
 2. Open the reset confirmation, then return to Personal data. Check that the
    overview has the same list and item counts. Submit the reset without
    confirmation and check the confirmation error and retained settings.
@@ -22,8 +24,8 @@ that is absent from the catalogue.
    that the requesting session is invalidated and the other session remains
    active.
 
-The test makes no external price or chat calls. It tests HTTP routes and H2
-transactions. The Chrome suite also follows the actual confirmation and
-download controls.
+The test uses a local chat fixture and makes no external price or chat calls.
+It tests HTTP routes and H2 transactions. The Chrome suite also follows the
+actual confirmation and download controls.
 
 Source [PersonalDataControllerTest](../../../src/test/java/com/pricewatch/web/PersonalDataControllerTest.java).

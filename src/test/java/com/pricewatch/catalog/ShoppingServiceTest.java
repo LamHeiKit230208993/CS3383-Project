@@ -55,6 +55,23 @@ class ShoppingServiceTest {
     }
 
     @Test
+    void batchAddKeepsExistingCartChoicesAndReportsSkippedProducts() {
+        catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
+        shopping.checkOff(null, "P000000124", true);
+
+        assertEquals(new ShoppingService.BatchAddResult(1, 1, 1), shopping.addMissingProducts(
+                List.of("P000000124", "P000000229", "P000000229", "MISSING")));
+        var items = shopping.items();
+        assertEquals(2, items.size());
+        assertEquals("JASONS", items.getFirst().selectedRetailerCode());
+        assertEquals(2, items.getFirst().quantity());
+        assertTrue(items.getFirst().checked());
+        assertEquals(1, items.getLast().quantity());
+        assertNull(items.getLast().selectedRetailerCode());
+    }
+
+    @Test
     void listLoadsProductsAndOffersInOneQuery() {
         catalog.importSample();
         shopping.add("P000000124", 2, "JASONS");

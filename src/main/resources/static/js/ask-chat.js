@@ -85,7 +85,7 @@ function currentChatUrl() {
 }
 
 async function loadChat(url, fields) {
-  const options = { cache: "no-store", signal: AbortSignal.timeout(25_000) };
+  const options = { cache: "no-store", signal: AbortSignal.timeout(45_000) };
   if (fields) {
     options.method = "POST";
     options.body = new URLSearchParams(fields);
@@ -157,6 +157,7 @@ chatWorkspace.addEventListener("submit", async event => {
   if (accepting || awaitingReply) return;
 
   const fields = new FormData(form, event.submitter);
+  if (!isQuestion) fields.set("deferReply", "true");
   const question = fields.get("question");
   const selectedPack = form.elements.code?.selectedOptions[0]?.textContent.trim();
   const pendingBubble = addPendingTurn(question?.trim() || selectedPack);

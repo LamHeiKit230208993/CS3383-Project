@@ -19,8 +19,11 @@
         <p lang="zh-Hans" th:if="${#locale.language == 'en' and product.name.zhHans != product.name.zhHant}" th:text="${product.name.zhHans}"></p>
         <p class="product-code" th:text="${product.code}" translate="no"></p>
         <p class="helper" th:text="#{compare.packDetails}">Pack details are part of the original product name.</p>
-        <p><a th:href="@{/saved(code=${product.code})}" th:text="#{compare.saveTrack}">Save or track this product</a></p>
-        <p><a th:href="@{/reminders(code=${product.code})}" th:text="#{compare.setReminder}">Set a replenishment reminder</a></p>
+        <form th:action="@{/saved/save}" method="post">
+          <input type="hidden" name="code" th:value="${product.code}">
+          <button class="button secondary" th:text="#{saved.save}">Save to wishlist</button>
+        </form>
+        <p><a th:href="@{/alerts/rules(code=${product.code})}" th:text="#{wishlist.rules}">Set rules</a></p>
         <p><a th:href="@{/products/{code}/history(code=${product.code})}" th:text="#{app.scene.history}">Price history</a></p>
         <p class="warning" th:unless="${product.active}" th:text="#{compare.inactive}">Not in the accepted catalogue. Saved identity kept; current price unknown.</p>
         <form

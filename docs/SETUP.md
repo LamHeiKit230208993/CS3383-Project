@@ -106,41 +106,38 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Alerts, Budget, and Reminders have working forms in the J05–J08
-implementation. Open Ask for the price assistant described below.
+Use Wishlist for tracked products and Alerts for price alerts.
+Open Ask for the price assistant described below.
 See the [baseline guide](implementation-baseline-j01-j04.md) and
 [extension guide](implementation-j05-j08.md) for behaviour and limits.
 
 ### Try the J05–J08 flow
 
-1. Open a product comparison and choose **Save or track this product**. Save it to the
-   wishlist, or explicitly track a retailer. These are separate actions.
-2. Open **Alerts** to set a target or enable a drop rule for that tracking period.
-   Only accepted LIVE data can create live history and price alerts. Loading the
-   historical sample is useful for screens, lists, budgets, and reminders; it
-   does not simulate live observations.
-3. Open **Budget**, choose Weekly or Monthly, and save a planned limit. It is
+1. Open a product comparison and choose **Save to wishlist**. The app starts
+   watching all retailers for the exact pack. New retailers are picked up on
+   accepted live refreshes. Select the Wishlist row to see its actions or select
+   several products to add one pack of each missing item to the default Cart.
+   Removing a product stops new price tracking and keeps its recorded history.
+2. Select **Set rules** on the pack. Set one target price for all retailers.
+   An accepted live refresh at or below the target makes one alert listing
+   all qualifying retailers. A later lowest known price above the target
+   rearms it. Existing retailer-specific price rules stay editable. Historical
+   samples are useful for checking the UI and list estimates.
+3. Open **Settings → Personal data**, choose Weekly or Monthly in the Budget
+   card, and save a planned limit. It is
    compared with the current My list estimate, including checked items. An
    explicit retailer choice stays selected when its price becomes unknown.
-4. From a product comparison, choose **Set a replenishment reminder**. Choose packs, an interval
-   in days, and an optional retailer. Adding its quantity to My list leaves the
-   reminder active. Clear starts a new interval from now; Snooze delays its
-   effective due time by 24 hours.
+4. In **Set rules**, add a time reminder with packs, an interval in days,
+   and an optional retailer. Open **Alerts** for one history of price and
+   time events. Adding a reminder's quantity to Cart leaves it active.
+   Dismiss it to start the next interval and keep the previous entry. Snooze
+   delays a due reminder by 24 hours.
 
-Alert timing uses Hong Kong time. Defaults are quiet hours **22:00–08:00** and
-daily summary **08:00**. Change them on Alerts; equal quiet start/end disables
-quiet hours. Quiet hours delay notification eligibility, not manual list actions.
-Events and reminders stay inside the app. Nothing is delivered while the app is
-closed, and startup does not fetch prices.
-
-The running web app checks summaries every minute. Alerts and Reminders pages
-also refresh every minute when visible, unless a form has edits or focus, or a
-disclosure is open. Reopen or reload the page to refresh manually. Without
-JavaScript, forms still work and page opening checks the current state.
-
-For isolated checks, disable the scheduled summary job with
-`--pricewatch.jobs.enabled=false`. This does not disable manual refresh, page
-checks, or the browser's safe page refresh.
+The running app checks due reminders each minute and when Alerts opens. Its
+scheduled work can be disabled for isolated checks with
+`--pricewatch.jobs.enabled=false`. Page opening still checks due reminders.
+Alert and price records show Hong Kong time. Quiet hours and scheduled
+summaries are retired. Old settings and summary records remain exportable.
 
 To stop the app, press `Ctrl+C` in the terminal.
 
@@ -166,21 +163,23 @@ service. Saved data on this computer does not by itself make a phone work offlin
 
 ### Share or review a saved list
 
-Open **My list**, choose a list, and select **Open list**. **Export JSON**
-downloads the open list. **Import JSON** creates a separate editable copy.
+Open **Cart** and select a list. Tick an item to keep it checked and
+cross out its name. Use **Edit item** to change packs or the retailer.
+In **List files**, **Export JSON** downloads the open list. **Import JSON**
+creates a separate editable copy.
 The file keeps each pack, quantity, checked state, and retailer choice.
 The receiving app gets prices from its own catalogue. Missing products or
 retailer prices appear as **Unknown**. Quick-add, budgets, and reminders use
 the default **My list**.
 
-Choose a list and select **View offline** while Spring Boot is running on
-the device. The read-only page shows the saved estimates and retrieval time.
-This mode applies to the current browser session. Select **Exit offline review**
-to edit the list, refresh prices, or use Ask.
+Choose **List files → Download offline checklist** to save an HTML copy.
+Open the file in a browser without a connection or the local app running.
+It shows saved estimates and their retrieval time. Checkmarks changed in the
+file last while it is open and stay separate from the app's Cart.
 
 ### Display settings, personal data, and history
 
-Open **Display settings** to choose English, Traditional Chinese, or
+Open **Settings → Display settings** to choose English, Traditional Chinese, or
 Simplified Chinese, and to enable high contrast. The choice is saved on this
 device. Product names use the matching source labels when available.
 
@@ -190,11 +189,10 @@ screen. A confirmed reset clears local personal records and the current
 session's chats. The accepted catalogue and its import details stay available.
 Previously exported files remain on the devices that received them.
 
-Open **Price history** from a product comparison. The table shows retained
-observations for that exact pack, with a retailer, the retrieval time, and
-the listed price or **Unknown**. An untracked pack can have no records.
-The table uses the existing 90-day window. Tracking is separate from
-wishlist saving or list editing.
+Open **Price history** from Wishlist or a product comparison. Filter the
+chart and table to one retailer or all retailers, and choose 30 or 90 days.
+The chart uses recorded retrieval times and breaks at unknown prices and
+stopped tracking periods. The table lists exact amounts and recorded gaps.
 
 ---
 
@@ -218,13 +216,15 @@ message while you wait. A failed send restores the draft. If the reply is
 interrupted, use **Try reply again**. Press **Enter** to send or
 **Shift+Enter** to start a new line.
 
-DeepSeek interprets the question and recent chat context. It can request a
-catalogue search, ask for a missing detail, or compare the selected pack at
-another retailer. The server runs the lookup, asks the shopper to choose when
-several packs match, and builds the price answer from checked listings.
-Without the provider, Ask still supports direct catalogue terms and common
-price questions. The recent conversation is sent to the configured CityU
-endpoint when the key is available.
+DeepSeek receives the recent messages and can reply directly, ask for a missing
+detail, or call the app's catalogue tools. It can search for matching products
+by relevance or lowest listed pack price, read a pack's prices, and offer exact
+pack choices. When you pick a pack, DeepSeek continues the conversation with
+that selection. **Checked catalogue prices** cards show the prices returned
+by the app from its accepted catalogue. Ask has read-only catalogue access.
+Ask requires a working DeepSeek connection. If a reply fails, the question
+stays in the chat for **Try reply again**. Check the key and endpoint if replies
+keep failing. You can still browse and compare prices in **Discover**.
 
 If Windows can reach CityU but Java reports a TLS handshake error, launch
 the app with Windows' trusted certificate store. Certificate and hostname

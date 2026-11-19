@@ -1,12 +1,12 @@
 # Test Case Catalog
 
-[TC-CHAT-001](cases/TC-CHAT-001.md) covers checked prices, follow-up context,
-chat history, message acceptance before replies, draft recovery, and the provider contract.
+[TC-CHAT-001](cases/TC-CHAT-001.md) covers DeepSeek conversation and tool calls,
+checked prices, pack choices and follow-ups, chat history, and send and reply recovery.
 
 [TC-SHARE-001](cases/TC-SHARE-001.md) checks list export, editable copies, missing prices, and rejected imports.
-[TC-OFFLINE-001](cases/TC-OFFLINE-001.md) checks saved estimates, local review, and server-side blocking.
+[TC-OFFLINE-001](cases/TC-OFFLINE-001.md) checks saved estimates and a downloaded checklist with the app stopped.
 [TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks saved languages, contrast, labels, and keyboard use.
-[TC-HISTORY-001](cases/TC-HISTORY-001.md) checks the exact pack, recorded prices, gaps, and retention.
+[TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, retailer and period filters, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
 
 This index describes maintained checks. Detailed steps and limits belong in
@@ -40,9 +40,10 @@ Case descriptions state expected behaviour; they do not prove a later build pass
 | ID | Area | Expected result | Source |
 |---|---|---|---|
 | [TC-TRACK-001](cases/TC-TRACK-001.md) | Wishlist and tracking | Product-wide enrollment on LIVE imports, separate retailer periods, retention, repeat prevention, rollback and file reopen | `TrackingServiceTest`, `TrackingPersistenceRestartTest` |
-| [TC-ALERT-001](cases/TC-ALERT-001.md) | In-app alerts | Targets, stated drop evidence, quiet hours, snooze, next-day summary catch-up and persisted repeat state | `AlertServiceTest`, `TrackingPersistenceRestartTest` |
-| [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget | Persistent weekly/monthly limit, effective selected-retailer estimate, incomplete-price states, category reconciliation, validation, and H2 file reopen | `BudgetServiceTest`, `BudgetControllerTest`, `BudgetPageTest`, `BudgetSettingsPersistenceTest` |
-| [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Replenishment | Persisted due state, clear/snooze timing, manual actions during quiet hours, and unchanged ShoppingService validation | `ReminderControllerTest`, `ReminderPersistenceRestartTest` |
+| [TC-ALERT-001](cases/TC-ALERT-001.md) | Retailer price alerts | Targets, drop evidence, 24-hour snooze, immediate availability, and historical timing state after reopen | `AlertServiceTest`, `TrackingPersistenceRestartTest` |
+| [TC-ALERT-002](cases/TC-ALERT-002.md) | Product-wide targets | Qualifying retailers, repeat prevention, rearm, paused rules, retained history, and import rollback | `ProductTargetServiceTest` |
+| [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget | Personal data budget card, legacy route, selected-retailer estimate, validation, and H2 file reopen | `BudgetServiceTest`, `BudgetPageTest`, `BudgetSettingsPersistenceTest` |
+| [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Time alerts | One due occurrence, editable rules, Cart actions, dismissal history, snooze, and H2 upgrade | `ReminderControllerTest`, `ReminderPersistenceRestartTest`, `SecondaryDisplayTest` |
 | [TC-MILESTONE-001](cases/TC-MILESTONE-001.md) | Combined browser flow | Save/track/update/alert, budget, reminder actions, native forms, safe timed refresh and responsive pages | `milestone-check.cjs` |
 | [TC-UPGRADE-001](cases/TC-UPGRADE-001.md) | Existing database upgrade | An old baseline's catalogue, selected retailer, quantity and checked state survive the new schema | `persistence-check.cjs` with `BASELINE_JAR` |
 

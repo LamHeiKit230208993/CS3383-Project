@@ -8,46 +8,72 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReminderPersistenceRestartTest {
     @Test
-    void reminderAndSnoozeSurviveClosingAndReopeningTheApplication(@TempDir Path directory) {
+    void reminderOccurrenceAndSnoozeSurviveClosingAndReopeningTheApplication(@TempDir Path directory) {
         String databaseUrl = "jdbc:h2:file:" + directory.resolve("reminder-restart").toAbsolutePath()
                 .toString().replace('\\', '/') + ";DB_CLOSE_ON_EXIT=FALSE";
         Long reminderId;
-        Instant initialDue;
+        long occurrenceId;
+        Instant now = Instant.parse("2026-11-06T02:00:00Z");
+        Instant due = now.plus(21, ChronoUnit.DAYS);
 
-        try (ConfigurableApplicationContext firstRun = start(databaseUrl)) {
+        try (ConfigurableApplicationContext firstRun = start(databaseUrl, now)) {
             firstRun.getBean(CatalogService.class).importSample();
             ReminderService service = firstRun.getBean(ReminderService.class);
             service.create("P000000124", 4, 21, "JASONS");
             ReminderView created = service.overview().reminders().getFirst();
             reminderId = created.id();
-            initialDue = created.nextDueAt();
-            service.snooze(reminderId);
+            assertEquals(due, created.nextDueAt());
+            assertTrue(service.occurrences(now).isEmpty());
+            firstRun.getBean(JdbcTemplate.class).execute("DROP TABLE reminder_occurrences");
         }
 
-        try (ConfigurableApplicationContext reopened = start(databaseUrl)) {
-            ReminderView restored = reopened.getBean(ReminderService.class).overview().reminders().getFirst();
+        try (ConfigurableApplicationContext atDue = start(databaseUrl, due)) {
+            ReminderService service = atDue.getBean(ReminderService.class);
+            service.recordDue();
+            occurrenceId = service.occurrences(due).getFirst().id();
+            service.snoozeOccurrence(occurrenceId);
+        }
+
+        try (ConfigurableApplicationContext reopened = start(databaseUrl, due)) {
+            ReminderService service = reopened.getBean(ReminderService.class);
+            ReminderView restored = service.overview().reminders().getFirst();
             assertEquals(reminderId, restored.id());
             assertEquals("P000000124", restored.productCode());
             assertEquals(4, restored.quantity());
             assertEquals(21, restored.intervalDays());
             assertEquals("JASONS", restored.selectedRetailerCode());
-            assertEquals(initialDue.plusSeconds(24 * 60 * 60L), restored.effectiveDueAt());
+            assertEquals(due.plusSeconds(24 * 60 * 60L), restored.effectiveDueAt());
             assertNotNull(reopened.getBean(ReminderRepository.class).findWithProductById(reminderId).orElse(null));
+            service.recordDue();
+            var events = service.occurrences(due);
+            assertEquals(1, events.size());
+            assertEquals(occurrenceId, events.getFirst().id());
+            assertFalse(events.getFirst().available());
+            assertTrue(events.getFirst().active());
         }
     }
 
-    private ConfigurableApplicationContext start(String databaseUrl) {
+    private ConfigurableApplicationContext start(String databaseUrl, Instant now) {
         return new SpringApplicationBuilder(PricewatchApplication.class)
                 .web(WebApplicationType.NONE)
+                .initializers(context -> ((GenericApplicationContext) context).registerBean("reminderFixtureClock",
+                        Clock.class, () -> Clock.fixed(now, ZoneOffset.UTC), bean -> bean.setPrimary(true)))
                 .run("--spring.datasource.url=" + databaseUrl,
                         "--spring.datasource.username=sa",
                         "--spring.datasource.password=",

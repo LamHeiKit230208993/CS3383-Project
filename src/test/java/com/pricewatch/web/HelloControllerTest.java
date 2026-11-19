@@ -1,17 +1,30 @@
 package com.pricewatch.web;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.shopping.ShoppingService;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -22,38 +35,59 @@ class HelloControllerTest {
     @Autowired MockMvc mvc;
     @Autowired CatalogService catalog;
     @Autowired ShoppingService shopping;
+    @MockitoBean DeepSeekChatClient provider;
 
-    @Test void offlineReviewIsReadOnlyAndBlocksOnlineActionsForThatSession() throws Exception {
+    private final ObjectMapper json = new ObjectMapper();
+
+    @Test void offlineChecklistDownloadsCheckedItemsAndTheirSavedPrices() throws Exception {
         catalog.importSample();
         shopping.add("P000000124", 2, "JASONS");
         shopping.update("P000000124", 2, true);
         var session = new MockHttpSession();
-        mvc.perform(post("/offline/enter").session(session)).andExpect(redirectedUrl("/offline"));
-        mvc.perform(get("/offline").session(session)).andExpect(status().isOk())
+        mvc.perform(get("/list/offline").session(session)).andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/html"))
                 .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"shopping-checklist.html\""))
                 .andExpect(content().string(containsString("Prices retrieved")))
+                .andExpect(content().string(containsString("Historical sample")))
+                .andExpect(content().string(containsString(catalog.status().retrievedAt().toString())))
+                .andExpect(content().string(containsString("2 · packs")))
                 .andExpect(content().string(containsString("JASONS")))
-                .andExpect(content().string(containsString("Checked")))
-                .andExpect(content().string(containsString("25.00")))
-                .andExpect(content().string(not(containsString("Save changes"))));
-        for (String route : new String[]{"/data/refresh", "/ask", "/list/items/P000000124/remove", "/offline/enter"}) {
-            mvc.perform(post(route).session(session)).andExpect(status().isForbidden());
-        }
-        mvc.perform(get("/ask").session(session)).andExpect(redirectedUrl("/offline"));
-        mvc.perform(get("/ask")).andExpect(status().isOk());
+                .andExpect(content().string(containsString("checked=\"checked\"")))
+                .andExpect(content().string(containsString("HK$12.50")))
+                .andExpect(content().string(containsString("HK$25.00")))
+                .andExpect(content().string(not(containsString("<script"))))
+                .andExpect(content().string(not(containsString("<link"))))
+                .andExpect(content().string(not(containsString("<form"))));
+        var listId = shopping.lists().getFirst().id();
+        mvc.perform(post("/offline/enter").session(session).param("listId", listId.toString()))
+                .andExpect(redirectedUrl("/list?listId=" + listId));
         mvc.perform(post("/offline/exit").session(session).header("Origin", "http://example.com"))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/offline/exit").session(session)).andExpect(redirectedUrlPattern("/list?listId=*"));
         mvc.perform(get("/ask").session(session)).andExpect(status().isOk());
         assertEquals(2, shopping.items().getFirst().quantity());
     }
 
-    @Test void offlineReviewShowsMissingRetrievalTime() throws Exception {
-        var session = new MockHttpSession();
+    @Test void offlineChecklistEscapesImportedLabelsAndKeepsUnknownPrices() throws Exception {
+        long listId = shopping.importList(new ByteArrayInputStream("""
+                {"version":1,"name":"<b>Trip</b>","items":[{"productCode":"MISSING",
+                "displayName":"<img src=x>","quantity":1,"checked":false,"retailerCode":"TEST"}]}
+                """.getBytes(StandardCharsets.UTF_8)));
         mvc.perform(get("/offline")).andExpect(redirectedUrl("/list"));
-        mvc.perform(post("/offline/enter").session(session)).andExpect(redirectedUrl("/offline"));
-        mvc.perform(get("/offline").session(session)).andExpect(status().isOk())
-                .andExpect(content().string(containsString("Price retrieval time is unavailable.")));
+        mvc.perform(get("/list/offline").param("listId", "-1")).andExpect(status().isNotFound());
+        mvc.perform(get("/list/offline").param("listId", Long.toString(listId))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Price retrieval time is unavailable.")))
+                .andExpect(content().string(containsString("&lt;b&gt;Trip&lt;/b&gt;")))
+                .andExpect(content().string(containsString("&lt;img src=x&gt;")))
+                .andExpect(content().string(not(containsString("<img"))))
+                .andExpect(content().string(containsString("TEST")))
+                .andExpect(content().string(containsString("Unknown")));
+        mvc.perform(post("/preferences").param("language", "zh-Hant").param("highContrast", "true"))
+                .andExpect(redirectedUrl("/preferences"));
+        mvc.perform(get("/list/offline").param("listId", Long.toString(listId))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("lang=\"zh-Hant\"")))
+                .andExpect(content().string(containsString("class=\"high-contrast\"")))
+                .andExpect(content().string(containsString("價格擷取時間不詳。")));
     }
 
     @Test void emptyStartDoesNotPretendToHavePrices() throws Exception {
@@ -64,7 +98,8 @@ class HelloControllerTest {
                 .andExpect(content().string(not(containsString("DEMO-MILK"))));
         assertNull(catalog.status());
     }
-    @Test void askKeepsTheExactPackForRetailerFollowUpsWithoutAProviderKey() throws Exception {
+    @Test void askKeepsTheExactPackAcrossModelToolFollowUps() throws Exception {
+        when(provider.reply(anyString(), anyList(), anyList(), any())).thenAnswer(this::catalogueReply);
         var session = new MockHttpSession();
         mvc.perform(get("/ask").session(session)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Ask about prices")));
@@ -75,42 +110,47 @@ class HelloControllerTest {
         String firstId = firstChat.substring(firstChat.indexOf('=') + 1);
         mvc.perform(get(firstChat).session(session))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("AEON · HK$7.50 · Lowest listed")))
-                .andExpect(content().string(containsString("JASONS")))
-                .andExpect(content().string(containsString("12.50")))
-                .andExpect(content().string(containsString("AI explanation is unavailable")));
+                .andExpect(content().string(containsString("Here are the saved prices for this pack.")))
+                .andExpect(content().string(containsString("HK$7.50")))
+                .andExpect(content().string(containsString("Lowest listed")));
+        assertEquals(List.of("AEON", "JASONS", "PARKNSHOP", "WELLCOME"), lastPriceRetailers(session));
         mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "What about Wellcome?"))
                 .andExpect(redirectedUrl(firstChat));
         mvc.perform(get(firstChat).session(session))
                 .andExpect(content().string(containsString("What about Wellcome?")))
-                .andExpect(content().string(containsString("236mL at WELLCOME · HK$12.00")));
+                .andExpect(content().string(containsString("HK$12.00")));
+        assertEquals(List.of("WELLCOME"), lastPriceRetailers(session));
         mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "no-such-product"))
                 .andExpect(redirectedUrl(firstChat));
         mvc.perform(get(firstChat).session(session))
-                .andExpect(content().string(containsString("The last matched pack is Kowloon Dairy · 100 %Fresh Milk 236mL")));
+                .andExpect(content().string(containsString("What name is printed on the pack?")));
+        assertTrue(lastPriceRetailers(session).isEmpty());
         mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "And at AEON?"))
                 .andExpect(redirectedUrl(firstChat));
         mvc.perform(get(firstChat).session(session))
-                .andExpect(content().string(containsString("236mL at AEON · HK$7.50")));
+                .andExpect(content().string(containsString("HK$7.50")));
+        assertEquals(List.of("AEON"), lastPriceRetailers(session));
         mvc.perform(post("/ask").session(session).param("chatId", firstId).param("question", "Which is cheapest?"))
                 .andExpect(redirectedUrl(firstChat));
         mvc.perform(get(firstChat).session(session))
                 .andExpect(content().string(containsString("Which is cheapest?")))
-                .andExpect(content().string(containsString("AEON · HK$7.50 · Lowest listed")));
+                .andExpect(content().string(containsString("Lowest listed")));
         mvc.perform(get("/ask").session(session))
                 .andExpect(content().string(not(containsString("What about Wellcome?"))));
         String secondChat = mvc.perform(post("/ask").session(session).param("question", "no-such-product"))
                 .andExpect(redirectedUrlPattern("/ask?chatId=*")).andReturn().getResponse().getRedirectedUrl();
         assertNotEquals(firstChat, secondChat);
         mvc.perform(get(secondChat).session(session))
-                .andExpect(content().string(containsString("No matching product")));
+                .andExpect(content().string(containsString("What name is printed on the pack?")))
+                .andExpect(content().string(not(containsString("HK$7.50"))));
         mvc.perform(get(firstChat).session(session))
-                .andExpect(content().string(containsString("236mL at WELLCOME · HK$12.00")));
+                .andExpect(content().string(containsString("What about Wellcome?")));
         mvc.perform(get(firstChat).session(new MockHttpSession()))
                 .andExpect(content().string(not(containsString("What about Wellcome?"))));
     }
 
     @Test void aStaleChatIdStartsFreshWithoutLosingTheSubmittedQuestion() throws Exception {
+        when(provider.reply(anyString(), anyList(), anyList(), any())).thenAnswer(this::catalogueReply);
         catalog.importSample();
         var session = new MockHttpSession();
         String oldChatId = "17efcb62-d81d-4bd1-b62b-c8e2cf207259";
@@ -120,7 +160,62 @@ class HelloControllerTest {
         assertNotEquals("/ask?chatId=" + oldChatId, chatUrl);
         mvc.perform(get(chatUrl).session(session)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("P000000124")))
-                .andExpect(content().string(containsString("AEON · HK$7.50 · Lowest listed")));
+                .andExpect(content().string(containsString("HK$7.50")));
+    }
+
+    @Test void unavailableProviderKeepsTheSubmittedQuestionForNativeRetry() throws Exception {
+        var session = new MockHttpSession();
+        String question = "P000000124";
+        when(provider.reply(anyString(), anyList(), anyList(), any()))
+                .thenReturn(Optional.empty())
+                .thenAnswer(this::catalogueReply);
+        catalog.importSample();
+        String failedChat = mvc.perform(post("/ask").session(session).param("question", question))
+                .andExpect(redirectedUrlPattern("/ask?chatId=*&replyFailed=true")).andReturn().getResponse().getRedirectedUrl();
+        mvc.perform(get(failedChat).session(session)).andExpect(status().isOk())
+                .andExpect(model().attribute("awaitingReply", true))
+                .andExpect(model().attribute("replyFailed", true))
+                .andExpect(content().string(containsString(question)))
+                .andExpect(content().string(not(containsString("HK$7.50"))));
+        mvc.perform(get("/").session(session)).andExpect(status().isOk())
+                .andExpect(content().string(containsString(question)));
+        mvc.perform(get("/list").session(session)).andExpect(status().isOk());
+        String chatUrl = failedChat.substring(0, failedChat.indexOf('&'));
+        mvc.perform(post("/ask/retry").session(session).param("chatId", chatUrl.substring(chatUrl.indexOf('=') + 1)))
+                .andExpect(redirectedUrl(chatUrl));
+        mvc.perform(get(chatUrl).session(session)).andExpect(status().isOk())
+                .andExpect(model().attribute("awaitingReply", false))
+                .andExpect(content().string(containsString("HK$7.50")));
+    }
+
+    private Optional<String> catalogueReply(InvocationOnMock invocation) {
+        List<DeepSeekChatClient.ChatMessage> history = invocation.getArgument(1);
+        BiFunction<String, JsonNode, Object> tool = invocation.getArgument(3);
+        String question = history.getLast().content();
+        if (question.equals("no-such-product")) {
+            assertTrue(json.valueToTree(tool.apply("search_products", json.createObjectNode().put("query", question)))
+                    .path("products").isEmpty());
+            return Optional.of("I couldn't find that product. What name is printed on the pack?");
+        }
+        var priceArguments = json.createObjectNode();
+        switch (question) {
+            case "What about Wellcome?" -> priceArguments.put("retailer", "惠康 WELLCOME");
+            case "And at AEON?" -> priceArguments.put("retailer", "AEON");
+            case "Which is cheapest?" -> { }
+            default -> {
+                tool.apply("search_products", json.createObjectNode().put("query", "P000000124"));
+                priceArguments.put("product_code", "P000000124");
+            }
+        }
+        JsonNode checked = json.valueToTree(tool.apply("get_product_prices", priceArguments));
+        assertEquals("P000000124", checked.path("product_code").asText());
+        assertEquals("SAMPLE", checked.path("source").path("origin").asText());
+        return Optional.of("Here are the saved prices for this pack.");
+    }
+
+    private static List<String> lastPriceRetailers(MockHttpSession session) {
+        return AskController.history(session).getFirst().messages().getLast().priceCards().stream()
+                .flatMap(card -> card.rows().stream()).map(AskCatalogueTools.PriceRow::retailer).toList();
     }
     @Test void sampleImportAndThreeLanguageSearchRenderSourceIdentity() throws Exception {
         mvc.perform(post("/data/sample")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/data"));

@@ -14,22 +14,22 @@
     >
     <link rel="stylesheet" th:href="@{/css/market-desk.css}">
     <link rel="stylesheet" th:if="${scene == 'ask'}" th:href="@{/css/ask-chat.css}">
+    <link rel="stylesheet" th:if="${scene == 'history'}" th:href="@{/css/price-history.css}">
     <script th:src="@{/js/market-desk.js}" defer></script>
     <script th:if="${scene == 'ask'}" th:src="@{/js/ask-chat.js}" defer></script>
+    <script th:if="${scene == 'list'}" th:src="@{/js/cart.js}" defer></script>
   </head>
   <body th:classappend="${scene == 'ask' ? 'ask-page' : null}">
     <a class="skip-link" href="#main-content" th:text="#{app.skip}">Skip to content</a>
     <th:block th:replace="~{fragments/layout :: icon-library}"></th:block>
-    <div class="workspace" th:classappend="${scene == 'offline' ? 'offline-workspace' : ''}">
-      <th:block th:unless="${scene == 'offline'}">
-        <th:block th:replace="~{fragments/navigation :: sidebar}"></th:block>
-      </th:block>
+    <div class="workspace">
+      <th:block th:replace="~{fragments/navigation :: sidebar}"></th:block>
       <div class="workspace-body">
-        <th:block th:unless="${scene == 'offline' or scene == 'ask'}">
+        <th:block th:unless="${scene == 'ask'}">
           <th:block th:replace="~{fragments/layout :: source-banner}"></th:block>
           <th:block th:replace="~{fragments/layout :: topbar}"></th:block>
         </th:block>
-        <main id="main-content" tabindex="-1" th:attr="data-timed-page=${scene == 'alerts' or scene == 'reminders' ? 'true' : null}">
+        <main id="main-content" tabindex="-1" th:attr="data-timed-page=${scene == 'alerts' ? 'true' : null}">
           <div class="notice" role="status" th:if="${notice}" th:text="${notice}"></div>
           <div class="notice error" role="alert" th:if="${error}" th:text="${error}"></div>
           <th:block th:if="${scene == 'discover'}">
@@ -43,9 +43,6 @@
           </th:block>
           <th:block th:if="${scene == 'list'}">
             <th:block th:replace="~{pages/list :: content}"></th:block>
-          </th:block>
-          <th:block th:if="${scene == 'offline'}">
-            <th:block th:replace="~{pages/offline :: content}"></th:block>
           </th:block>
           <th:block th:if="${scene == 'data'}">
             <th:block th:replace="~{pages/data :: content}"></th:block>
@@ -62,11 +59,11 @@
           <th:block th:if="${scene == 'alerts'}">
             <th:block th:replace="~{pages/alerts :: content}"></th:block>
           </th:block>
-          <th:block th:if="${scene == 'budget'}">
-            <th:block th:replace="~{pages/budget :: content}"></th:block>
+          <th:block th:if="${scene == 'settings'}">
+            <th:block th:replace="~{pages/settings :: content}"></th:block>
           </th:block>
-          <th:block th:if="${scene == 'reminders'}">
-            <th:block th:replace="~{pages/reminders :: content}"></th:block>
+          <th:block th:if="${scene == 'rules'}">
+            <th:block th:replace="~{pages/alert-rules :: content}"></th:block>
           </th:block>
           <th:block th:if="${scene == 'error'}">
             <th:block th:replace="~{pages/error :: content}"></th:block>
@@ -77,14 +74,9 @@
           <th:block th:if="${scene == 'personal'}">
             <th:block th:replace="~{pages/personal :: content}"></th:block>
           </th:block>
-          <th:block th:unless="${scene == 'offline' or scene == 'ask'}">
-            <th:block th:replace="~{fragments/layout :: page-footer}"></th:block>
-          </th:block>
         </main>
       </div>
     </div>
-    <th:block th:unless="${scene == 'offline'}">
-      <th:block th:replace="~{fragments/navigation :: mobile-navigation}"></th:block>
-    </th:block>
+    <th:block th:replace="~{fragments/navigation :: mobile-navigation}"></th:block>
   </body>
 </html>

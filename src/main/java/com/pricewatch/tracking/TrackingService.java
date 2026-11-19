@@ -13,6 +13,8 @@ import com.pricewatch.tracking.persistence.TrackingEntity;
 import com.pricewatch.tracking.repository.PriceObservationRepository;
 import com.pricewatch.tracking.repository.SavedProductRepository;
 import com.pricewatch.tracking.repository.TrackingRepository;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeSet;
 
 @Service
 public class TrackingService {
@@ -69,15 +72,42 @@ public class TrackingService {
 
     @Transactional
     public void save(String productCode) {
-        ProductEntity product = currentProduct(productCode);
-        if (!savedRepository.existsById(productCode)) {
-            savedRepository.save(new SavedProductEntity(product, clock.instant()));
+        ProductEntity product = lockProduct(productCode);
+        requireActive(product);
+        saveWishlistEntry(product);
+        startAll(product);
+    }
+
+    private void saveWishlistEntry(ProductEntity product) {
+        if (savedRepository.existsById(product.getCode())) return;
+        savedRepository.save(new SavedProductEntity(product, clock.instant()));
+    }
+
+    @EventListener(ContextRefreshedEvent.class)
+    @Transactional
+    public void reconcileWishlistTracking() {
+        var codes = new TreeSet<>(trackingRepository.enabledProductCodes());
+        savedRepository.findAll().forEach(entry -> codes.add(entry.getProductCode()));
+        productRepository.findAllByTrackAllRetailersTrueOrderByCode()
+                .forEach(product -> codes.add(product.getCode()));
+        for (String code : codes) {
+            ProductEntity product = lockProduct(code);
+            saveWishlistEntry(product);
+            // Keep existing periods. An accepted live import enrols missing retailers.
+            product.setTrackAllRetailers(true);
         }
     }
 
     @Transactional
     public void removeSaved(String productCode) {
-        savedRepository.deleteById(productCode);
+        productRepository.findLockedByCode(productCode).ifPresent(product -> {
+            if (!savedRepository.existsById(productCode)) return;
+            product.setTrackAllRetailers(false);
+            Instant now = clock.instant();
+            trackingRepository.findEnabledForProductForUpdate(productCode)
+                    .forEach(period -> period.pauseForWishlist(now));
+            savedRepository.deleteById(productCode);
+        });
     }
 
     @Transactional
@@ -112,12 +142,17 @@ public class TrackingService {
     }
 
     private TrackingEntity startRetailer(ProductEntity product, String retailerCode) {
-        TrackingEntity tracking = trackingRepository
+        return trackingRepository
                 .findByProduct_CodeAndRetailerCodeAndEnabledTrue(product.getCode(), retailerCode)
-                .orElse(null);
-        if (tracking == null) {
-            Instant now = clock.instant();
-            tracking = trackingRepository.saveAndFlush(new TrackingEntity(product, retailerCode, now));
+                .orElseGet(() -> enrolRetailer(product, retailerCode, clock.instant(), true));
+    }
+
+    private TrackingEntity enrolRetailer(ProductEntity product, String retailerCode, Instant now, boolean seedCurrentPrice) {
+        TrackingEntity tracking = new TrackingEntity(product, retailerCode, now);
+        var paused = trackingRepository.findWishlistPausedPeriod(product.getCode(), retailerCode);
+        paused.ifPresent(previous -> previous.resumeRulesInto(tracking));
+        trackingRepository.saveAndFlush(tracking);
+        if (seedCurrentPrice && paused.isEmpty()) {
             seedFromCurrentLiveImport(tracking, product);
         }
         return tracking;
@@ -127,6 +162,10 @@ public class TrackingService {
     public void startAll(String productCode) {
         ProductEntity product = lockProduct(productCode);
         requireActive(product);
+        startAll(product);
+    }
+
+    private void startAll(ProductEntity product) {
         product.setTrackAllRetailers(true);
         product.getListings().forEach(listing -> startRetailer(product, listing.getRetailerCode()));
     }
@@ -150,6 +189,9 @@ public class TrackingService {
     }
 
     private ProductEntity lockProduct(String code) {
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("A product is required.");
+        }
         return productRepository.findLockedByCode(code)
                 .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
     }
@@ -204,6 +246,13 @@ public class TrackingService {
     }
 
     @Transactional(readOnly = true)
+    public List<TrackingView> activeLegacyRules() {
+        return trackingRepository.findAllByEnabledTrueOrderByStartedAtDescIdDesc().stream()
+                .filter(period -> period.getTargetPrice() != null || period.isDropEnabled())
+                .map(period -> toView(period, List.of())).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<PriceHistoryEntry> priceHistory(String code) {
         return observationRepository.historyForProduct(code, clock.instant().minus(HISTORY_RETENTION));
     }
@@ -232,22 +281,11 @@ public class TrackingService {
             for (var listing : prices.getOrDefault(product.getCode(), Map.of()).entrySet()) {
                 if (trackingRepository.findByProduct_CodeAndRetailerCodeAndEnabledTrue(
                         product.getCode(), listing.getKey()).isEmpty()) {
-                    TrackingEntity period = trackingRepository.saveAndFlush(
-                            new TrackingEntity(product, listing.getKey(), now));
+                    TrackingEntity period = enrolRetailer(product, listing.getKey(), now, false);
                     recordIfChanged(period, listing.getValue(), retrievedAt, sourceUrl, checksum);
                 }
             }
         }
-    }
-
-    private ProductEntity currentProduct(String productCode) {
-        if (productCode == null || productCode.isBlank()) {
-            throw new IllegalArgumentException("A product is required.");
-        }
-        ProductEntity product = productRepository.findWithListingsByCode(productCode)
-                .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
-        requireActive(product);
-        return product;
     }
 
     private void requireActive(ProductEntity product) {
@@ -318,6 +356,10 @@ public class TrackingService {
                 .map(observation -> new PriceObservationView(observation.getPrice(), observation.getObservedAt(),
                         observation.getSourceUrl()))
                 .toList();
+        return toView(tracking, history);
+    }
+
+    private TrackingView toView(TrackingEntity tracking, List<PriceObservationView> history) {
         return new TrackingView(tracking.getId(), tracking.getProductCode(),
                 tracking.getProduct().getName() == null ? tracking.getProductCode()
                         : tracking.getProduct().getName().getEn(),

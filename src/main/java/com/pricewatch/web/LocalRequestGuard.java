@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.UrlPathHelper;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Set;
@@ -29,19 +28,6 @@ public class LocalRequestGuard extends OncePerRequestFilter {
             if ("cross-site".equalsIgnoreCase(request.getHeader("Sec-Fetch-Site"))
                     || (origin != null && !sameOrigin(origin, request))) {
                 response.sendError(403, "Open Market Desk directly before changing local data.");
-                return;
-            }
-        }
-        if (OfflineListController.review(request) != null) {
-            String path = UrlPathHelper.defaultInstance.getPathWithinApplication(request);
-            if (!READ_METHODS.contains(request.getMethod())) {
-                if (!("POST".equals(request.getMethod()) && "/offline/exit".equals(path))) {
-                    response.sendError(403, "Exit offline review to change data or use online features.");
-                    return;
-                }
-            } else if (!(path.equals("/offline") || path.startsWith("/css/") || path.startsWith("/js/")
-                    || path.equals("/error"))) {
-                response.sendRedirect(request.getContextPath() + "/offline");
                 return;
             }
         }

@@ -12,6 +12,7 @@ import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -124,9 +125,16 @@ public class CatalogService {
                 .orElseThrow(() -> new IllegalArgumentException("Product " + code + " was not found."));
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public ProductSnapshot readProductSnapshot(String code) {
+        return new ProductSnapshot(find(code), status());
+    }
+
+    public record ProductSnapshot(ProductView product, ImportStatus status) {}
+
     @Transactional(readOnly = true)
     public Map<String, ProductLabel> localizedLabels(Collection<String> productCodes, Locale locale) {
-        if (!"zh".equals(locale.getLanguage()) || productCodes.isEmpty()) return Map.of();
+        if (productCodes.isEmpty()) return Map.of();
         return productRepository.findAllById(productCodes.stream().distinct().toList()).stream()
                 .collect(Collectors.toUnmodifiableMap(ProductEntity::getCode, product -> {
                     var name = localizedLabel(product.getName(), locale);

@@ -1,0 +1,91 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="rules-heading" class="item-rules">
+  <a class="back-link" th:href="@{/alerts}" th:text="#{alertRules.back}">← Alerts</a>
+  <header class="page-heading">
+    <h1 id="rules-heading" th:text="#{alertRules.heading}">Alert rules</h1>
+    <p class="intro" th:text="${product.brand.forLocale(#locale) + ' · ' + product.name.forLocale(#locale)}"></p>
+  </header>
+
+  <section class="panel" aria-labelledby="product-target-heading">
+    <h2 id="product-target-heading" th:text="#{alertRules.target}">Price target</h2>
+    <p class="helper" th:if="${!wishlistTracking}" th:text="#{alertRules.trackFirst}">Save to Wishlist to watch prices.</p>
+    <p class="helper" th:if="${wishlistTracking}" th:text="#{alertRules.priceHelp}"></p>
+    <form class="rule-form" th:if="${wishlistTracking}" th:action="@{/alerts/product-target}" method="post">
+      <input type="hidden" name="code" th:value="${product.code}">
+      <label><span th:text="#{alerts.target}">Target price (HK$)</span>
+        <input name="targetPrice" type="text" inputmode="decimal" th:value="${productTarget}" required maxlength="32"></label>
+      <button class="button primary" th:text="#{alerts.targetSave}">Save target</button>
+    </form>
+    <form class="rule-remove" th:unless="${productTarget.isEmpty()}" th:action="@{/alerts/product-target/delete}" method="post">
+      <input type="hidden" name="code" th:value="${product.code}">
+      <button class="button secondary" th:text="#{alertRules.deleteTarget}">Delete target</button>
+    </form>
+  </section>
+
+  <section class="panel" aria-labelledby="time-rules-heading">
+    <h2 id="time-rules-heading" th:text="#{alertRules.timeRules}">Time reminders</h2>
+    <div class="rule-card" th:each="rule : ${timeRules}">
+      <details>
+        <summary>
+          <strong th:text="#{reminders.schedule(${rule.quantity},${rule.intervalDays})}"></strong>
+          <span class="helper" th:text="#{alertCenter.due(${format.time(rule.nextDueAt)})}"></span>
+        </summary>
+        <form class="rule-form" th:action="@{/reminders/{id}/update(id=${rule.id})}" method="post">
+          <input type="hidden" name="code" th:value="${product.code}">
+          <th:block th:replace="~{pages/alert-rules :: reminder-fields(${product},${rule})}"></th:block>
+          <button class="button primary" th:text="#{reminders.submit}">Save reminder</button>
+        </form>
+        <form class="rule-remove" th:action="@{/reminders/{id}/delete(id=${rule.id})}" method="post">
+          <input type="hidden" name="code" th:value="${product.code}">
+          <button class="button secondary" th:text="#{reminders.delete}">Delete reminder</button>
+        </form>
+      </details>
+    </div>
+    <details class="rule-card" th:if="${product.active}">
+      <summary th:text="#{alertRules.addTime}">Add time reminder</summary>
+      <form class="rule-form" th:action="@{/reminders/create}" method="post">
+        <input type="hidden" name="code" th:value="${product.code}">
+        <th:block th:replace="~{pages/alert-rules :: reminder-fields(${product},null)}"></th:block>
+        <button class="button primary" th:text="#{reminders.submit}">Save reminder</button>
+      </form>
+    </details>
+  </section>
+
+  <section class="panel" th:unless="${legacyRules.isEmpty()}" aria-labelledby="legacy-rules-heading">
+    <h2 id="legacy-rules-heading" th:text="#{alertRules.legacy}">Retailer-specific rules</h2>
+    <details class="rule-card" th:each="rule : ${legacyRules}">
+      <summary th:text="${rule.retailerCode}"></summary>
+      <form class="rule-form" th:action="@{/alerts/target}" method="post">
+        <input type="hidden" name="code" th:value="${product.code}">
+        <input type="hidden" name="trackingId" th:value="${rule.id}">
+        <label><span th:text="#{alerts.target}"></span>
+          <input name="targetPrice" inputmode="decimal" th:value="${rule.targetPrice}" th:placeholder="#{alerts.targetPlaceholder}">
+        </label>
+        <button class="button secondary" th:text="#{alerts.targetSave}">Save target</button>
+      </form>
+      <form class="rule-form" th:action="@{/alerts/drop}" method="post">
+        <input type="hidden" name="code" th:value="${product.code}">
+        <input type="hidden" name="trackingId" th:value="${rule.id}">
+        <label class="check-label"><input type="checkbox" name="enabled" value="true" th:checked="${rule.dropEnabled}">
+          <span th:text="#{alerts.drop}"></span></label>
+        <button class="button secondary" th:text="#{alerts.dropSave}">Save drop rule</button>
+      </form>
+    </details>
+  </section>
+</section>
+
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="reminder-fields(product,rule)"
+          th:with="selected=${rule == null ? null : rule.selectedRetailerCode}">
+  <label><span th:text="#{common.packs}">Packs</span>
+    <input name="quantity" type="number" min="1" max="999" required th:value="${rule == null ? 1 : rule.quantity}"></label>
+  <label><span th:text="#{reminders.interval}">Remind me again after (days)</span>
+    <input name="intervalDays" type="number" min="1" required th:value="${rule == null ? 7 : rule.intervalDays}"></label>
+  <label><span th:text="#{common.retailer}">Retailer</span>
+    <select name="retailerCode">
+      <option value="" th:text="#{reminders.autoChoice}"></option>
+      <option th:if="${selected != null and !product.listings.![retailerCode].contains(selected)}"
+              th:value="${selected}" selected th:text="${selected}"></option>
+      <option th:each="listing : ${product.listings}" th:value="${listing.retailerCode}"
+              th:selected="${listing.retailerCode == selected}" th:text="${listing.retailerCode}"></option>
+    </select>
+  </label>
+</th:block>

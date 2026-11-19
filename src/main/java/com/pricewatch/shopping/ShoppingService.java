@@ -12,6 +12,7 @@ import com.pricewatch.shopping.repository.ShoppingListRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -178,6 +179,36 @@ public class ShoppingService {
         });
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void addFromReminder(String productCode, int quantity, String retailerCode) {
+        // Commit the Cart write before releasing its mutation lock even when a reminder row is locked.
+        add(productCode, quantity, retailerCode);
+    }
+
+    public BatchAddResult addMissingProducts(List<String> productCodes) {
+        synchronized (mutationLock) {
+            return transactionTemplate.execute(status -> {
+                int added = 0;
+                int existing = 0;
+                int unavailable = 0;
+                for (String code : productCodes.stream().distinct().toList()) {
+                    var product = productRepository.findById(code);
+                    if (product.isEmpty() || !product.get().isActive()) {
+                        unavailable++;
+                    } else if (itemRepository.findByShoppingList_NameAndProduct_Code(LIST_NAME, code).isPresent()) {
+                        existing++;
+                    } else {
+                        itemRepository.save(new ShoppingListItemEntity(getOrCreateList(), product.get(), 1, false, null));
+                        added++;
+                    }
+                }
+                return new BatchAddResult(added, existing, unavailable);
+            });
+        }
+    }
+
+    public record BatchAddResult(int added, int existing, int unavailable) {}
+
     public void update(String productCode, int quantity, boolean checked) {
         validateQuantity(quantity);
         mutate(() -> {
@@ -194,6 +225,14 @@ public class ShoppingService {
     }
 
     public void update(Long listId, String productCode, int quantity, boolean checked, String retailerCode) {
+        edit(listId, productCode, quantity, checked, retailerCode);
+    }
+
+    public void editDetails(Long listId, String productCode, int quantity, String retailerCode) {
+        edit(listId, productCode, quantity, null, retailerCode);
+    }
+
+    private void edit(Long listId, String productCode, int quantity, Boolean checked, String retailerCode) {
         validateQuantity(quantity);
         String requestedRetailer = automaticIfBlank(retailerCode);
         mutate(() -> {
@@ -207,8 +246,14 @@ public class ShoppingService {
                 item.setSelectedRetailerCode(requestedRetailer);
             }
             item.setQuantity(quantity);
-            item.setChecked(checked);
+            if (checked != null) item.setChecked(checked);
         });
+    }
+
+    public void checkOff(Long listId, String productCode, boolean checked) {
+        mutate(() -> itemRepository.findByShoppingList_NameAndProduct_Code(listName(listId), productCode)
+                .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."))
+                .setChecked(checked));
     }
 
     public void remove(String productCode) {

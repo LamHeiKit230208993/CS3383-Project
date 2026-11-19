@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
 const { once } = require("node:events");
 const { chromium } = require("playwright");
@@ -25,13 +26,17 @@ function fixture(code, name, category, price = "3.90") {
 const records = [...sample,
   fixture("TEST-NOODLE", "Instant noodle 70g", "Instant noodles"),
   fixture("TEST-DIMSUM", "Rice dumpling", "Frozen food"),
+  fixture("TEST-MILK", "Fresh milk 1L", "Milk", "22.00"),
   fixture("TEST-TINY", "Decimal precision test", "Test data", "0.0001"),
   fixture("TEST-LARGE", "Large decimal test", "Test data", "999999999999999.9999")];
 let missingRetailer = false;
+let additionalRetailer = false;
 const children = [];
 let browser;
 let source;
 let sourceReads = 0;
+let providerUnavailable = false;
+const providerRequests = [];
 let appLog = "";
 let passed = 0;
 const browserErrors = [];
@@ -57,8 +62,9 @@ async function startApp(sourceUrl) {
   const child = spawn(java, ["-jar", jar, "--server.port=0", "--server.address=127.0.0.1",
     "--spring.datasource.url=jdbc:h2:mem:browser-checks;DB_CLOSE_DELAY=-1",
     "--spring.jpa.hibernate.ddl-auto=create-drop", "--pricewatch.jobs.enabled=false",
-    `--pricewatch.source-url=${sourceUrl}`],
-  { cwd: root, env: { ...process.env, DEEPSEEK_API_KEY_SKU: "" },
+    `--pricewatch.source-url=${sourceUrl}`, `--pricewatch.chat.base-url=${new URL("/v1", sourceUrl)}`,
+    "--pricewatch.chat.model=fixture-deepseek"],
+  { cwd: root, env: { ...process.env, DEEPSEEK_API_KEY_SKU: "browser-fixture" },
     stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
   children.push(child);
   let output = "";
@@ -83,15 +89,108 @@ async function startApp(sourceUrl) {
   });
 }
 
+function serveChatFixture(request, response) {
+  let body = "";
+  request.setEncoding("utf8");
+  request.on("data", chunk => { body += chunk; });
+  request.on("end", () => {
+    try {
+      const payload = JSON.parse(body);
+      assert.equal(payload.model, "fixture-deepseek");
+      assert.equal(request.headers.authorization, "Bearer browser-fixture");
+      assert.deepEqual(payload.tools.map(tool => tool.function.name).sort(),
+        ["get_product_prices", "offer_product_choices", "search_products"]);
+      const question = payload.messages.findLast(message => message.role === "user").content;
+      const toolReplies = payload.messages.filter(message => message.role === "tool");
+      if (!toolReplies.length) providerRequests.push(question);
+      if (providerUnavailable) {
+        response.writeHead(503).end();
+        return;
+      }
+      const result = toolReplies.at(-1);
+      const priorCall = payload.messages.at(-2)?.tool_calls?.[0];
+      if (result) assert.equal(result.tool_call_id, priorCall.id);
+      const facts = result ? JSON.parse(result.content) : {};
+      assert.equal(facts.error, undefined);
+      const call = (name, args) => ({
+        role: "assistant",
+        content: null,
+        tool_calls: [{ id: `fixture-${toolReplies.length}`, type: "function",
+          function: { name, arguments: JSON.stringify(args) } }]
+      });
+      const say = content => ({ role: "assistant", content });
+      let message;
+      if (question === "Can you speak Traditional Chinese?") {
+        assert.equal(toolReplies.length, 0);
+        message = say("可以，我可以用繁體中文和你聊天。");
+      } else if (question === "who are u") {
+        assert.equal(toolReplies.length, 0);
+        message = say("I’m Market Desk, your shopping assistant.");
+      } else if (question === "What about Wellcome?") {
+        if (result) {
+          assert.equal(facts.product_code, "P000000124");
+          assert.deepEqual(facts.prices.map(row => [row.retailer, row.price]), [["WELLCOME", 12]]);
+          message = say("Here’s Wellcome’s listing for the same 236 mL pack.");
+        } else {
+          assert.ok(payload.messages.some(entry => entry.role === "user" &&
+            entry.content === "Kowloon Dairy fresh milk 236mL"));
+          message = call("get_product_prices", { retailer: "WELLCOME" });
+        }
+      } else if (question === "no-such-product") {
+        if (result) assert.deepEqual(facts.products, []);
+        message = result ? say("No matching product. Can you share the brand?")
+          : call("search_products", { query: question });
+      } else if (question === "milk options") {
+        if (!result) message = call("search_products", { query: "milk" });
+        else if (priorCall.function.name === "search_products") {
+          assert.deepEqual(facts.products.map(product => product.product_code).sort(),
+            ["P000000124", "TEST-MILK"]);
+          message = call("offer_product_choices", { product_codes: ["P000000124", "TEST-MILK"] });
+        } else {
+          message = say("Which of these two pack sizes would you like to check?");
+        }
+      } else if (["Kowloon Dairy fresh milk 236mL", "P000000124", "I want the cheapest milk"].includes(question)) {
+        if (!result) message = call("search_products", question === "I want the cheapest milk"
+          ? { query: "milk", sort: "lowest_listed_price" } : { query: "P000000124" });
+        else if (priorCall.function.name === "search_products") {
+          assert.equal(facts.products[0].product_code, "P000000124");
+          message = call("get_product_prices", { product_code: facts.products[0].product_code });
+        } else {
+          assert.ok(facts.prices.some(row => row.retailer === "AEON" && row.price === 7.5));
+          message = say("Here are the saved prices for this exact pack.");
+        }
+      } else if (payload.messages.some(entry => entry.role === "user" && entry.content === "milk options")) {
+        if (result) assert.equal(facts.product_code, "P000000124");
+        message = result ? say("Here are the saved prices for your selected pack.") : call("get_product_prices", {});
+      }
+      assert.ok(message, "Unexpected provider fixture turn");
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ choices: [{ message,
+        finish_reason: message.tool_calls ? "tool_calls" : "stop" }] }));
+    } catch (error) {
+      console.error(error);
+      response.writeHead(400).end();
+    }
+  });
+}
+
 async function main() {
   assert.ok(fs.existsSync(jar), "Build the app first: ./mvnw package (Windows: .\\mvnw.cmd package)");
   fs.mkdirSync(artifacts, { recursive: true });
   source = http.createServer((request, response) => {
+    if (request.url === "/v1/chat/completions") {
+      serveChatFixture(request, response);
+      return;
+    }
     sourceReads++;
     const data = structuredClone(records);
     if (missingRetailer) {
       data.find(product => product.code === "P000000124").prices
         .find(price => price.supermarketCode === "JASONS").price = null;
+    }
+    if (additionalRetailer) {
+      data.find(product => product.code === "P000000124").prices
+        .push({ supermarketCode: "NEW-STORE", price: "11.00" });
     }
     response.writeHead(200, { "Content-Type": "application/json" });
     response.end(JSON.stringify(data));
@@ -139,6 +238,11 @@ async function main() {
       await input.press("Enter");
       await freshAsk.locator("[data-ask-status]").filter({ hasText: "Reply received." }).waitFor({ state: "attached" });
       assert.match(await freshAsk.locator(".chat-message").last().innerText(), /Market Desk, your shopping assistant/);
+      assert.equal(providerRequests.at(-1), "who are u");
+      await input.fill("Can you speak Traditional Chinese?");
+      await input.press("Enter");
+      await freshAsk.getByText("可以，我可以用繁體中文和你聊天。").waitFor();
+      assert.equal(await freshAsk.locator(".chat-prices").count(), 0);
     } finally {
       await freshSession.close();
     }
@@ -202,7 +306,11 @@ async function main() {
     await page.unroute(replyEndpoint, failSend);
     await retryReply.click();
     await askStatus.filter({ hasText: "Reply received." }).waitFor({ state: "attached" });
-    assert.match(await text(page.locator(".chat-message").last()), /236mL at WELLCOME · HK\$12\.00/);
+    const wellcome = page.locator(".chat-prices").last();
+    assert.match(await text(wellcome), /236mL/);
+    assert.match(await text(wellcome), /WELLCOME\s+HK\$12\.00/);
+    assert.doesNotMatch(await text(wellcome), /AEON/);
+    assert.equal(providerRequests.at(-1), "What about Wellcome?");
     const alignments = await page.locator(".chat-message").evaluateAll(messages =>
       messages.map(message => getComputedStyle(message).justifySelf));
     assert.deepEqual(alignments, ["end", "start", "end", "start"]);
@@ -224,18 +332,47 @@ async function main() {
     const mobileNav = await page.locator(".mobile-nav").boundingBox();
     assert.ok(sendButtonBounds && mobileNav && sendButtonBounds.y + sendButtonBounds.height <= mobileNav.y,
       "Mobile navigation must not cover the composer");
-    const visibleMessageCount = await transcript.evaluate(region => {
+    const visibleMessages = await transcript.evaluate(region => {
       const viewport = region.getBoundingClientRect();
-      return [...region.querySelectorAll(".chat-message")].filter(message => {
+      return [...region.querySelectorAll(".chat-message")].map(message => {
         const rect = message.getBoundingClientRect();
         const visible = Math.min(viewport.bottom, rect.bottom) - Math.max(viewport.top, rect.top);
-        return visible >= rect.height / 2;
-      }).length;
+        return Math.max(0, Math.round(100 * visible / rect.height));
+      });
     });
-    assert.ok(visibleMessageCount >= 3, "At least three messages should be readable on a short mobile viewport");
     await page.screenshot({ path: path.join(artifacts, "ask-mobile.png"), fullPage: true });
+    assert.ok(visibleMessages.filter(percent => percent >= 50).length >= 3,
+      `At least three messages should be readable on a short mobile viewport. Visible portions: ${visibleMessages}`);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.screenshot({ path: path.join(artifacts, "ask-desktop.png"), fullPage: true });
+  });
+
+  await check("Ask keeps the question ready for retry when DeepSeek is unavailable", async () => {
+    const outageContext = await browser.newContext();
+    try {
+      const outageAsk = await outageContext.newPage();
+      await outageAsk.goto(base + "/ask");
+      providerUnavailable = true;
+      const readsBefore = providerRequests.length;
+      await outageAsk.getByRole("textbox", { name: "Your price question" }).fill("P000000124");
+      await outageAsk.getByRole("button", { name: "Send", exact: true }).click();
+      const retry = outageAsk.getByRole("button", { name: "Try reply again" });
+      await retry.waitFor();
+      assert.match(await outageAsk.locator("[data-ask-status]").innerText(), /DeepSeek couldn’t complete/);
+      assert.equal(providerRequests.length, readsBefore + 1);
+      assert.equal(await outageAsk.locator(".chat-shopper").count(), 1);
+      assert.equal(await outageAsk.locator(".chat-message:not(.chat-shopper)").count(), 0);
+      const comparison = await outageContext.request.get(base + "/products/P000000124");
+      assert.equal(comparison.status(), 200);
+      providerUnavailable = false;
+      await retry.click();
+      await outageAsk.locator(".chat-message:not(.chat-shopper)").filter({ hasText: /HK\$7\.50/ }).waitFor();
+      assert.equal(providerRequests.length, readsBefore + 2);
+      assert.equal(await outageAsk.locator(".chat-shopper").count(), 1);
+    } finally {
+      providerUnavailable = false;
+      await outageContext.close();
+    }
   });
 
   await check("store name and lowest-price badge select the retailer", async () => {
@@ -277,14 +414,17 @@ async function main() {
     await page.locator("#quantity").fill("2");
     assert.match(await text(page.locator("[data-listed-estimate]")), /25\.00/);
     assert.match(await text(page.locator(".selection-estimate")), /offer not included/);
-    await page.getByRole("button", { name: "Add to my list" }).click();
+    await page.getByRole("button", { name: "Add to Cart" }).click();
     await page.waitForURL(base + "/list");
     await page.reload();
+    await page.locator(".cart-edit > summary").click();
     assert.equal(await page.locator("[name=retailerCode]").inputValue(), "JASONS");
     assert.match(await text(page.locator(".line-total")), /25\.00/);
     await page.locator("[name=retailerCode]").selectOption("PARKNSHOP");
     await page.locator("[name=quantity]").fill("3");
+    const savedCheck = page.waitForResponse(response => response.url().includes("/list/items/check") && response.status() === 204);
     await page.locator("[name=checked]").check();
+    await savedCheck;
     await page.getByRole("button", { name: /^Save changes/ }).click();
     await page.reload();
     assert.equal(await page.locator("[name=retailerCode]").inputValue(), "PARKNSHOP");
@@ -301,7 +441,7 @@ async function main() {
         .locator(".lowest-tag").click();
       assert.equal(await tab.getByRole("radio", { name: "Choose WELLCOME", exact: true }).isChecked(), true);
       assert.equal(await tab.locator("#add-item-form").evaluate(form => form.checkValidity()), true);
-      await tab.getByRole("button", { name: "Add to my list" }).click();
+      await tab.getByRole("button", { name: "Add to Cart" }).click();
       // A first flash redirect can include Tomcat's URL session marker.
       await tab.waitForURL(url => url.origin === base && url.pathname.split(";")[0] === "/list");
       assert.match(await tab.locator("main").innerText(), /Your retailer: WELLCOME/);
@@ -339,6 +479,30 @@ async function main() {
     }
   });
 
+  await check("Ask ranks matching packs and lets the shopper choose an exact pack", async () => {
+    await go("/ask");
+    const input = page.locator("#price-question");
+    await input.fill("I want the cheapest milk");
+    await input.press("Enter");
+    const checked = page.locator(".chat-prices");
+    const milk = checked.getByRole("link", { name: /236mL/ });
+    await milk.waitFor();
+    assert.equal(await milk.getAttribute("href"), "/products/P000000124");
+    assert.match(await text(checked), /AEON\s+HK\$7\.50/);
+    await page.getByRole("link", { name: /New chat/ }).click();
+    await input.fill("milk options");
+    await input.press("Enter");
+    const chooser = page.getByLabel("Choose the exact product and pack");
+    await chooser.waitFor();
+    assert.equal(await chooser.locator("option:not([disabled])").count(), 2);
+    assert.equal(await checked.count(), 0);
+    await chooser.selectOption("P000000124");
+    await page.getByRole("button", { name: "Compare this pack" }).click();
+    await milk.waitFor();
+    assert.equal(await chooser.count(), 0);
+    await page.getByText("Here are the saved prices for your selected pack.").waitFor();
+  });
+
   await check("decimal preview boundaries and invalid quantities", async () => {
     await go("/products/TEST-TINY");
     await chooseRetailer(page, "TEST");
@@ -350,13 +514,14 @@ async function main() {
     await chooseRetailer(page, "TEST");
     await page.locator("#quantity").fill("999");
     assert.match(await text(page.locator("[data-listed-estimate]")), /998,999,999,999,999,999\.9001$/);
-    await page.getByRole("button", { name: "Add to my list" }).click();
+    await page.getByRole("button", { name: "Add to Cart" }).click();
     await page.waitForURL(base + "/list");
   });
 
   await check("missing selected price stays unknown after refresh", async () => {
     await go("/list");
     const item = page.locator(".list-item").filter({ hasText: "P000000124" });
+    await item.locator(".cart-edit > summary").click();
     await item.locator("[name=retailerCode]").selectOption("JASONS");
     await item.getByRole("button", { name: /^Save changes/ }).click();
     missingRetailer = true;
@@ -379,7 +544,7 @@ async function main() {
   await check("navigation, responsive layouts, and keyboard skip link", async () => {
     for (const width of [375, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const route of ["/", "/products/P000000124", "/products/TEST-LARGE", "/list", "/data"]) {
+      for (const route of ["/", "/products/P000000124", "/products/TEST-LARGE", "/list", "/settings", "/data"]) {
         await go(route);
         assert.equal(await page.locator("h1").count(), 1);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
@@ -408,10 +573,18 @@ async function main() {
     }
     await page.setViewportSize({ width: 375, height: 1000 });
     await go("/");
-    await page.locator(".mobile-nav").getByRole("link", { name: "Price data", exact: true }).click();
+    assert.deepEqual(await page.locator(".mobile-nav a").allTextContents().then(labels => labels.map(label => label.trim())),
+      ["Discover", "Cart", "Wishlist", "Ask", "Alerts"]);
+    await tabTo(page, page.locator(".mobile-settings"));
+    await page.keyboard.press("Enter");
+    await page.waitForURL(base + "/settings");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    assert.equal(await page.locator(".action-row").first().evaluate(row => getComputedStyle(row).transitionDuration), "0s");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.screenshot({ path: path.join(artifacts, "settings-mobile.png") });
+    await page.locator("main").getByRole("link", { name: /Price data/ }).click();
     await page.waitForURL(base + "/data");
-    await page.locator(".mobile-more > summary").click();
-    await page.locator(".mobile-nav").getByRole("link", { name: /Saved/ }).click();
+    await page.locator(".mobile-nav").getByRole("link", { name: "Wishlist", exact: true }).click();
     await page.waitForURL(base + "/saved");
     assert.match(await text(page.locator("main")), /Wishlist/);
     await go("/");
@@ -428,13 +601,16 @@ async function main() {
   await check("J10 exports one list and imports an editable copy on a second local app", async () => {
     await go("/list");
     const precisionItem = page.locator(".list-item").filter({ hasText: "TEST-LARGE" });
-    await precisionItem.locator("summary").click();
+    await precisionItem.locator(".cart-edit > summary").click();
+    await precisionItem.locator(".remove-item > summary").click();
     await precisionItem.getByRole("button", { name: /^Confirm remove/ }).click();
     assert.equal(await page.locator(".list-item").count(), 2);
     const milk = page.locator(".list-item").filter({ hasText: "P000000124" });
+    await milk.locator(".cart-edit > summary").click();
     await milk.locator("select[name=retailerCode]").selectOption("AEON");
-    await milk.getByRole("checkbox", { name: "Checked" }).check();
     await milk.getByRole("button", { name: /Save changes/ }).click();
+    assert.equal(await milk.getByRole("checkbox").isChecked(), true);
+    await page.locator(".cart-files > summary").click();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       page.getByRole("link", { name: "Export JSON" }).click()
@@ -453,6 +629,7 @@ async function main() {
       const receiver = await receivingContext.newPage();
       await receiver.goto(receivingBase + "/list");
       const upload = async buffer => {
+        await receiver.locator(".cart-files > summary").click();
         await receiver.locator("#list-file").setInputFiles({
           name: "shopping-list.json", mimeType: "application/json", buffer
         });
@@ -465,65 +642,72 @@ async function main() {
       assert.equal(await receiver.locator(".list-item").count(), 2);
       assert.equal(await copy.locator(".line-total").innerText(), "Unknown");
       assert.equal(await copy.locator("select[name=retailerCode]").inputValue(), "AEON");
-      assert.equal(await copy.getByRole("checkbox", { name: "Checked" }).isChecked(), true);
+      assert.equal(await copy.getByRole("checkbox").isChecked(), true);
+      await copy.locator(".cart-edit > summary").click();
       await copy.getByRole("spinbutton").fill(String(original.quantity + 1));
       await copy.getByRole("button", { name: /Save changes/ }).click();
-      assert.equal(await copy.getByRole("spinbutton").inputValue(), String(original.quantity + 1));
-      assert.equal(await milk.getByRole("spinbutton").inputValue(), String(original.quantity));
+      assert.equal(await copy.locator("[name=quantity]").inputValue(), String(original.quantity + 1));
+      assert.equal(await milk.locator("[name=quantity]").inputValue(), String(original.quantity));
       await upload(Buffer.from('{"version":1,"items":['));
       assert.match(await receiver.getByRole("alert").innerText(), /Could not import/);
       assert.equal(await receiver.locator("#list-picker option").count(), 2);
       await receiver.locator("#list-picker").selectOption({ index: 1 });
-      await receiver.getByRole("button", { name: "Open list" }).click();
-      assert.equal(await copy.getByRole("spinbutton").inputValue(), String(original.quantity + 1));
+      await receiver.waitForURL(url => url.searchParams.has("listId"));
+      assert.equal(await copy.locator("[name=quantity]").inputValue(), String(original.quantity + 1));
       await receiver.screenshot({ path: path.join(artifacts, "j10-imported-list.png"), fullPage: true });
     } finally {
       await receivingContext.close();
     }
   });
-  await check("J11 reopens the imported list offline and guards writes and remote actions", async () => {
-    await go("/list");
-    await page.locator("#list-file").setInputFiles({
-      name: "shopping-list.json", mimeType: "application/json", buffer: exportedList
-    });
-    await page.getByRole("button", { name: "Import JSON" }).click();
-    const listId = new URL(page.url()).searchParams.get("listId");
-    assert.ok(listId);
-    const rows = page.locator(".list-item");
-    const quantities = await rows.locator("input[name=quantity]").evaluateAll(inputs => inputs.map(input => input.value));
-    const amounts = await rows.locator(".line-total").allTextContents();
-    const cachedRetrieved = (await page.locator(".source-banner span").first().innerText())
-      .match(/Retrieved (.+) ·/)[1];
-    const readsBefore = sourceReads;
-    const localhostOnly = route => new URL(route.request().url()).origin === base
-      ? route.continue() : route.abort("internetdisconnected");
-    await context.route("**/*", localhostOnly);
+  await check("J11 opens the downloaded checklist without the server or internet", async () => {
+    const offlineBase = await startApp(`http://127.0.0.1:${source.address().port}/prices.json`);
+    const offlineServer = children.at(-1);
+    const offlineContext = await browser.newContext({ viewport: { width: 375, height: 900 }, reducedMotion: "reduce" });
     try {
-      await page.getByRole("button", { name: "View offline" }).click();
-      await page.waitForURL(url => url.pathname.split(";")[0] === "/offline");
-      await page.reload();
-      assert.match(await page.locator("main").innerText(), /READ ONLY/);
-      assert.equal(await page.locator("main time").innerText(), cachedRetrieved);
-      assert.deepEqual(await page.locator(".offline-item dd:first-of-type").evaluateAll(fields =>
-        fields.filter(field => field.previousElementSibling.textContent === "Packs")
-          .map(field => field.textContent)), quantities);
-      assert.deepEqual(await page.locator(".offline-item .line-total").allTextContents(), amounts);
-      assert.match(await page.locator(".offline-item").filter({ hasText: "P000000124" }).innerText(), /Checked[\s\S]*AEON/);
-      assert.equal(await page.getByRole("button", { name: /Save changes|Refresh live prices|Send/ }).count(), 0);
-      for (const route of ["/list/items/update", "/data/refresh", "/ask"]) {
-        assert.equal((await page.request.post(base + route)).status(), 403, route);
-      }
-      await page.goto(base + "/ask");
-      assert.equal(new URL(page.url()).pathname, "/offline");
-      assert.equal(sourceReads, readsBefore);
-      await page.screenshot({ path: path.join(artifacts, "j11-offline-list.png"), fullPage: true });
-      await page.getByRole("button", { name: "Exit offline review" }).click();
-      assert.equal(new URL(page.url()).searchParams.get("listId"), listId);
-      assert.equal(await page.getByRole("button", { name: /Save changes/ }).count(), 2);
-      await go("/ask");
-      assert.equal(await page.getByRole("button", { name: "Send", exact: true }).count(), 1);
+      const offlinePage = await offlineContext.newPage();
+      await offlinePage.goto(offlineBase + "/data");
+      await offlinePage.getByRole("button", { name: "Refresh live prices" }).click();
+      await offlinePage.goto(offlineBase + "/list");
+      await offlinePage.locator(".cart-files > summary").click();
+      await offlinePage.locator("#list-file").setInputFiles({
+        name: "shopping-list.json", mimeType: "application/json", buffer: exportedList
+      });
+      await offlinePage.getByRole("button", { name: "Import JSON" }).click();
+      await offlinePage.waitForURL(url => url.searchParams.has("listId"));
+      const amounts = await offlinePage.locator(".list-item .line-total").allTextContents();
+      const cachedRetrieved = (await offlinePage.locator(".source-banner span").first().innerText())
+        .match(/Retrieved (.+) ·/)[1];
+      await offlinePage.locator(".cart-files > summary").click();
+      const downloading = offlinePage.waitForEvent("download");
+      await offlinePage.getByRole("link", { name: "Download offline checklist" }).click();
+      const download = await downloading;
+      const localFile = path.join(artifacts, "j11-offline-checklist.html");
+      await download.saveAs(localFile);
+      const stopped = once(offlineServer, "exit");
+      offlineServer.kill();
+      await stopped;
+      await offlineContext.setOffline(true);
+      const remoteRequests = [];
+      offlinePage.on("request", incoming => {
+        if (/^https?:/.test(incoming.url())) remoteRequests.push(incoming.url());
+      });
+      await offlinePage.goto(pathToFileURL(localFile).href);
+      assert.equal(await offlinePage.locator("time").innerText(), cachedRetrieved);
+      const checks = offlinePage.getByRole("checkbox");
+      assert.equal(await checks.count(), 2);
+      assert.equal(await offlinePage.locator("input:checked").count(), 1);
+      const main = await offlinePage.locator("main").innerText();
+      for (const amount of amounts) assert.ok(main.includes(amount));
+      assert.match(main, /AEON/);
+      const unchecked = offlinePage.locator("input[type=checkbox]:not(:checked)");
+      await unchecked.focus();
+      await offlinePage.keyboard.press("Space");
+      assert.equal(await offlinePage.locator("input:checked").count(), 2);
+      assert.equal(await offlinePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      assert.deepEqual(remoteRequests, []);
+      await offlinePage.screenshot({ path: path.join(artifacts, "j11-offline-list.png"), fullPage: true });
     } finally {
-      await context.unroute("**/*", localhostOnly);
+      await offlineContext.close();
     }
   });
   await check("J12 finds the same pack in three languages, with usable keyboard focus and high contrast", async () => {
@@ -568,7 +752,7 @@ async function main() {
       const reply = await page.locator(".chat-message").last().innerText();
       assert.ok(reply.includes(sourceLabel), reply);
       assert.match(reply, /HK\$7\.50/);
-      if (language !== "en") assert.doesNotMatch(reply, /Lowest listed|AI explanation is unavailable/);
+      if (language !== "en") assert.doesNotMatch(reply, /Lowest listed/);
       await page.screenshot({ path: path.join(artifacts, `j12-ask-${language}.png`), fullPage: true });
       await go("/products/P000000124");
       const retailerRadio = page.locator('input[name=retailerCode][value=AEON]');
@@ -584,7 +768,7 @@ async function main() {
         await page.screenshot({ path: path.join(artifacts, `j12-compare-${language}.png`), fullPage: true });
       }
       if (language !== "en") {
-        for (const route of ["/products/P000000124", "/list", "/saved", "/alerts", "/budget", "/reminders", "/data"]) {
+        for (const route of ["/products/P000000124", "/list", "/saved", "/alerts", "/settings", "/personal-data", "/alerts/rules?code=P000000124", "/data"]) {
           await go(route);
           assert.doesNotMatch(await page.locator("main").innerText(), /\?\?[a-z][\w.]*[^\s]*\?\?/);
           assert.match(await page.locator("main h1").innerText(), /\p{Script=Han}/u);
@@ -610,21 +794,27 @@ async function main() {
     await page.getByRole("button", { name: "Refresh live prices", exact: true }).click();
     await go(`/saved?code=${milkCode}`);
     await page.getByRole("button", { name: "Save to wishlist" }).click();
-    await go(`/saved?code=${milkCode}`);
-    const trackAll = page.locator('form[action$="/tracking/start-all"]').first();
-    await trackAll.getByRole("button", { name: "Track all retailers" }).click();
-    await page.getByRole("button", { name: "Stop all retailers" }).waitFor();
     missingRetailer = true;
+    additionalRetailer = true;
     await go("/data");
     await page.getByRole("button", { name: "Refresh live prices", exact: true }).click();
     await go(`/products/${milkCode}`);
     await page.getByRole("link", { name: "Price history", exact: true }).click();
     const rows = page.locator(".price-history tbody tr").filter({ hasText: "JASONS" });
+    assert.match(await page.locator(".price-history tbody").innerText(), /NEW-STORE/);
     assert.equal(await rows.count(), 2);
     assert.match(await rows.first().innerText(), /Unknown/);
     assert.match(await rows.last().innerText(), /HK\$12\.50/);
     const dates = await rows.locator("time").evaluateAll(items => items.map(item => Date.parse(item.dateTime)));
     assert.ok(Number.isFinite(dates[0]) && dates[0] >= dates[1]);
+    assert.equal(await page.locator('.price-chart svg[role="img"]').isVisible(), true);
+    await page.locator("#history-days").selectOption("30");
+    await page.locator("#history-retailer").selectOption("JASONS");
+    await page.locator(".history-filters button[type=submit]").click();
+    await page.waitForURL(url => url.searchParams.get("days") === "30");
+    assert.equal(await page.locator(".price-history tbody tr").count(), 2);
+    assert.doesNotMatch(await page.locator(".price-history tbody").innerText(), /NEW-STORE|AEON/);
+    await go(history);
     await go("/preferences");
     await page.locator("select[name=language]").selectOption("zh-Hant");
     await page.locator("input[name=highContrast]").check();
@@ -642,25 +832,53 @@ async function main() {
     }), 1, "The listed price fits on a single line at 375px.");
     await page.screenshot({ path: path.join(artifacts, "j12-history-mobile.png"), fullPage: true });
     await go("/preferences");
+    await page.locator("select[name=language]").selectOption("zh-Hans");
+    await page.locator('form[action$="/preferences"] button[type=submit]').click();
+    await go(history);
+    assert.equal(await page.locator("html").getAttribute("lang"), "zh-Hans");
+    assert.match(await page.locator("#history-chart-title").innerText(), /\p{Script=Han}/u);
+    await go("/preferences");
     await page.locator("select[name=language]").selectOption("en");
     await page.locator("input[name=highContrast]").uncheck();
     await page.locator('form[action$="/preferences"] button[type=submit]').click();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  });
+  await check("Wishlist batch adds only missing products and opens item actions on mobile", async () => {
+    await go("/saved?code=TEST-MILK");
+    await page.getByRole("button", { name: "Save to wishlist" }).click();
+    await page.setViewportSize({ width: 375, height: 812 });
+    const extraMilk = page.locator(".wishlist-row").filter({ has: page.locator('[value="TEST-MILK"]') });
+    await tabTo(page, extraMilk.locator("summary"));
+    await page.keyboard.press("Enter");
+    for (const name of ["View product", "Price history", "Set rules"]) {
+      assert.equal(await extraMilk.getByRole("link", { name, exact: true }).isVisible(), true);
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(artifacts, "wishlist-mobile.png"), animations: "disabled" });
+    await extraMilk.getByRole("checkbox").check();
+    await page.locator('.wishlist-row [value="P000000124"]').first().check();
+    await page.getByRole("button", { name: "Add selected to Cart" }).click();
+    assert.match(await page.locator("main [role=status]").innerText(), /Added 1 · Already in Cart 1 · Unavailable 0/);
+    await go("/list");
+    assert.equal(await page.locator(".list-item").filter({ hasText: "TEST-MILK" }).locator("[name=quantity]").inputValue(), "1");
+    assert.equal(await page.locator(".list-item").filter({ hasText: "P000000124" }).locator("[name=retailerCode]").inputValue(), "AEON");
     await page.setViewportSize({ width: 1440, height: 1000 });
   });
   await check("J12 exports personal records, cancels reset, then clears them and keeps the catalogue", async () => {
     for (const [route, form] of [
       ["/budget", { period: "MONTHLY", limit: "250" }],
       ["/reminders/create", { code: "P000000124", quantity: "1", intervalDays: "14", retailerCode: "AEON" }],
-      ["/alerts/settings", { quietStart: "22:00", quietEnd: "07:00", summaryTime: "08:00" }],
       ["/preferences", { language: "en", highContrast: "true" }]
     ]) {
       assert.equal((await page.request.post(base + route, { form, maxRedirects: 0 })).status(), 302, route);
     }
-    await go("/alerts");
-    const target = page.locator("article.list-item").filter({ hasText: /AEON · P000000124/ });
-    await target.locator("[name=targetPrice]").fill("8");
-    await target.getByRole("button", { name: "Save target" }).click();
-    await page.locator(".main-nav").getByRole("link", { name: "Personal data", exact: true }).click();
+    await go("/alerts/rules?code=P000000124");
+    await page.locator("[name=targetPrice]").fill("8");
+    await page.getByRole("button", { name: "Save target" }).click();
+    await go("/data");
+    await page.getByRole("button", { name: "Refresh live prices" }).click();
+    await page.locator(".main-nav").getByRole("link", { name: "Settings", exact: true }).click();
+    await page.locator("main").getByRole("link", { name: /Personal data/ }).click();
     const exportData = async () => {
       const download = page.waitForEvent("download");
       await page.getByRole("link", { name: "Export personal data" }).click();
@@ -668,13 +886,15 @@ async function main() {
     };
     const before = await exportData();
     assert.equal(before.version, 1);
-    for (const key of ["lists", "wishlist", "tracking", "observations", "alerts", "reminders", "budgets", "chats"]) {
+    for (const key of ["lists", "wishlist", "tracking", "observations", "priceTargets", "productPriceAlerts", "reminders", "budgets", "chats"]) {
       assert.ok(before[key].length > 0, key);
     }
     assert.ok(before.lists.some(list => list.entries.some(entry => entry.productCode === "P000000124")));
+    assert.ok(before.chats.flatMap(chat => chat.messages).flatMap(message => message.priceCards)
+      .some(card => card.productCode === "P000000124" && card.rows.some(row => row.retailer === "AEON" && row.price === 7.5)));
     assert.ok(before.allRetailerTrackingProducts.includes("P000000124"));
     assert.equal(before.preferences.display.highContrast, true);
-    assert.ok(before.preferences.notifications);
+    assert.equal(before.preferences.notifications, null);
     await page.getByRole("link", { name: "Review reset" }).click();
     await page.getByRole("link", { name: "Cancel", exact: true }).click();
     assert.deepEqual(await exportData(), before);
@@ -684,7 +904,8 @@ async function main() {
     await page.getByRole("button", { name: "Confirm reset" }).click();
     assert.match(await page.locator("main [role=status]").innerText(), /Personal data was reset/);
     const after = await exportData();
-    for (const key of ["lists", "wishlist", "allRetailerTrackingProducts", "tracking", "observations", "alerts", "reminders", "budgets", "chats"]) {
+    for (const key of ["lists", "wishlist", "allRetailerTrackingProducts", "tracking", "observations", "alerts", "reminders", "budgets", "chats",
+      "priceTargets", "productPriceAlerts", "timeAlerts"]) {
       assert.deepEqual(after[key], [], key);
     }
     assert.equal(after.preferences.display.highContrast, false);

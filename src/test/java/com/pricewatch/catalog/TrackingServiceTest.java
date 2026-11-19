@@ -102,7 +102,7 @@ class TrackingServiceTest {
         String second = "{\"supermarketCode\":\"STORE-B\",\"price\":\"4.00\"}";
         catalog.accept(json(product("TRACK-ALL", "[" + first + "]")), "LIVE", "fixture-live");
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                        .post("/tracking/start-all").param("code", "TRACK-ALL"))
+                        .post("/saved/save").param("code", "TRACK-ALL"))
                 .andExpect(status().is3xxRedirection());
         long firstId = tracking.trackingPeriods().getFirst().id();
         tracking.configureDrop(firstId, true);
@@ -119,9 +119,11 @@ class TrackingServiceTest {
         assertEquals(0, alertEventRepository.count(), "Different retailers cannot form a drop comparison.");
         assertThrows(IllegalArgumentException.class, () -> tracking.stop(firstId));
         mvc.perform(get("/saved")).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Stop all retailers")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("action=\"/saved/remove\"")));
 
-        tracking.stopAll("TRACK-ALL");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/saved/remove").param("code", "TRACK-ALL"))
+                .andExpect(status().is3xxRedirection());
         String third = "{\"supermarketCode\":\"STORE-C\",\"price\":\"3.00\"}";
         catalog.accept(json(product("TRACK-ALL", "[" + first + "," + second + "," + third + "]")),
                 "LIVE", "fixture-live");
@@ -131,34 +133,36 @@ class TrackingServiceTest {
     }
 
     @Test
-    void savedWishlistIsSeparateAndOnlyLiveImportsAddChangedObservations() {
+    void wishlistTracksEveryRetailerAndOnlyLiveImportsAddChangedObservations() {
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"5.00\"},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "SAMPLE", "fixture");
         tracking.save("TRACK-1");
-        TrackingView period = tracking.start("TRACK-1", "STORE-A");
+        tracking.save("TRACK-1");
 
         assertEquals(1, tracking.savedProducts().size());
-        assertTrue(period.observations().isEmpty(), "A sample must not seed live history.");
-        assertEquals(1, tracking.trackingPeriods().stream().filter(TrackingView::enabled).count());
+        assertEquals(2, tracking.trackingPeriods().stream().filter(TrackingView::enabled).count());
+        assertTrue(tracking.trackingPeriods().stream().allMatch(period -> period.observations().isEmpty()),
+                "A sample must not seed live history.");
 
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"5.0000\"},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "LIVE", "fixture-live");
-        assertEquals(1, observationRepository.count());
+        assertEquals(2, observationRepository.count());
         assertEquals("fixture-live", observationRepository.findAll().getFirst().getSourceUrl());
 
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"5\"},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "LIVE", "fixture-live");
-        assertEquals(1, observationRepository.count(), "A consecutive identical price is skipped.");
+        assertEquals(2, observationRepository.count(), "A consecutive identical price is skipped.");
 
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":null},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "LIVE", "fixture-live");
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":null},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "LIVE", "fixture-live");
-        assertEquals(2, observationRepository.count(), "One null gap is recorded; repeated gaps are skipped.");
+        assertEquals(3, observationRepository.count(), "One null gap is recorded; repeated gaps are skipped.");
 
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"4.00\"},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "LIVE", "fixture-live");
-        List<PriceObservationView> history = tracking.trackingPeriods().getFirst().observations();
+        List<PriceObservationView> history = tracking.trackingPeriods().stream()
+                .filter(period -> period.retailerCode().equals("STORE-A")).findFirst().orElseThrow().observations();
         assertEquals(3, history.size());
         assertEquals(new BigDecimal("4.0000"), history.getFirst().price());
         assertNull(history.get(1).price());
@@ -177,29 +181,44 @@ class TrackingServiceTest {
         mvc.perform(get("/alerts"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("market-desk"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Price alerts, on your schedule.")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Alert history")));
     }
 
     @Test
-    void stoppingKeepsOldHistoryAndReenableCreatesANewSeededPeriod() {
+    void removingWishlistPausesRulesAndResavingRestoresThemWithANewLiveBaseline() {
         catalog.accept(json(product("TRACK-2", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"10.00\"}]")),
                 "SAMPLE", "fixture-sample");
         tracking.save("TRACK-2");
         TrackingView oldPeriod = tracking.start("TRACK-2", "STORE-A");
         tracking.configureDrop(oldPeriod.id(), true);
+        tracking.configureTarget(oldPeriod.id(), new BigDecimal("9.00"));
 
         catalog.accept(json(product("TRACK-2", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"10.00\"}]")),
                 "LIVE", "fixture-live");
         assertEquals(1, tracking.trackingPeriods().getFirst().observations().size());
-        tracking.stop(oldPeriod.id());
+        tracking.removeSaved("TRACK-2");
+        assertTrue(tracking.savedProducts().isEmpty());
+        assertTrue(tracking.allRetailersProducts().isEmpty());
+        now.set(START.plusSeconds(60));
         catalog.accept(json(product("TRACK-2", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"8.00\"}]")),
                 "LIVE", "fixture-live");
+        assertEquals(1, observationRepository.count());
+        assertEquals(0, alertEventRepository.count());
 
-        TrackingView newPeriod = tracking.start("TRACK-2", "STORE-A");
+        now.set(START.plusSeconds(120));
+        tracking.save("TRACK-2");
+        TrackingView newPeriod = tracking.trackingPeriods().getFirst();
         assertNotEquals(oldPeriod.id(), newPeriod.id());
-        assertEquals(1, newPeriod.observations().size(), "Only the current live catalogue seeds the new period.");
-        tracking.configureDrop(newPeriod.id(), true);
+        assertTrue(newPeriod.observations().isEmpty(), "Re-saving must not fill a paused period with observations.");
+        assertTrue(newPeriod.dropEnabled());
+        assertEquals(new BigDecimal("9.0000"), newPeriod.targetPrice());
+        now.set(START.plusSeconds(180));
         catalog.accept(json(product("TRACK-2", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"7.00\"}]")),
+                "LIVE", "fixture-live");
+        assertEquals(1, alertEventRepository.findAll().stream().filter(event -> "TARGET".equals(event.getType())).count());
+        assertEquals(0, alertEventRepository.findAll().stream().filter(event -> "DROP".equals(event.getType())).count());
+        now.set(START.plusSeconds(240));
+        catalog.accept(json(product("TRACK-2", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"6.00\"}]")),
                 "LIVE", "fixture-live");
 
         assertEquals(1, tracking.trackingPeriods().stream().filter(period -> period.id() == oldPeriod.id())
@@ -211,6 +230,22 @@ class TrackingServiceTest {
         assertTrue(tracking.trackingPeriods().stream().filter(period -> period.id() == oldPeriod.id())
                 .findFirst().orElseThrow().observations().isEmpty());
         assertEquals(1, tracking.savedProducts().size(), "Deleting history does not unsave the product.");
+    }
+
+    @Test
+    void failedEnrolmentRollsBackTheWishlistEntryAndTrackAllFlag() {
+        catalog.accept(json(product("TRACK-FAIL", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"10.00\"},"
+                + "{\"supermarketCode\":\"STORE-B\",\"price\":\"8.00\"}]")), "LIVE", "fixture-live");
+        jdbc.execute("alter table product_tracking_periods add constraint ck_wishlist_enrolment_failure check (retailer_code <> 'STORE-B')");
+        try {
+            assertThrows(DataIntegrityViolationException.class, () -> tracking.save("TRACK-FAIL"));
+            assertTrue(tracking.savedProducts().isEmpty());
+            assertTrue(tracking.allRetailersProducts().isEmpty());
+            assertTrue(tracking.trackingPeriods().isEmpty());
+            assertEquals(0, observationRepository.count());
+        } finally {
+            jdbc.execute("alter table product_tracking_periods drop constraint ck_wishlist_enrolment_failure");
+        }
     }
 
     @Test

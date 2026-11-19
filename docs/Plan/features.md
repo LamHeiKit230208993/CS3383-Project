@@ -40,8 +40,8 @@ This table replaces the old difficulty rankings and separate feature legend.
 | F2 | Compare retailer listings | R02; R04 remains conditional. Compare the selected exact product and pack. Show ties and missing listings. |
 | F3 | Target-price and price-drop alerts | R21. Two separate rules: a target needs a current price; a drop needs an earlier price for the same product/retailer. |
 | F4 | Product-type target alerts | Possible extension of R21. Not a separate confirmed scope row. Agree the category and price rule before implementing it. |
-| F5 | Quiet hours, repeat prevention, and snooze | R23. Define event and repeat rules before coding. |
-| F6 | Morning summary | R26. Inside the active app first. Set timing and missed-run behaviour before coding. |
+| F5 | Repeat prevention and snooze | R23. Keep alert occurrence checks and snooze. Quiet hours are retired. |
+| F6 | Morning summary | R26. Retired. Existing summary records remain exportable. |
 | F7 | Saved recurring shopping lists | R27. Product, quantity, and checked state persist across restart. |
 | F8 | Per-item lowest listed prices and list total | R28. Use quantities; identify retailers and incomplete totals. This is not R06's full-store basket comparison. |
 | F9 | Planned weekly/monthly budget and warnings | R30. Label planned costs; actual spending needs separate purchase entries. |
@@ -54,7 +54,7 @@ This table replaces the old difficulty rankings and separate feature legend.
 | F16 | View, export, and delete local personal data | R45. List sharing must not export all personal data. |
 | F17 | App text and product labels in three languages | R46. The JSON supplies product labels; app screens still need translations. |
 | F18 | High-contrast, easy-to-read display | R47. Check text, controls, focus, and meaning without colour. |
-| F19 | Read-only saved-list review offline | R48. Data must be on the viewing device; remote price refresh and AI are off. |
+| F19 | Offline Cart checklist | R48. A standalone HTML file opens without the app and allows temporary checkmarks. |
 | F20 | Selected-product history collection | Supports R10, R14, R21-R22, R35. Use separate product/pack/retailer records; collect only while the app runs. |
 | F21 | Price history charts | R10. Show available dates and gaps, not an invented 30/90-day series. |
 | F22 | Source and retrieval/source dates | R14 is tracked-only. A general saved-data age label does not imply tracking. |
@@ -89,13 +89,13 @@ Conditional scope rows keep their existing conditions.
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
-| J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; stopping tracking stops new collection without unsaving the product | J01-J04 |
-| J06 | In-app target/drop alerts, quiet hours, snooze, and summary | One current price can meet a target; a drop uses a stated earlier price; repeat imports do not repeat an event; closed-app periods are not reported as delivered alerts | J05 |
+| J05 | Wishlist and all-retailer tracking for saved packs | Saving tracks each retailer for the exact pack; accepted live refreshes enroll new retailers; removing a product stops collection and retains earlier observations | J01-J04 |
+| J06 | In-app price alerts and snooze | One target covers all retailers for a saved pack. One event groups every qualifying retailer. A later lowest known price above the target rearms it. Existing retailer-specific rules stay editable. | J05 |
 | J07 | List totals, planned budgets, and category totals | Preserve explicit retailer choices; Automatic lowest applies only in that mode; quantities affect totals; missing prices keep the result incomplete; estimates are not actual spending | J04 |
-| J08 | User-set reminders, add-to-list, clear, and snooze | Reminders run only in the active app; actions set the agreed next due date and preserve product/quantity | J04, J06 |
+| J08 | Time reminders with shared alert history | Edit or delete a reminder in item rules. One entry appears per due occurrence while the app is running. Dismissal schedules the next reminder and keeps its history. | J04, J06 |
 | J09 | Text chat using checked search/comparison operations | The answer uses checked product, retailer, and amount; unclear requests ask for a choice; AI failure still leaves the normal comparison usable | J03 |
 | J10 | Separate-copy list sharing | Transfer a chosen list as versioned JSON. Preserve products, quantities, checked states, and retailer choices. Invalid input leaves existing lists unchanged. | J04 |
-| J11 | Read-only saved-list view without a connection | Reopen the selected list with the local app running. Show the saved prices and their retrieval time. Editing and online actions require exiting offline review. | J10 |
+| J11 | Standalone offline Cart checklist | Download the selected list as HTML with saved prices and retrieval time. Open it and check off items with the app stopped and network disconnected. | J10 |
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
 Within this milestone, J05 and J07 can proceed in parallel under the agreed
@@ -137,7 +137,8 @@ This branch now adds J05–J08 wishlist/tracking, alerts, planned budgets/catego
 totals, and reminders. Local validation on 6 November passed 86 Java tests,
 20 browser scenarios and an old-to-new database upgrade check; use the
 [test catalogue](../Test/test-case-catalog.md) for the latest local results.
-J12 price history lists retained records for the selected pack. A combined chart
-and the separate product-wide alert rule change remain follow-ups under issue #21.
+The Market Desk redesign adds the retailer chart, product-wide targets and
+combined Alerts history. Quiet hours and scheduled summaries are retired.
+See the [setup guide](../SETUP.md) and [dated test results](../Test/history.md).
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

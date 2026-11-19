@@ -65,6 +65,15 @@ public class ReminderEntity {
         snoozedUntil = (currentDue.isAfter(now) ? currentDue : now).plus(SNOOZE_HOURS, ChronoUnit.HOURS);
     }
 
+    public void updateRule(int quantity, int intervalDays, String retailerCode, Instant now) {
+        this.quantity = quantity;
+        this.selectedRetailerCode = retailerCode;
+        if (this.intervalDays != intervalDays) {
+            this.intervalDays = intervalDays;
+            clear(now);
+        }
+    }
+
     public Long getId() { return id; }
     public ProductEntity getProduct() { return product; }
     public int getQuantity() { return quantity; }

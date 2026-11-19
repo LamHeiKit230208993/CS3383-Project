@@ -19,21 +19,45 @@
         <dd th:text="#{personal.trackingCount(${overview.tracking},${overview.observations})}"></dd>
         <dt><a th:href="@{/alerts}" th:text="#{personal.alerts}">Alerts</a></dt>
         <dd th:text="${overview.alerts}"></dd>
-        <dt><a th:href="@{/reminders}" th:text="#{personal.reminders}">Reminders</a></dt>
+        <dt><a th:href="@{/alerts#rules-title}" th:text="#{personal.reminders}">Reminders</a></dt>
         <dd th:text="${overview.reminders}"></dd>
-        <dt><a th:href="@{/budget}" th:text="#{personal.budgets}">Budgets</a></dt>
-        <dd th:text="${overview.budgets}"></dd>
         <dt th:text="#{personal.preferences}">Preferences</dt>
         <dd>
           <a th:href="@{/preferences}" th:text="#{personal.display}">Display</a>
-          <span aria-hidden="true"> · </span>
-          <a th:href="@{/alerts}" th:text="#{personal.notifications}">Notifications</a>
         </dd>
         <dt><a th:href="@{/ask}" th:text="#{personal.chats}">Chats in this session</a></dt>
         <dd th:text="${chatCount}"></dd>
       </dl>
     </section>
     <div class="import-actions">
+      <section class="panel" id="budget" aria-labelledby="budget-title">
+        <h2 id="budget-title" th:text="#{budget.title}">Budget</h2>
+        <div class="notice" role="status" th:if="${budgetNotice}" th:text="${budgetNotice}"></div>
+        <div class="notice error" role="alert" th:if="${budgetError}" th:text="${budgetError}"></div>
+        <form class="add-form" th:action="@{/personal-data/budget}" method="post">
+          <label for="budget-period" th:text="#{budget.period}">Plan period</label>
+          <select id="budget-period" name="period" required>
+            <option value="WEEKLY" th:selected="${budgetFormPeriod == 'WEEKLY'}" th:text="#{budget.period.WEEKLY}">Weekly</option>
+            <option value="MONTHLY" th:selected="${budgetFormPeriod == 'MONTHLY'}" th:text="#{budget.period.MONTHLY}">Monthly</option>
+          </select>
+          <label for="budget-limit" th:text="#{budget.amount}">Planned limit (HKD)</label>
+          <input id="budget-limit" name="limit" type="number" min="0" max="999999999999999.9999" step="0.0001"
+                 inputmode="decimal" autocomplete="off" required th:value="${budgetFormLimit}">
+          <button class="button secondary" type="submit" th:text="#{budget.submit}">Save budget</button>
+        </form>
+        <div class="summary-total">
+          <span th:text="${budget.unknownItemCount > 0} ? #{budget.subtotal} : #{budget.estimatedCost}"></span>
+          <strong th:text="${format.money(budget.knownSubtotal)}"></strong>
+        </div>
+        <p class="warning" th:if="${budget.state.name() == 'OVER_LIMIT'}" th:text="#{budget.over}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'OVER_LIMIT' and budget.unknownItemCount > 0}"
+           th:text="#{budget.overUnknown(${budget.unknownItemCount})}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'UNKNOWN_TOTAL'}" th:text="#{budget.unknownTotal}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'WITHIN_LIMIT'}" th:text="#{budget.within}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'NOT_SET'}" th:text="#{budget.notSet}"></p>
+        <p class="warning" th:if="${budget.unknownItemCount > 0 and budget.state.name() == 'NOT_SET'}"
+           th:text="#{budget.unknownItems(${budget.unknownItemCount})}"></p>
+      </section>
       <section class="panel" aria-labelledby="personal-export">
         <h2 id="personal-export" th:text="#{personal.exportTitle}">Export</h2>
         <p th:text="#{personal.exportHelp}">Download these records as one JSON file, including chats from this browser session.</p>

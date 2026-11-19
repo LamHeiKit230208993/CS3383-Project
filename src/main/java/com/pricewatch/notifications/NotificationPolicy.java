@@ -5,15 +5,12 @@ import com.pricewatch.notifications.repository.NotificationSettingsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.Objects;
 
+/** Keeps historical notification preferences available in personal-data exports. */
 @Service
 public class NotificationPolicy {
-    public static final ZoneId ZONE = ZoneId.of("Asia/Hong_Kong");
     private static final LocalTime DEFAULT_QUIET_START = LocalTime.of(22, 0);
     private static final LocalTime DEFAULT_QUIET_END = LocalTime.of(8, 0);
     private static final LocalTime DEFAULT_SUMMARY_TIME = LocalTime.of(8, 0);
@@ -22,31 +19,6 @@ public class NotificationPolicy {
 
     public NotificationPolicy(NotificationSettingsRepository repository) {
         this.repository = repository;
-    }
-
-    public boolean isQuiet(Instant instant) {
-        Objects.requireNonNull(instant, "instant");
-        Settings settings = settings();
-        LocalTime current = instant.atZone(ZONE).toLocalTime();
-        LocalTime start = settings.quietStart();
-        LocalTime end = settings.quietEnd();
-        if (start.equals(end)) return false;
-        if (start.isBefore(end)) return !current.isBefore(start) && current.isBefore(end);
-        return !current.isBefore(start) || current.isBefore(end);
-    }
-
-    public Instant nextAllowed(Instant instant) {
-        Objects.requireNonNull(instant, "instant");
-        Settings settings = settings();
-        if (!isQuiet(instant)) return instant;
-
-        var local = instant.atZone(ZONE);
-        LocalTime start = settings.quietStart();
-        LocalTime end = settings.quietEnd();
-        LocalDate endDate = start.isBefore(end) || local.toLocalTime().isBefore(end)
-                ? local.toLocalDate()
-                : local.toLocalDate().plusDays(1);
-        return endDate.atTime(end).atZone(ZONE).toInstant();
     }
 
     @Transactional(readOnly = true)

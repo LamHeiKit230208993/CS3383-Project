@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}"
+      th:classappend="${displayPreferences != null and displayPreferences.highContrast ? 'high-contrast' : ''}"
+      th:with="checklistName=${listName == 'My list'} ? #{app.scene.list} : ${listName}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title th:text="${checklistName}">Cart</title>
+  <style>
+    :root { color-scheme: light; --ink: #18253a; --muted: #41536e; --line: #c5d0df; --accent: #2854ce; }
+    .high-contrast { --ink: #050505; --muted: #252525; --line: #525252; --accent: #183d9e; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: clamp(1.25rem, 5vw, 3rem); background: #fff; color: var(--ink);
+      font: 1rem / 1.5 system-ui, sans-serif; }
+    main { max-width: 42rem; margin: 0 auto; }
+    h1 { margin: 0; font-size: clamp(1.8rem, 6vw, 2.6rem); overflow-wrap: anywhere; }
+    header p { margin: .4rem 0; color: var(--muted); }
+    ul { list-style: none; margin: 1.5rem 0 0; padding: 0; border-top: 1px solid var(--line); }
+    .checklist-item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start; gap: .7rem; padding: .8rem 0; border-bottom: 1px solid var(--line); }
+    .checklist-item label { display: flex; width: fit-content; min-height: 2.75rem; align-items: center;
+      gap: .75rem; cursor: pointer; font-weight: 650; overflow-wrap: anywhere; }
+    input { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; accent-color: var(--accent); }
+    input:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    input:checked + .item-name { text-decoration: line-through; }
+    .item-meta { display: flex; flex-wrap: wrap; gap: .25rem .8rem; margin: 0 0 0 2rem;
+      color: var(--muted); font-size: .875rem; overflow-wrap: anywhere; }
+    .item-total { padding-top: .6rem; max-width: 10rem; overflow-wrap: anywhere; text-align: right; }
+    .estimate { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem .7rem;
+      margin: 1rem 0 0; overflow-wrap: anywhere; }
+    .incomplete { color: var(--muted); }
+    @media (max-width: 370px) { .item-total { max-width: 7rem; } }
+  </style>
+</head>
+<body>
+  <main id="offline-checklist">
+    <header>
+      <h1 th:text="${checklistName}">Cart</h1>
+      <p th:text="#{offline.intro}">Check off items while this file is open. These marks stay in this copy.</p>
+      <p th:if="${sampleCatalogue}" th:text="#{source.sample}">Historical sample</p>
+      <p th:if="${retrievedAt != null}">
+        <strong th:text="#{offline.retrieval}">Prices retrieved</strong>
+        <time th:datetime="${retrievedAt}" th:text="${format.time(retrievedAt)}"></time>
+      </p>
+      <p th:if="${retrievedAt == null}" th:text="#{offline.noTimestamp}">Price retrieval time is unavailable.</p>
+    </header>
+    <p th:if="${items.isEmpty()}" th:text="#{offline.empty}">This list has no saved items.</p>
+    <ul th:unless="${items.isEmpty()}" role="list">
+      <li class="checklist-item" th:each="item : ${items}">
+        <div>
+          <label>
+            <input type="checkbox" autocomplete="off" th:checked="${item.checked}">
+            <span class="item-name" th:text="${item.product.name.forLocale(#locale)}"></span>
+          </label>
+          <p class="item-meta">
+            <span th:text="${item.quantity + ' · ' + #messages.msg('common.packsUnit')}"></span>
+            <span th:if="${item.selectedRetailerCode != null}" th:text="#{list.chosen(${item.selectedRetailerCode})}"></span>
+            <span th:if="${item.selectedRetailerCode == null}" th:text="#{common.automaticPrice}"></span>
+            <span th:if="${item.unitPrice != null}" th:text="#{list.perPack(${format.money(item.unitPrice)},${item.retailerCode})}"></span>
+          </p>
+        </div>
+        <strong class="item-total" th:text="${item.lineTotal == null} ? #{common.unknown} : ${format.money(item.lineTotal)}"></strong>
+      </li>
+    </ul>
+    <p class="estimate" th:unless="${items.isEmpty()}">
+      <span th:text="${summary.unknownItemCount > 0} ? #{common.subtotal} : #{offline.estimate}"></span>
+      <strong th:text="${format.money(summary.knownSubtotal)}"></strong>
+    </p>
+    <p class="incomplete" th:if="${summary.unknownItemCount > 0}" th:text="#{offline.incomplete}">Prices are missing for part of this list. The total is incomplete.</p>
+  </main>
+</body>
+</html>

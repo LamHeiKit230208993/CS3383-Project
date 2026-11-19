@@ -4,6 +4,66 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Market Desk redesign · Retailer history and Alerts — 20 November 2026
+
+- The chart passed 14 focused Maven tests and the Chrome shopper workflow.
+  It shows only recorded observations and separates unknown prices and
+  tracking periods. The 30-day and retailer filters update the chart and
+  table together. Chrome checked English and both Chinese variants.
+- The final build passed **123 Maven tests**, **18 Chrome shopper
+  scenarios**, and **11 Chrome milestone scenarios**. The fixture covered
+  grouped price targets and rearming, existing retailer drop evidence, time
+  rule editing, and the combined Alerts screen. Controlled-clock tests check
+  one due reminder occurrence and preserved history after dismissal.
+- The final build also opened a copy of a file-backed H2 database made by
+  the earlier Cart build. It kept Cart quantities and retailer choices, the
+  reminder, the old retailer rule and event, and price observations. The
+  next accepted live fixture enrolled missing retailers.
+
+## Market Desk redesign · Navigation and Cart — 19 November 2026
+
+- Navigation and Settings passed the focused controller checks and Chrome
+  shopper and milestone suites. The suite opens Settings with the keyboard,
+  checks the mobile tabs and reduced motion, and saves a budget in Personal data.
+- Cart passed 33 focused Maven tests, 17 Chrome shopper scenarios and
+  11 Chrome milestone scenarios. The second app imported an editable JSON
+  copy. Chrome then downloaded an HTML checklist from a separate fixture app,
+  stopped that app, disabled the browser's network and checked another item
+  in the file.
+
+## Market Desk redesign · Wishlist — 19 November 2026
+
+- The H2 upgrade and lifecycle suites passed 13 focused tests. The upgrade
+  kept old price history and retailer rules and enrolled new retailers from
+  live imports. The browser checks passed 18 shopper and 11 milestone
+  scenarios, including mobile row actions and batch additions that preserve
+  the quantity and retailer for an existing Cart item.
+
+## DeepSeek catalogue tools — 19 November 2026
+
+- Maven packaging passed **114 Java tests**. The provider fixture verified
+  natural replies, matched tool call IDs, invalid args and the tool limit.
+  Catalogue checks covered ranked results, exact packs, bilingual retailers,
+  unknown prices and retrieval times. Chat export includes checked rows.
+- Chrome passed **17 shopper scenarios** and **11 milestone scenarios**. The
+  Ask workflow checked send and retry, a natural Chinese reply, cheapest-pack
+  search, the exact-pack picker, history, and mobile layout.
+- Live CityU in Chrome produced a Traditional Chinese introduction, found
+  the 236 mL sample milk for HK$7.50 at AEON, and checked the same pack for
+  HK$12.00 at `惠康 WELLCOME`. The first live run exposed a bilingual
+  retailer lookup failure. The rerun passed after the alias fix.
+
+## Required DeepSeek interpretation — 19 November 2026
+
+- Maven packaging passed **107 Java tests**. The focused checks covered missing
+  credentials, unusable provider output, and a retry of the accepted question.
+- Chrome passed **16 shopper scenarios** and **11 milestone scenarios**. The
+  provider fixture received both an introduction request and a retailer
+  follow-up. A simulated outage kept the question for retry, and the product
+  comparison page remained available.
+- The CityU preview interpreted an introduction request, a milk search, and a
+  Wellcome follow-up. Prices came from the historical sample catalogue.
+
 ## Ask message delivery and conversational prompts — 18 November 2026
 
 - Maven packaging passed **105 Java tests**. The focused turn checks verified
