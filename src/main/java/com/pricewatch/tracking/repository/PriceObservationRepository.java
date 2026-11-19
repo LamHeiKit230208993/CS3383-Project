@@ -12,6 +12,8 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
 
     List<PriceObservationEntity> findByTracking_IdOrderByObservedAtDescIdDesc(Long trackingId);
 
+    List<PriceObservationEntity> findByTracking_IdOrderByObservedAtAscIdAsc(Long trackingId);
+
     void deleteByTracking_Id(Long trackingId);
 
     void deleteByObservedAtBefore(Instant cutoff);

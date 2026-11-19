@@ -1,0 +1,63 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="privacy-title">
+    <header class="page-heading">
+      <p class="eyebrow" th:text="#{privacy.eyebrow}">YOUR DATA</p>
+      <h1 id="privacy-title" th:text="#{privacy.title}">Privacy and your local data.</h1>
+      <p class="intro" th:text="#{privacy.intro}">See what this app stores for the one local user, export a copy, or delete personal records. The accepted price catalogue is not personal data.</p>
+    </header>
+
+    <div class="privacy-layout">
+      <section class="panel" aria-labelledby="privacy-counts-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="privacy-counts-title" th:text="#{privacy.countsTitle}">What is stored now</h2>
+            <p class="helper" th:text="#{privacy.countsHelper}">Counts include all saved rows, including empty lists and stopped tracking.</p>
+          </div>
+        </div>
+        <dl class="data-facts privacy-facts">
+          <dt th:text="#{privacy.lists}">Lists</dt>
+          <dd th:text="${summary.lists}">0</dd>
+          <dt th:text="#{privacy.listItems}">List items</dt>
+          <dd th:text="${summary.listItems}">0</dd>
+          <dt th:text="#{privacy.wishlist}">Wishlist entries</dt>
+          <dd th:text="${summary.wishlist}">0</dd>
+          <dt th:text="#{privacy.trackingPeriods}">Tracking periods</dt>
+          <dd th:text="${summary.trackingPeriods}">0</dd>
+          <dt th:text="#{privacy.observations}">Price observations</dt>
+          <dd th:text="${summary.observations}">0</dd>
+          <dt th:text="#{privacy.alerts}">Alert events</dt>
+          <dd th:text="${summary.alerts}">0</dd>
+          <dt th:text="#{privacy.reminders}">Reminders</dt>
+          <dd th:text="${summary.reminders}">0</dd>
+          <dt th:text="#{privacy.languageAndContrast}">Language and contrast</dt>
+          <dd th:text="${summary.preferences ? #messages.msg('privacy.set') : #messages.msg('privacy.notSet')}">Not set</dd>
+          <dt th:text="#{privacy.budget}">Budget settings</dt>
+          <dd th:text="${summary.budget ? #messages.msg('privacy.set') : #messages.msg('privacy.notSet')}">Not set</dd>
+          <dt th:text="#{privacy.notificationSettings}">Alert timing</dt>
+          <dd th:text="${summary.notificationSettings ? #messages.msg('privacy.set') : #messages.msg('privacy.notSet')}">Not set</dd>
+        </dl>
+      </section>
+
+      <div class="privacy-actions">
+        <section class="panel" aria-labelledby="privacy-export-title">
+          <h2 id="privacy-export-title" th:text="#{privacy.exportTitle}">Export personal records</h2>
+          <p th:text="#{privacy.exportText}">Download one versioned JSON file with lists, wishlist, tracking history, alerts, budget, reminders, preferences, and alert timing. Product catalogue records are not included.</p>
+          <a class="button primary" th:href="@{/privacy/export}" th:text="#{privacy.exportAction}">Download personal data</a>
+        </section>
+
+        <section class="panel privacy-delete" aria-labelledby="privacy-delete-title">
+          <h2 id="privacy-delete-title" th:text="#{privacy.deleteTitle}">Delete personal records</h2>
+          <p th:text="#{privacy.deleteText}">This deletes lists, wishlist entries, tracking periods and observations, alerts, the budget, reminders, preferences, and alert timing from this device.</p>
+          <p class="warning" th:text="#{privacy.deleteWarning}">The accepted catalogue and its source details stay. Copies you exported or shared with someone else cannot be recalled.</p>
+          <form class="stack-form" th:action="@{/privacy/delete}" method="post">
+            <label class="check-label">
+              <input type="checkbox" name="confirmDelete" value="true" required>
+              <span th:text="#{privacy.deleteConfirmLabel}">I understand this permanently deletes my personal records from this device.</span>
+            </label>
+            <button class="button danger" type="submit" th:text="#{privacy.deleteAction}">Delete personal records</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </section>
+</th:block>

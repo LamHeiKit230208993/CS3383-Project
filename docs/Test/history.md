@@ -4,6 +4,195 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## J12 personal data, history and accessibility review — 19 November 2026
+
+- Added `GET /privacy`, `GET /privacy/export`, and `POST /privacy/delete` with
+  `PersonalDataService`. The export is version-1 `pricewatch-personal-data`
+  JSON: lists/items, wishlist, tracking periods and observations, alerts,
+  budget, reminders, preferences, and alert timing. It deliberately omits the
+  accepted catalogue and accepted-import metadata.
+- Deletion requires `confirmDelete=true`. It removes the personal rows and
+  resets product-wide tracking/target choices, but keeps products, listings,
+  offers, and accepted-import source metadata. The confirmation-missing path
+  changes nothing.
+- Added `GET /history/{code}` and `ProductHistoryService`. Access is restricted
+  to tracked products; unknown or untracked products return 404. The view uses
+  actual retrieval times, keeps only observations inside 90 days and not after
+  the current instant, and inserts an explicit gap row when adjacent
+  observations are at least seven days apart. It does not invent daily values
+  or source price dates. `/saved` now links to it with **View history**.
+- Extended the high-contrast browser scenario to measure body-text contrast
+  (at least 7:1), require a visible status-pill border, and require a 4 px
+  focus outline after keyboard Tab reaches the main content.
+- Added `PrivacyControllerTest` (3 tests) and `ProductHistoryControllerTest`
+  (5 tests), plus `TC-PRIVACY-001`, `TC-HISTORY-001`, and `TC-A11Y-001`.
+  Message bundles remain at 569 keys each.
+- Full Maven run passed **149 tests in 28 suites** with no failures, errors, or
+  skips. Chromium passed **9 baseline** and **17 milestone** scenarios with no
+  browser console errors. The packaged-JAR file-database restart check passed.
+- Added `docs/diagrams/j09-j12/` with editable PlantUML sources and official
+  PlantUML 1.2026.9 SVG/PNG exports. Rendering and syntax checks passed; a human
+  visual pass over label legibility and connector balance remains recommended.
+- Environment: JDK 21.0.12.1, Spring Boot 3.4.5, H2 2.3.232, Node 24.18.0,
+  official PlantUML 1.2026.9 (`18d0aae`).
+- Dated commands: `./mvnw -q '-DargLine=-javaagent:$HOME/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar' test`
+  (exit 0), `./mvnw -q -DskipTests package` (exit 0), then
+  `BROWSER_CHANNEL=chrome npm run test:browser`,
+  `BROWSER_CHANNEL=chrome npm run test:milestone`, and
+  `npm run test:persistence` (exit 0).
+  Diagram: `powershell -NoProfile -ExecutionPolicy Bypass -File docs/diagrams/j09-j12/render.ps1`
+  (exit 0).
+- Artifacts: `target/browser-checks`, `target/browser-milestone` (including
+  `privacy.png`, `history-375.png`, `history-1440.png`, `offline-list*.png`, and
+  `app.log`), and `docs/diagrams/j09-j12/*.svg|*.png`.
+
+Limits: privacy deletion is personal only; it cannot recall exported or shared
+copies and does not reset the accepted catalogue. The history check's gap and
+retention evidence uses a mutable test clock and direct observation rows; the
+browser scenario's same-day imports do not create a seven-day gap. The contrast
+check measures Chromium computed styles, not a full WCAG audit or screen-reader
+pass. The PlantUML sources were checked against the implementation and rendered
+successfully, but the agent could not perform a pixel-level visual review; a
+human should inspect the four exports before submission.
+
+## J11 offline saved list — 19 November 2026
+
+- Added `GET /list/offline` for My list and `GET /list/offline?listId=...` for a
+  chosen saved list. The response is a UTF-8 HTML attachment named
+  `<list name>.pricewatch.html`; an unknown list id returns 404.
+- The snapshot is self-contained: inline CSS only, with no script, form, link,
+  image, refresh control, chat control, or remote URL. It contains product name,
+  brand, code, quantity, checked state, retailer, saved unit and line amounts
+  (or `Unknown`), the saved-on time, a data-age label, and `Source price date:
+  Unknown`.
+- Added offline-copy links to My list and to every row of the transfer page, plus
+  message keys in all three bundles. List names and source labels are escaped;
+  product labels keep their `lang` attributes.
+- Added `OfflineSnapshotServiceTest` (6 tests) and three
+  `ListTransferControllerTest` cases for the download, chosen list, escaping,
+  and unknown-list 404.
+- Full Maven run passed **141 tests** with no failures, errors, or skips.
+- Chromium 1208 through Playwright 1.58.2 passed **9 baseline** and **15
+  milestone** scenarios with no browser console errors. The new milestone
+  scenario downloads the snapshot, stops the Spring Boot process, opens the file
+  through `file://` in an offline browser context, checks the saved values and
+  labels, checks that no script/form/link/resource element exists, and checks
+  375 px and 1440 px without horizontal overflow.
+- The packaged-JAR file-database restart check passed.
+- Environment: JDK 21.0.12.1, Spring Boot 3.4.5, H2 2.3.232, Node 24.18.0.
+- Dated commands: `./mvnw -q '-DargLine=-javaagent:$HOME/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar' test`
+  (exit 0), `./mvnw -q -DskipTests package` (exit 0), then
+  `BROWSER_CHANNEL=chrome npm run test:browser`,
+  `BROWSER_CHANNEL=chrome npm run test:milestone`, and
+  `npm run test:persistence` (exit 0).
+- Artifacts: `target/browser-milestone/my-list.pricewatch.html`,
+  `offline-list.png`, `offline-list-375.png`, and `app.log`.
+
+Limits: the snapshot is a static file. It shows the saved-on timestamp and
+explains that its age is the time since then; no value inside the file updates.
+It is one chosen list, read-only, and not a live sharing link. The browser check
+uses Chromium only and a synthetic local feed. Chinese text is reviewed source
+text, not machine-translation evidence. Personal-data controls, history views,
+the full contrast/keyboard review, and final integration remain unimplemented.
+
+## J09 Ask and J10 list sharing — 19 November 2026
+
+- Added `GET /ask` and `POST /ask`. Retrieval selects an accepted active product
+  deterministically, builds checked facts, and asks the configured model only to
+  explain those facts. No match, ambiguous match, missing key, provider failure,
+  timeout, empty answer, or a `HK$`/`$` amount outside the checked prices falls
+  back to a deterministic checked answer.
+- Added version 1 `pricewatch-list` export from `/list/export` and
+  `/list/export?listId=`, and multipart import from `/list/import`. Import checks
+  the whole file before writing and creates one separate list without merging.
+  Records preserve product code, quantity, checked state, and saved retailer.
+  Limits are 2 MB and 999 distinct products. Listed-but-unpriced retailers keep
+  their saved choice; unlisted retailers reject the file.
+- Added the J10 transfer page, list summary/preview, message keys in all three
+  bundles, and a My-list entry link.
+- Full Maven run passed **132 tests** with no failures, errors, or skips.
+  `ListTransferServiceTest` contributes 8 tests and `ListTransferControllerTest`
+  contributes 8 tests. `AskServiceTest`, `AskControllerTest`, and
+  `HttpAiAnswerClientTest` were included in the full run.
+- Chromium 1208 through Playwright 1.58.2 passed **9 baseline** and **14
+  milestone** scenarios with no browser console errors. The new milestone
+  scenario checks the Ask fallback and chooser, a versioned export, a successful
+  import into a separate list, a rejected malformed import, and `/list/import`
+  at 375 and 1440 px.
+- The packaged-JAR file-database restart check passed. This run used the current
+  JAR as both baseline and current; the old-to-new upgrade evidence remains the
+  earlier pre-J05 `5ecf9e1` run.
+- Environment: JDK 21.0.12.1, Spring Boot 3.4.5, H2 2.3.232, Node 24.18.0.
+- Dated commands: `./mvnw -q '-DargLine=-javaagent:$HOME/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar' test`
+  (exit 0), `./mvnw -q -DskipTests package` (exit 0), then
+  `BROWSER_CHANNEL=chrome npm run test:browser` and
+  `BROWSER_CHANNEL=chrome npm run test:milestone` (exit 0).
+- Artifacts: `target/browser-checks`, `target/browser-milestone` (including
+  `list-import-375.png`, `list-import-1440.png`, and `app.log`).
+
+Limits: the automated Ask run has no API key and therefore covers the fallback,
+not live provider output. The provider contract is checked with a fake client and
+a local HTTP server. List transfer is a file snapshot, not sync; imported lists
+are previewed/exported but not edited in `/list`. Chromium is the only browser
+checked. Chinese text is reviewed source text, not machine-translation evidence.
+Offline snapshot, personal-data controls, history views, and final integration
+remain unimplemented.
+
+## J09–J12 workstream 2 — 18 November 2026
+
+- Added the three reviewed message bundles (`messages`, `messages_zh_HK`,
+  `messages_zh_CN`) and moved page, controller, and service text onto shared
+  keys. The key sets are checked for parity.
+- Added the single local user's saved language and contrast row and a custom
+  `LocaleResolver`. English is the default even when the host JVM locale is
+  Chinese; system-locale fallback is disabled for both Spring's `MessageSource`
+  and `AppMessages`.
+- Added the reviewed product-label fallback order (English, then Traditional,
+  then Simplified from English; Traditional-first for `zh-HK`; Simplified-first
+  for `zh-CN`) with source `lang` attributes.
+- Added the saved high-contrast theme and responsive preference controls.
+- Full Maven run passed **96 tests** with no failures, errors, or skips.
+  `LocalizationTest` contributes 6 tests: English default, saved Traditional and
+  Simplified Chinese on pages, invalid preference rejection, bundle key parity,
+  and product-label fallback.
+- Chromium 1208 through Playwright 1.58.2 passed **9 baseline** and **12
+  milestone** scenarios with no browser console errors. The added milestone
+  scenario switches to Traditional Chinese and high contrast, checks the applied
+  `lang`/`data-contrast` values, and checks the budget page at 375, 768, 1024,
+  and 1440 px before restoring English/normal.
+- Environment: JDK 21.0.12.1, Spring Boot 3.4.5, H2 2.3.232, Node 24.18.0.
+- Dated command: `./mvnw -q '-DargLine=-javaagent:$HOME/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar' test`
+  (exit 0), then `BROWSER_CHANNEL=chrome npm run test:browser` and
+  `BROWSER_CHANNEL=chrome npm run test:milestone` (exit 0).
+
+Limits: Chinese text is reviewed source text, not machine-translation evidence.
+The browser check covers Chromium only and four widths, not every browser or a
+full WCAG contrast/keyboard audit. Workstreams 3–7 (Ask, list transfer, offline
+snapshot, personal-data controls, history views, final integration) remain
+unimplemented.
+
+## J09–J12 workstream 1 — 18 November 2026
+
+- Replaced the per-retailer saved-page controls with one **Track this product**
+  / **Stop tracking** control. Existing retailer periods remain internal history.
+- Added one product target applied to every active retailer period. A retailer
+  enrolled by a later accepted LIVE import inherits the product target.
+- Removed the enabled Add action when a reminder's pinned retailer has no current
+  price. The page now explains the block and offers other priced retailers.
+- Full Maven run passed **90 tests** with no failures, errors, or skips.
+- Chromium 1208 through Playwright 1.58.2 passed **9 baseline** and **11 milestone**
+  scenarios with no browser console errors.
+- The file-database restart check passed.
+- An old-to-new H2 upgrade from the pre-J05 commit `5ecf9e1` preserved the
+  catalogue, retailer, quantity, checked state and exact total.
+- Environment: JDK 21.0.12.1, Spring Boot 3.4.5, H2 2.3.232, Node 24.18.0.
+
+Limits: prices remain synthetic local fixtures. Workstreams 2–7 of J09–J12,
+including chat, list transfer, offline snapshot, languages, high contrast,
+personal-data controls and final history views, are not implemented or verified
+by this run. No account, cloud storage, purchase record or live source claim is
+added.
+
 ## PR #18 review follow-up — 12 November 2026
 
 - Maven package on JDK 21 with the Byte Buddy startup agent passed 88 tests

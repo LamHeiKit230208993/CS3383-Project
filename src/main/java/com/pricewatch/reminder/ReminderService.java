@@ -1,9 +1,11 @@
 package com.pricewatch.reminder;
 
+import com.pricewatch.catalog.LocalizedText;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.catalog.persistence.ProductEntity;
 import com.pricewatch.catalog.persistence.RetailerListingEntity;
 import com.pricewatch.catalog.repository.ProductRepository;
+import com.pricewatch.i18n.AppMessages;
 import com.pricewatch.notifications.NotificationPolicy;
 import com.pricewatch.reminder.persistence.ReminderEntity;
 import com.pricewatch.reminder.repository.ReminderRepository;
@@ -16,6 +18,7 @@ import java.time.Clock;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -52,29 +55,29 @@ public class ReminderService {
     public ProductView candidate(String code) {
         ProductEntity product = products.findWithListingsByCode(code)
                 .filter(ProductEntity::isActive)
-                .orElseThrow(() -> new IllegalArgumentException("Choose a product from the current catalogue."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.reminder.product")));
         return ProductView.from(product);
     }
 
     @Transactional
     public void create(String productCode, int quantity, int intervalDays, String retailerCode) {
         if (quantity < MIN_QUANTITY || quantity > MAX_QUANTITY) {
-            throw new IllegalArgumentException("Quantity must be a whole number from 1 to 999.");
+            throw new IllegalArgumentException(AppMessages.text("error.quantity"));
         }
         if (intervalDays < 1) {
-            throw new IllegalArgumentException("Choose an interval of at least 1 day.");
+            throw new IllegalArgumentException(AppMessages.text("error.interval"));
         }
         if (productCode == null || productCode.isBlank()) {
-            throw new IllegalArgumentException("Choose a product from the current catalogue.");
+            throw new IllegalArgumentException(AppMessages.text("error.reminder.product"));
         }
 
         ProductEntity product = products.findWithListingsByCode(productCode)
                 .filter(ProductEntity::isActive)
-                .orElseThrow(() -> new IllegalArgumentException("Choose a product from the current catalogue."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.reminder.product")));
         String selectedRetailer = retailerCode == null || retailerCode.isBlank() ? null : retailerCode.strip();
         if (selectedRetailer != null && product.getListings().stream()
                 .map(RetailerListingEntity::getRetailerCode).noneMatch(selectedRetailer::equals)) {
-            throw new IllegalArgumentException("Choose a listed retailer for this product, or use Automatic lowest.");
+            throw new IllegalArgumentException(AppMessages.text("error.reminder.retailer"));
         }
 
         Instant now = clock.instant();
@@ -82,7 +85,7 @@ public class ReminderService {
             reminders.save(new ReminderEntity(product, quantity, intervalDays, selectedRetailer,
                     now.plus(intervalDays, ChronoUnit.DAYS)));
         } catch (DateTimeException exception) {
-            throw new IllegalArgumentException("That interval is outside the supported date range.", exception);
+            throw new IllegalArgumentException(AppMessages.text("error.intervalRange"), exception);
         }
     }
 
@@ -103,6 +106,26 @@ public class ReminderService {
     }
 
     @Transactional
+    public void changeRetailer(long id, String retailerCode) {
+        ReminderEntity reminder = reminders.findWithProductById(id).orElseThrow(ReminderService::notFound);
+        ProductEntity product = reminder.getProduct();
+        if (!product.isActive()) {
+            throw new IllegalArgumentException(AppMessages.text("error.product.inactive"));
+        }
+
+        String selectedRetailer = retailerCode == null || retailerCode.isBlank() ? null : retailerCode.strip();
+        List<RetailerChoiceView> available = currentChoices(product);
+        if (selectedRetailer == null) {
+            if (available.isEmpty()) {
+                throw new IllegalArgumentException(AppMessages.text("error.reminder.noPricedRetailer"));
+            }
+        } else if (available.stream().noneMatch(choice -> selectedRetailer.equals(choice.code()))) {
+            throw new IllegalArgumentException(AppMessages.text("error.reminder.retailerPrice"));
+        }
+        reminder.setSelectedRetailerCode(selectedRetailer);
+    }
+
+    @Transactional
     public void delete(long id) {
         ReminderEntity reminder = reminders.findById(id).orElseThrow(ReminderService::notFound);
         reminders.delete(reminder);
@@ -113,26 +136,29 @@ public class ReminderService {
         var name = product.getName();
         var brand = product.getBrand();
         String retailerCode = reminder.getSelectedRetailerCode();
-        boolean priceAvailable = product.getListings().stream().anyMatch(listing ->
-                (retailerCode == null || retailerCode.equals(listing.getRetailerCode())) && listing.getPrice() != null);
+        List<RetailerChoiceView> available = currentChoices(product);
+        boolean priceAvailable = available.stream()
+                .anyMatch(choice -> retailerCode == null || retailerCode.equals(choice.code()));
         Instant effectiveDueAt = reminder.effectiveDueAt();
         String productName = name == null ? product.getCode()
-                : label(name.getEn(), name.getZhHant(), name.getZhHans(), product.getCode());
-        String brandName = brand == null ? "" : label(brand.getEn(), brand.getZhHant(), brand.getZhHans(), "");
+                : LocalizedText.label(name.getEn(), name.getZhHant(), name.getZhHans());
+        String brandName = brand == null ? "" : LocalizedText.label(brand.getEn(), brand.getZhHant(), brand.getZhHans());
         return new ReminderView(reminder.getId(), product.getCode(), productName, brandName,
                 reminder.getQuantity(), reminder.getIntervalDays(),
-                retailerCode, priceAvailable, product.isActive(), reminder.getNextDueAt(), effectiveDueAt,
+                retailerCode, priceAvailable, product.isActive() && priceAvailable, available,
+                product.isActive(), reminder.getNextDueAt(), effectiveDueAt,
                 !quietHours && !now.isBefore(effectiveDueAt));
     }
 
-    private static String label(String english, String traditional, String simplified, String fallback) {
-        if (english != null && !english.isBlank()) return english;
-        if (traditional != null && !traditional.isBlank()) return traditional;
-        if (simplified != null && !simplified.isBlank()) return simplified;
-        return fallback;
+    private static List<RetailerChoiceView> currentChoices(ProductEntity product) {
+        return product.getListings().stream()
+                .filter(listing -> listing.getPrice() != null)
+                .sorted(Comparator.comparing(RetailerListingEntity::getRetailerCode))
+                .map(listing -> new RetailerChoiceView(listing.getRetailerCode(), listing.getPrice()))
+                .toList();
     }
 
     private static IllegalArgumentException notFound() {
-        return new IllegalArgumentException("That reminder no longer exists.");
+        return new IllegalArgumentException(AppMessages.text("error.reminder.notFound"));
     }
 }

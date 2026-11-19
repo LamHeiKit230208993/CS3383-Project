@@ -70,6 +70,9 @@ public class ReminderEntity {
     public int getQuantity() { return quantity; }
     public int getIntervalDays() { return intervalDays; }
     public String getSelectedRetailerCode() { return selectedRetailerCode; }
+    public void setSelectedRetailerCode(String selectedRetailerCode) {
+        this.selectedRetailerCode = selectedRetailerCode;
+    }
     public Instant getNextDueAt() { return nextDueAt; }
     public Instant getSnoozedUntil() { return snoozedUntil; }
 

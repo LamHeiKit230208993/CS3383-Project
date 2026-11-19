@@ -3,11 +3,12 @@
 Updated: 6 November 2026.
 
 Status: [Issue #17](https://github.com/LamHeiKit230208993/CS3383-Project/issues/17)
-groups J05–J08 in one milestone. The user approved the D01–D07 rules on
-6 November 2026. The local implementation passed its integrated checks on that
-date: 86 Java tests, 20 browser scenarios and the old-to-new H2 upgrade check.
-See [test history](../Test/history.md). Commit/PR review and merge remain;
-the issue is still open. The closure checks below remain applicable.
+grouped J05–J08 in one milestone and is now closed. The user approved the
+D01–D07 rules on 6 November 2026. The implementation passed its integrated
+checks on that date: 86 Java tests, 20 browser scenarios and the old-to-new H2
+upgrade check. The 12 November review follow-up passed 88 Java tests, and PR #18
+merged on 15 November. See [test history](../Test/history.md). The closure checks
+below remain the acceptance record for this milestone.
 
 Read the [project scope](../project-scope.md), [job plan](features.md), and
 [implemented J01–J04 contract](../implementation-baseline-j01-j04.md) first.

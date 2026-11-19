@@ -106,10 +106,12 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Alerts, Budget, and Reminders now have working forms in the J05–J08
-implementation. Local integration checks passed on 6 November 2026; Ask remains planned.
-See the [baseline guide](implementation-baseline-j01-j04.md) and
-[extension guide](implementation-j05-j08.md) for behaviour and limits.
+Saved, Alerts, Budget, and Reminders have working forms from J05–J08. J09 Ask,
+J10 list sharing, J11 offline snapshots, and J12 history/personal-data controls
+are implemented on this branch. See the
+[baseline guide](implementation-baseline-j01-j04.md),
+[extension guide](implementation-j05-j08.md), and
+[J09–J12 contract](implementation-j09-j12.md) for behaviour and limits.
 
 ### Try the J05–J08 flow
 
@@ -138,11 +140,127 @@ also refresh every minute when visible, unless a form has edits or focus, or a
 disclosure is open. Reopen or reload the page to refresh manually. Without
 JavaScript, forms still work and page opening checks the current state.
 
+### Change language or contrast
+
+Open **Preferences**, choose English, 繁體中文 (Traditional Chinese), or
+简体中文 (Simplified Chinese), and choose normal or high contrast. Save the form.
+The choice is stored in the local H2 database for the single local user and
+applies to every page; no account, cookie, or JavaScript is involved. The
+sidebar language form changes only the language and keeps the current contrast.
+
+Product and brand names come from the imported source data and keep their own
+language. Missing translations fall back in this order:
+
+- English screen: English, then Traditional, then Simplified.
+- Traditional Chinese screen: Traditional, then English, then Simplified.
+- Simplified Chinese screen: Simplified, then English, then Traditional.
+
+Prices and retailer/product codes are not translated. High contrast changes the
+page colours and focus outline but does not replace a keyboard or assistive
+technology check.
+
+### Enable the Ask assistant (optional)
+
+Ask works without an AI provider: it shows the checked product, every listed
+retailer price or `Unknown`, the lowest price, and the retrieval time. The AI is
+only asked to explain those checked facts in the question's language. If it is
+missing, fails, times out, or mentions a price that is not in the checked facts,
+the page shows the deterministic checked answer instead.
+
+Set the key in the environment before starting the app. Never put it in a tracked
+file, screenshot, test, log, or commit:
+
+```powershell
+$env:PRICEWATCH_AI_API_KEY = "<Your CityU API key>"
+java -jar target\pricewatch-0.0.1-SNAPSHOT.jar
+```
+
+The CityU OpenAI-compatible defaults are already in
+`application.properties`:
+
+- Base URL: `https://llm.cs.cityu.edu.hk/v1`
+- Model: `CS3383/DeepSeek-V4-Flash`
+
+Override them only if CityU changes the contract:
+
+```powershell
+$env:PRICEWATCH_AI_BASE_URL = "https://llm.cs.cityu.edu.hk/v1"
+$env:PRICEWATCH_AI_MODEL = "CS3383/DeepSeek-V4-Flash"
+```
+
+If the label says `AI unavailable or rejected`, the app fell back to the checked
+answer. The rest of the app, including search, comparison, and every checked
+fact on the Ask page, remains usable.
+
+Do not read the key from `opencode.json`; put the value directly in the
+environment variable or an untracked local properties file.
+
+### Export or import a list
+
+Open **My list**, then **Export or import**. Export downloads a version 1 JSON
+snapshot of a saved list. Import creates a new separate list from a file; it
+never overwrites or merges into My list. The page previews the created records,
+and the new list can be previewed or exported again.
+
+The file stores product codes, quantities, checked states, and saved retailer
+choices, but not prices. The importing app uses its own current accepted
+catalogue, so both local copies need compatible products. A retailer must be
+listed for its product; a listed retailer with no current price keeps its saved
+choice and shows an unknown price. A file is limited to 2 MB and 999 distinct
+products, with quantities from 1 to 999.
+
+The whole file is checked before anything is written. Malformed, oversized,
+unknown-product, duplicate-product, out-of-range, or unlisted-retailer input
+leaves every existing list unchanged. Imported lists are read-only in this
+milestone: `/list` still edits only My list.
+
+### Save a list for offline use
+
+On **My list**, choose **Offline copy**. The transfer page also offers an
+offline copy for each saved list. The browser downloads one `.pricewatch.html`
+file containing the list name, products, quantities, checked states, saved
+retailers, unit and line amounts, and the saved-on time. Prices that are not
+known are shown as **Unknown**.
+
+The file contains inline styling only. It has no script, form, link, image,
+refresh control, chat control, or remote address. You can copy it to the viewing
+device, stop the app or disconnect the device, and open it in a browser. Saved
+amounts stay visible, with a data-age label and an **Unknown** source price date.
+The copy is read-only: it never refreshes, and checking or editing inside the
+file is not supported. Its age is the time elapsed since the visible saved-on
+timestamp.
+
 For isolated checks, disable the scheduled summary job with
 `--pricewatch.jobs.enabled=false`. This does not disable manual refresh, page
 checks, or the browser's safe page refresh.
 
-To stop the app, press `Ctrl+C` in the terminal.
+### See a tracked product's history
+
+On **Saved**, choose **View history** for a tracked product, or open
+`/history/<product code>`. The page shows one section per tracking period with
+its retailer and status, then the retrieval time and listed price of each
+accepted LIVE observation in the last 90 days. `Unknown` means the stored
+observation has no price.
+
+When adjacent observations are at least seven days apart, the table shows a gap
+row with the number of days that have no recorded observation. The page does not
+invent daily values, and the source price date remains unknown. An unknown or
+untracked product returns 404. The page is read-only.
+
+### Review privacy and delete personal data
+
+Open **Privacy** to see how many lists, list items, wishlist entries, tracking
+periods, observations, alerts, and reminders are stored, and whether preferences,
+budget, and alert timing are set. **Download personal data** saves one versioned
+`pricewatch-personal-data.json` file containing those personal records. The
+accepted product catalogue and its source metadata are not included.
+
+**Delete personal records** requires the confirmation checkbox. It removes the
+personal records above and resets product-wide tracking and target choices, but
+keeps accepted products, listings, offers, and import metadata. Exported or
+shared copies cannot be recalled. Deleting preferences returns the UI to the
+English/normal default. Use the separate list export when you only want to share
+one list; that file contains no prices or other personal settings.
 
 ### Local database
 

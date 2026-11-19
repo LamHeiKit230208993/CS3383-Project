@@ -6,6 +6,7 @@ const http = require("node:http");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { once } = require("node:events");
+const { pathToFileURL } = require("node:url");
 const { chromium } = require("playwright");
 
 const root = path.resolve(__dirname, "../../..");
@@ -119,7 +120,7 @@ async function main() {
     assert.match(await page.locator("main").innerText(), /E2E-MILK/);
     assert.match(await page.locator("main").innerText(), /No tracking yet/);
     await go("/saved?code=E2E-MILK");
-    await submit(page.locator('section[aria-labelledby="save-product-title"]').getByRole("button", { name: "Track TEST-STORE" }), "/saved");
+    await submit(page.locator('section[aria-labelledby="save-product-title"]').getByRole("button", { name: "Track this product" }), "/saved");
     assert.match(await page.locator("main").innerText(), /TEST-STORE · E2E-MILK/);
   });
 
@@ -203,15 +204,95 @@ async function main() {
     assert.equal(await events.filter({ hasText: "PRICE DROP" }).count(), 2);
   });
 
+  await check("ask uses checked facts with a safe no-AI fallback", async () => {
+    await go("/ask");
+    await page.locator("#ask-question").fill("Price for E2E-MILK");
+    await submit(page.getByRole("button", { name: "Ask" }), "/ask");
+    const answer = await page.locator("main").innerText();
+    assert.match(answer, /CHECKED ANSWER/);
+    assert.match(answer, /E2E-MILK/);
+    assert.match(answer, /TEST-STORE/);
+    assert.match(answer, /HK\$7\.00/);
+    assert.match(answer, /source price date/i);
+
+    await page.locator("#ask-question").fill("Compare E2E-MILK and E2E-NOODLE");
+    await submit(page.getByRole("button", { name: "Ask" }), "/ask");
+    assert.match(await page.locator("main").innerText(), /Choose the product/);
+    await page.locator('input[name="productCode"][value="E2E-NOODLE"]').check();
+    await submit(page.getByRole("button", { name: "Use this product" }), "/ask");
+    assert.match(await page.locator("main").innerText(), /HK\$5\.00/);
+    await capture("ask");
+  });
+
+  await check("list export is a snapshot and import creates a separate validated list", async () => {
+    const exported = await context.request.get(`${base}/list/export`);
+    assert.equal(exported.status(), 200);
+    assert.match(exported.headers()["content-disposition"], /attachment/);
+    const snapshot = await exported.json();
+    assert.equal(snapshot.format, "pricewatch-list");
+    assert.equal(snapshot.version, 1);
+    assert.equal(snapshot.name, "My list");
+    assert.equal(snapshot.items.some(item => item.productCode === "E2E-MILK"
+      && item.quantity === 1 && item.retailerCode === "TEST-STORE"), true);
+
+    await go("/list/import");
+    await page.locator("#share-file").setInputFiles({
+      name: "trip.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({
+        format: "pricewatch-list",
+        version: 1,
+        name: "Trip",
+        items: [{ productCode: "E2E-NOODLE", quantity: 3, checked: true, retailerCode: "NOODLE-STORE" }]
+      }))
+    });
+    await submit(page.getByRole("button", { name: "Import as a new list" }), "/list/import");
+    const imported = await page.locator("main").innerText();
+    assert.match(imported, /Imported Trip as a new list\./);
+    assert.match(imported, /Separate list/);
+    assert.match(imported, /E2E-NOODLE/);
+    assert.match(imported, /NOODLE-STORE/);
+    assert.match(imported, /My list/);
+    const importedRow = page.locator("table.facts-table tbody tr").filter({ hasText: "E2E-NOODLE" });
+    assert.match(await importedRow.innerText(), /\b3\b/);
+    assert.match(await importedRow.innerText(), /Yes/);
+
+    await go("/list");
+    const mainNoodle = page.locator("article.list-item").filter({ hasText: "E2E-NOODLE" });
+    assert.equal(await mainNoodle.count(), 1);
+    assert.equal(await mainNoodle.locator('[name="quantity"]').inputValue(), "2");
+    assert.equal(await mainNoodle.locator('[name="checked"]').isChecked(), false);
+    assert.match(await page.locator("main").innerText(), /E2E-MILK/);
+
+    await go("/list/import");
+    await page.locator("#share-file").setInputFiles({
+      name: "broken.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("{not json")
+    });
+    await submit(page.getByRole("button", { name: "Import as a new list" }), "/list/import");
+    const rejected = await page.locator("main").innerText();
+    assert.match(rejected, /not a readable list file/);
+    assert.match(rejected, /Trip/);
+
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await go("/list/import");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
+        `List transfer overflow at ${width}px`);
+      await capture(`list-import-${width}`);
+    }
+  });
+
   await check("invalid form parameters return client errors or validation redirects, never 500", async () => {
     const invalidReminder = await context.request.post(`${base}/reminders/create`, {
       form: { code: "E2E-NOODLE", quantity: "0", intervalDays: "7" }, maxRedirects: 0
     });
     assert.equal(invalidReminder.status(), 302);
     await go("/alerts");
-    const trackingId = await page.locator('[action="/alerts/target"] [name="trackingId"]').inputValue();
+    const code = await page.locator('[action="/alerts/target"] [name="code"]').inputValue();
     const invalidTarget = await context.request.post(`${base}/alerts/target`, {
-      form: { trackingId, targetPrice: "not-a-price" }, maxRedirects: 0
+      form: { code, targetPrice: "not-a-price" }, maxRedirects: 0
     });
     assert.equal(invalidTarget.status(), 400);
     const invalidBudget = await context.request.post(`${base}/budget`, {
@@ -279,6 +360,213 @@ async function main() {
       assert.match(await nativePage.locator("main").innerText(), /within your planned limit/);
     } finally {
       await nativeContext.close();
+    }
+  });
+
+  await check("saved language and high contrast apply to every page", async () => {
+    await go("/preferences");
+    await page.locator('main form[action="/preferences"] [name="locale"][value="zh-HK"]').check();
+    await page.locator('main form[action="/preferences"] [name="contrast"][value="high"]').check();
+    await submit(page.locator('main form[action="/preferences"] button[type="submit"]'), "/preferences");
+
+    await go("/budget");
+    assert.equal(await page.locator("html").getAttribute("lang"), "zh-Hant");
+    assert.equal(await page.locator("body").getAttribute("data-contrast"), "high");
+    assert.match(await page.locator("main").innerText(), /你的計劃上限/);
+
+    const contrastRatio = await page.evaluate(() => {
+      const rgb = value => value.match(/[\d.]+/g).slice(0, 3).map(Number);
+      const luminance = ([r, g, b]) => {
+        const channel = value => {
+          const scaled = value / 255;
+          return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const style = getComputedStyle(document.body);
+      const foreground = luminance(rgb(style.color));
+      const background = luminance(rgb(style.backgroundColor));
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+    });
+    assert.ok(contrastRatio >= 7, `High-contrast body text ratio was ${contrastRatio.toFixed(2)}:1`);
+
+    await go("/saved");
+    const pillBorder = await page.locator(".status-pill").first()
+      .evaluate(element => getComputedStyle(element).borderTopWidth);
+    assert.notEqual(pillBorder, "0px", "Status must not rely on colour alone in high contrast.");
+
+    await go("/preferences");
+    for (let press = 0; press < 25; press++) {
+      await page.keyboard.press("Tab");
+      if (await page.evaluate(() => !!document.activeElement.closest("main"))) break;
+    }
+    const focus = await page.evaluate(() => ({
+      inMain: !!document.activeElement.closest("main"),
+      outlineWidth: getComputedStyle(document.activeElement).outlineWidth
+    }));
+    assert.equal(focus.inMain, true, "Tab must reach the main content.");
+    assert.equal(focus.outlineWidth, "4px", "High-contrast keyboard focus must be clearly visible.");
+
+    for (const width of [375, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await go("/budget");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
+        `Chinese layout overflow at ${width}px`);
+      await capture(`budget-zh-hant-${width}`);
+    }
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await go("/preferences");
+    await page.locator('main form[action="/preferences"] [name="locale"][value="en"]').check();
+    await page.locator('main form[action="/preferences"] [name="contrast"][value="normal"]').check();
+    await submit(page.locator('main form[action="/preferences"] button[type="submit"]'), "/preferences");
+    await go("/budget");
+    assert.equal(await page.locator("html").getAttribute("lang"), "en");
+    assert.equal(await page.locator("body").getAttribute("data-contrast"), "normal");
+  });
+
+  await check("history shows the accepted observations for a tracked product", async () => {
+    await go("/saved");
+    assert.match(await page.locator("main").innerText(), /View history/);
+    await Promise.all([
+      page.waitForURL(url => url.pathname === "/history/E2E-MILK"),
+      page.getByRole("link", { name: "View history" }).first().click()
+    ]);
+    const history = await page.locator("main").innerText();
+    assert.match(history, /History for Fresh Milk 236mL/);
+    assert.match(history, /TEST-STORE/);
+    assert.match(history, /Retrieved/);
+    assert.match(history, /Listed price/);
+    assert.match(history, /HK\$\d+\.\d{2}/);
+    assert.match(history, /90-day retention/);
+    assert.match(history, /daily values are not invented/);
+
+    const missing = await context.request.get(`${base}/history/UNKNOWN`, { maxRedirects: 0 });
+    assert.equal(missing.status(), 404);
+
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await go("/history/E2E-MILK");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
+        `History overflow at ${width}px`);
+      await capture(`history-${width}`);
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  });
+
+  await check("privacy exports personal records, then deletes only those records", async () => {
+    await go("/privacy");
+    const privacy = await page.locator("main").innerText();
+    assert.match(privacy, /Privacy and your local data/);
+    assert.match(privacy, /What is stored now/);
+    assert.match(privacy, /Download personal data/);
+    assert.match(privacy, /I understand this permanently deletes/);
+    await capture("privacy");
+
+    const exported = await context.request.get(`${base}/privacy/export`);
+    assert.equal(exported.status(), 200);
+    assert.match(exported.headers()["content-disposition"], /attachment/);
+    const data = await exported.json();
+    assert.equal(data.format, "pricewatch-personal-data");
+    assert.equal(data.version, 1);
+    assert.equal(data.lists.some(list => list.items.some(item => item.productCode === "E2E-MILK")), true);
+    assert.equal(data.wishlist.some(entry => entry.productCode === "E2E-MILK"), true);
+    assert.equal(data.tracking.some(period => period.productCode === "E2E-MILK"
+      && period.observations.length >= 2), true);
+    assert.equal(data.alerts.length > 0, true);
+    assert.equal(data.budget.period, "MONTHLY");
+    assert.equal(data.reminders.length > 0, true);
+    assert.equal(data.preferences.locale, "en");
+    assert.equal("products" in data, false);
+    assert.equal("catalogue" in data, false);
+
+    const cancelled = await context.request.post(`${base}/privacy/delete`, { maxRedirects: 0 });
+    assert.equal(cancelled.status(), 302);
+    await go("/privacy");
+    assert.match(await page.locator("main").innerText(), /Confirm the deletion first/);
+    assert.equal(await page.locator(".privacy-facts dd").first().innerText(), "2");
+
+    await page.locator('form[action="/privacy/delete"] [name="confirmDelete"]').check();
+    await submit(page.getByRole("button", { name: "Delete personal records" }), "/privacy");
+    assert.match(await page.locator("main").innerText(), /Personal records were deleted/);
+    const facts = await page.locator(".privacy-facts dd").allInnerTexts();
+    assert.deepEqual(facts.slice(0, 7), ["0", "0", "0", "0", "0", "0", "0"]);
+    assert.equal(facts.slice(7).every(value => value === "Not set"), true);
+
+    await go("/products/E2E-MILK");
+    assert.match(await page.locator("main").innerText(), /Fresh Milk 236mL/);
+
+    for (const [code, quantity] of [["E2E-MILK", "1"], ["E2E-NOODLE", "2"]]) {
+      await go(`/products/${code}`);
+      await page.locator(".retailer-option").first().click();
+      await page.locator("#quantity").fill(quantity);
+      await submit(page.getByRole("button", { name: "Add to my list" }), "/list");
+    }
+    await go("/list");
+    const list = await page.locator("main").innerText();
+    assert.match(list, /E2E-MILK/);
+    assert.match(list, /E2E-NOODLE/);
+  });
+
+  await check("offline snapshot opens from a file with the app stopped and no live resources", async () => {
+    const response = await context.request.get(`${base}/list/offline`);
+    assert.equal(response.status(), 200);
+    assert.match(response.headers()["content-disposition"], /attachment/);
+    assert.match(response.headers()["content-type"], /text\/html/);
+    const html = await response.body();
+    const file = path.join(artifacts, "my-list.pricewatch.html");
+    fs.writeFileSync(file, html);
+    const sourceText = html.toString("utf8");
+    assert.match(sourceText, /E2E-MILK/);
+    assert.match(sourceText, /E2E-NOODLE/);
+    assert.match(sourceText, /HK\$7\.00/);
+    assert.match(sourceText, /HK\$10\.00/);
+    assert.match(sourceText, /Source price date/);
+    assert.doesNotMatch(sourceText, /<script|<form|<a\s|href=|src=|https?:\/\//i);
+
+    const stopped = once(child, "exit");
+    child.kill();
+    await stopped;
+
+    const offlineContext = await browser.newContext({
+      viewport: { width: 1440, height: 1000 },
+      offline: true
+    });
+    try {
+      const offlinePage = await offlineContext.newPage();
+      await offlinePage.goto(pathToFileURL(file).href);
+      const bodyText = await offlinePage.locator("body").innerText();
+      assert.match(bodyText, /E2E-MILK/);
+      assert.match(bodyText, /E2E-NOODLE/);
+      assert.match(bodyText, /TEST-STORE/);
+      assert.match(bodyText, /NOODLE-STORE/);
+      assert.match(bodyText, /HK\$7\.00/);
+      assert.match(bodyText, /HK\$10\.00/);
+      assert.match(bodyText, /Saved on/i);
+      assert.match(bodyText, /Data age/i);
+      assert.match(bodyText, /Source price date/i);
+      assert.match(bodyText, /Unknown/);
+      assert.match(bodyText, /Read-only/i);
+      assert.deepEqual(await offlinePage.evaluate(() => ({
+        scripts: document.querySelectorAll("script").length,
+        forms: document.querySelectorAll("form").length,
+        links: document.querySelectorAll("a").length,
+        resources: document.querySelectorAll("[href], [src]").length
+      })), { scripts: 0, forms: 0, links: 0, resources: 0 });
+      assert.equal(await offlinePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        true, "Offline snapshot overflow at 1440px");
+      await offlinePage.screenshot({
+        path: path.join(artifacts, "offline-list.png"), fullPage: true, animations: "disabled"
+      });
+
+      await offlinePage.setViewportSize({ width: 375, height: 1000 });
+      assert.equal(await offlinePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        true, "Offline snapshot overflow at 375px");
+      await offlinePage.screenshot({
+        path: path.join(artifacts, "offline-list-375.png"), fullPage: true, animations: "disabled"
+      });
+    } finally {
+      await offlineContext.close();
     }
   });
 

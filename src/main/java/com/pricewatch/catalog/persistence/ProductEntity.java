@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -66,6 +67,9 @@ public class ProductEntity {
     @Column(name = "track_all_retailers")
     private Boolean trackAllRetailers;
 
+    @Column(name = "product_target_price", precision = 19, scale = 4)
+    private BigDecimal productTargetPrice;
+
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private Set<RetailerListingEntity> listings = new LinkedHashSet<>();
 
@@ -90,6 +94,8 @@ public class ProductEntity {
     public boolean isActive() { return active; }
     public boolean isTrackAllRetailers() { return Boolean.TRUE.equals(trackAllRetailers); }
     public void setTrackAllRetailers(boolean enabled) { this.trackAllRetailers = enabled; }
+    public BigDecimal getProductTargetPrice() { return productTargetPrice; }
+    public void setProductTargetPrice(BigDecimal productTargetPrice) { this.productTargetPrice = productTargetPrice; }
     public void setActive(boolean active) { this.active = active; }
     public Set<RetailerListingEntity> getListings() { return listings; }
 

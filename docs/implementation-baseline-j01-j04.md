@@ -125,7 +125,8 @@ Maven package run passed 47 tests, including direct database-write rollback.
 All 9 saved Chrome scenarios passed against that rebuilt JAR. These are baseline
 results; they do not verify the J05–J08 extension or later edits. Current results
 belong in the [test catalogue](Test/test-case-catalog.md) and dated history.
-J09–J12 remain later work.
+J09–J12 are covered separately by the
+[J09–J12 contract](implementation-j09-j12.md).
 
 Issue #13 also requires the method shown in the course tutorial. The data model, application classes, and sequence diagrams cover the implementation and requested flow, but the issue does not identify that method. Confirm the tutorial-specific method with the team before claiming that this course requirement is verified.
 

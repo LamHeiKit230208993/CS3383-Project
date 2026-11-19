@@ -14,6 +14,7 @@ The original idea was a price-comparison app with a chat helper. The team has si
 | Understand the application | [J01–J04 baseline](docs/implementation-baseline-j01-j04.md), [J05–J08 extension](docs/implementation-j05-j08.md), and [UML index](docs/diagrams/README.md) |
 | Assign jobs or check dependencies | [Job plan](docs/Plan/features.md) |
 | Work on J05–J08 | [Milestone execution plan](docs/Plan/tracking-alerts-budgets-reminders-j05-j08.md); D01–D07 were agreed on 6 November 2026 |
+| Work on J09–J12 | [J09–J12 implementation plan](docs/Plan/j09-j12.md); D08–D13 were agreed on 18 November 2026 |
 | Check data limits and wider design proposals | [Feasibility review](docs/feasibility-review-simple.md), [source inspection](docs/Plan/data-sample-review.md), and [architecture](docs/architecture-options.md) |
 | Review test coverage or past results | [Current catalogue](docs/Test/test-case-catalog.md) and [dated history](docs/Test/history.md) |
 
@@ -24,15 +25,30 @@ evidence, not current implementation guidance.
 
 PR #15 is merged. J01–J04 provide the local import, search, comparison, and saved-list baseline. The 25 October baseline checks passed 47 Java tests and 9 browser scenarios; see the [test history](docs/Test/history.md#pr-15-review-regressions--25-october-2026). Those results do not verify later changes.
 
-**J05–J08 are implemented locally under issue #17.** This branch adds
-Saved products and retailer tracking, in-app alerts, planned budgets, and
-replenishment reminders. Validation on 6 November passed 86 Java tests, 9 baseline
-and 11 milestone browser scenarios, and an old-to-new H2 upgrade check. The
-changes await commit/PR review and merge; the issue remains open. Use the
-[implementation guide](docs/implementation-j05-j08.md) for routes and behaviour,
-and the [test catalogue](docs/Test/test-case-catalog.md) for verification evidence.
-The milestone plan records the agreed rules; the project scope remains the
-authority for feature decisions. J09–J12 remain later work.
+**J05–J08 are merged through PR #18; issue #17 is closed.** The extension adds
+Saved products and product tracking, in-app alerts, planned budgets, and
+replenishment reminders. Validation recorded on 12 November passed 88 Java
+tests, 9 baseline and 11 milestone browser scenarios, and an old-to-new H2
+upgrade check. A fresh full Maven run on 18 November also passed 88 tests. Use
+the [implementation guide](docs/implementation-j05-j08.md) for routes and
+behaviour, and the [test catalogue](docs/Test/test-case-catalog.md) for
+verification evidence. The milestone plan records the agreed rules; the project
+scope remains the authority for feature decisions.
+
+**J09–J12 are implemented under issue #21.** Product-wide tracking, the three
+UI languages, and the saved high-contrast display are in place. J09 Ask answers
+from checked catalogue facts with a deterministic fallback. J10 list sharing
+exports a versioned snapshot and imports a validated separate list; it never
+merges into an existing list. J11 downloads a self-contained read-only HTML
+snapshot with saved amounts, a saved-on/data-age label, and an unknown source
+price date; it opens with the app stopped. J12 adds personal-data view/export/
+delete, tracked product history with explicit gaps, and automated
+contrast/keyboard checks. The final run passed **149 Java tests in 28 suites**,
+**9 baseline and 17 milestone Chrome scenarios**, and the file-database restart
+check. The [J09–J12 plan](docs/Plan/j09-j12.md) records decisions D08–D13; the
+[implementation contract](docs/implementation-j09-j12.md) records behaviour and
+limits; the [test history](docs/Test/history.md) records dated results,
+including the remaining human review of the UML exports.
 
 ## Share the plan with teammates
 

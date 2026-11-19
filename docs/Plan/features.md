@@ -79,12 +79,15 @@ J04 completes the first milestone. UI work can start as a small sketch while J01
 
 ## 5. Following baseline jobs
 
-**Current milestone: J05–J08 in issue #17, locally implemented and checked; review/merge pending.** Read the
-[milestone execution plan](tracking-alerts-budgets-reminders-j05-j08.md) before
-assigning or implementing any of these jobs. It defines workstreams, shared
-contracts, the D01–D07 rules agreed on 6 November 2026, and combined completion checks. The issue
-can use separate linked PRs; grouping jobs does not remove their dependencies.
-J09–J12 remain later work. Conditional scope rows keep their existing conditions.
+**J05–J08 are merged through PR #18; issue #17 is closed.** Read the
+[milestone execution plan](tracking-alerts-budgets-reminders-j05-j08.md) for the
+D01–D07 rules agreed on 6 November 2026 and the combined completion checks.
+
+**Current milestone: J09–J12 in issue #21 (implemented).** Read the
+[J09–J12 plan](j09-j12.md) before assigning or implementing work. It defines the
+workstreams, shared contracts, D08–D13, and the combined completion checks. The
+issue can use separate linked PRs; grouping jobs does not remove their
+dependencies. Conditional scope rows keep their existing conditions.
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
@@ -97,11 +100,12 @@ J09–J12 remain later work. Conditional scope rows keep their existing conditio
 | J11 | Read-only saved-list view without a connection | Save on the viewing device, disconnect, and reopen the list; no fresh-price or remote-chat claim; saved amounts show their age | J04 |
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
-Within this milestone, J05 and J07 can proceed in parallel under the agreed
-D01–D07 rules. J06 follows J05; J08 uses the saved list and J06's
-agreed notification behaviour. Integrate and check the four jobs together before
-closing the issue. J09 does not need history, but is outside this milestone.
-J10's transfer format remains a later decision.
+Within the J09–J12 milestone, product-wide tracking and the language foundation
+come first. J09, J10, and J11 can then proceed in parallel except that J11 reuses
+the list-transfer/list-selection work from J10. J12's contrast, personal-data, and
+history work follows the features they expose. Integrate and check the four jobs
+together before closing issue #21. The transfer format is decided in the
+[J09–J12 plan](j09-j12.md#4-shared-contracts).
 
 Use the [agreed decision register](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
 for retention, periods, target/drop rules, repeat reset, timing, budgets, and
@@ -118,8 +122,10 @@ use the [J01–J04 implementation guide](../implementation-baseline-j01-j04.md).
 For current J05–J08 routes, records, operations, and limits, use the
 [extension implementation guide](../implementation-j05-j08.md). The
 [milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#shared-records-and-operations)
-defines its approved rules and acceptance checks. J09 chat contracts remain later work.
-App code must search and calculate before sending checked facts to an LLM.
+defines its approved rules and acceptance checks. J09–J12 contracts are in the
+[J09–J12 plan](j09-j12.md#4-shared-contracts) and the
+[J09–J12 implementation guide](../implementation-j09-j12.md). App code must search and calculate before sending checked
+facts to an LLM.
 
 ## 7. Checks and current state
 
@@ -131,11 +137,15 @@ The independent J01–J04 implementation now replaces the temporary Market Desk 
 
 
 J04 includes the minimum effective-price subtotal needed to review the list.
-This branch now adds J05–J08 wishlist/tracking, alerts, planned budgets/category
-totals, and reminders. Local validation on 6 November passed 86 Java tests,
-20 browser scenarios and an old-to-new database upgrade check; use the
-[test catalogue](../Test/test-case-catalog.md) for current evidence. AI chat,
-list transfer, offline reopening, and full UI translation remain J09–J12 work.
-Neither a working screen nor the earlier baseline test results close issue #17.
+PR #18 merged J05–J08 wishlist/tracking, alerts, planned budgets/category
+totals, and reminders. Validation recorded on 12 November passed 88 Java tests,
+9 baseline and 11 milestone browser scenarios, and an old-to-new database
+upgrade check; a fresh full Maven run on 18 November also passed 88 tests. Use
+the [test catalogue](../Test/test-case-catalog.md) for current evidence. AI
+chat, list transfer, offline reopening, full UI translation, personal-data
+controls, and history views are implemented under issue #21; see the
+[J09–J12 contract](../implementation-j09-j12.md) and the 19 November entry in
+the [test history](../Test/history.md). Neither a working screen nor earlier
+baseline results close that issue.
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

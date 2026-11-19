@@ -2,6 +2,7 @@ package com.pricewatch.web;
 
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.ProductView;
+import com.pricewatch.i18n.AppMessages;
 import com.pricewatch.reminder.ReminderService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -48,7 +49,7 @@ public class ReminderController {
                   @RequestParam(defaultValue = "") String retailerCode, RedirectAttributes redirect) {
         try {
             reminders.create(code, quantity, intervalDays, retailerCode);
-            redirect.addFlashAttribute("notice", "Reminder saved on this device.");
+            redirect.addFlashAttribute("notice", AppMessages.text("notice.reminderSaved"));
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute("error", exception.getMessage());
             redirect.addAttribute("code", code);
@@ -59,31 +60,35 @@ public class ReminderController {
 
     @PostMapping("/reminders/{id}/clear")
     String clear(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder cleared. The next due date uses the interval from now.", redirect,
-                () -> reminders.clear(id));
+        return act(id, "notice.reminderCleared", redirect, () -> reminders.clear(id));
     }
 
     @PostMapping("/reminders/{id}/snooze")
     String snooze(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder snoozed for 24 hours. Its interval is unchanged.", redirect,
-                () -> reminders.snooze(id));
+        return act(id, "notice.reminderSnoozed", redirect, () -> reminders.snooze(id));
+    }
+
+    @PostMapping("/reminders/{id}/retailer")
+    String changeRetailer(@PathVariable long id, @RequestParam(defaultValue = "") String retailerCode,
+                          RedirectAttributes redirect) {
+        return act(id, "notice.reminderRetailer", redirect,
+                () -> reminders.changeRetailer(id, retailerCode));
     }
 
     @PostMapping("/reminders/{id}/add")
     String addToList(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Added the reminder quantity to My list. The reminder is still active.", redirect,
-                () -> reminders.addToList(id));
+        return act(id, "notice.reminderAdded", redirect, () -> reminders.addToList(id));
     }
 
     @PostMapping("/reminders/{id}/delete")
     String delete(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder deleted.", redirect, () -> reminders.delete(id));
+        return act(id, "notice.reminderDeleted", redirect, () -> reminders.delete(id));
     }
 
-    private String act(long id, String success, RedirectAttributes redirect, Runnable action) {
+    private String act(long id, String successKey, RedirectAttributes redirect, Runnable action) {
         try {
             action.run();
-            redirect.addFlashAttribute("notice", success);
+            redirect.addFlashAttribute("notice", AppMessages.text(successKey));
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute("error", exception.getMessage());
         }
@@ -94,7 +99,7 @@ public class ReminderController {
         model.addAttribute("overview", reminders.overview());
         model.addAttribute("candidate", candidate);
         model.addAttribute("scene", "reminders");
-        model.addAttribute("title", "Reminders");
+        model.addAttribute("title", AppMessages.text("page.reminders"));
         return "market-desk";
     }
 }

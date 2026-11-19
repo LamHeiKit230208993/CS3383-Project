@@ -1,9 +1,9 @@
 # Market Desk: J05–J08 implementation
 
-Updated: 6 November 2026. Local implementation and integration checks passed.
-The changes await commit/PR review and merge; this is not an issue-closure or
-release claim. Use the [test catalogue](Test/test-case-catalog.md) and
-[dated history](Test/history.md) for observed results.
+Updated: 18 November 2026. Merged through PR #18; issue #17 is closed. Local
+implementation and integration checks passed, including the 12 November review
+follow-up. Use the [test catalogue](Test/test-case-catalog.md) and
+[dated history](Test/history.md) for observed results and limits.
 
 Read the [J01–J04 baseline](implementation-baseline-j01-j04.md) for source parsing,
 search, exact money, retailer choice and list rules. The
@@ -34,12 +34,14 @@ frontend, separate API server, accounts or cloud storage.
 ## Saving and tracking
 
 Saving a wishlist entry does not start tracking or add a shopping-list item.
-Choose one retailer or use **Track all retailers** for an exact product.
+Choose **Track this product** for an exact product. The saved and alert pages
+show one control per product, not one control per retailer.
 The product-wide preference survives restart and enrolls newly listed retailers
-on accepted LIVE imports. Each retailer starts with its own baseline and has
-its own alert rules. Tracking is independent of the retailer saved in My list.
-**Stop all retailers** ends all active periods for the product and turns off
-future enrollment. Retained history stays available.
+on accepted LIVE imports. Each retailer starts with its own baseline and keeps
+its own drop-rule evidence. A product target applies to every active retailer.
+Tracking is independent of the retailer saved in My list. **Stop tracking** ends
+all active periods for the product and turns off future enrollment. Retained
+history stays available.
 
 An eligible accepted LIVE catalogue can seed the first observation. Subsequent
 successful LIVE imports record changes, including a transition to an unknown
@@ -134,7 +136,9 @@ the existing retailer-conflict and combined-quantity rules still apply. A failed
 add must not partially change the list. A new explicit retailer selection needs
 a current known price; an existing item can retain that same selection if the
 price later becomes unknown. The reminder retains its retailer and does not
-fall back automatically. Adding does not clear the reminder, start tracking or record a purchase.
+fall back automatically. If the pinned retailer has no current price, the page
+explains the block and disables Add. It keeps the choice and offers other listed
+retailers that do have a current price; choosing one is an explicit change. Adding does not clear the reminder, start tracking or record a purchase.
 A product absent from the accepted catalogue can retain its reminder but cannot
 be added to My list until available again.
 
@@ -146,11 +150,11 @@ These are normal HTML pages and POST forms, not a separate JSON API.
 |---|---|
 | `GET /saved?code=…` | Wishlist/history; optional product to save or track |
 | `POST /saved/save`, `/saved/remove` | Wishlist action: `code` |
-| `POST /tracking/start` | `code`, `retailerCode` |
-| `POST /tracking/start-all`, `/tracking/stop-all` | Product-wide tracking action with `code` |
+| `POST /tracking/start` | Compatibility per-retailer start: `code`, `retailerCode`; no current page control |
+| `POST /tracking/start-all`, `/tracking/stop-all` | Product tracking control with `code` |
 | `POST /tracking/stop`, `/tracking/history/delete` | `trackingId` |
-| `GET /alerts` | Rules, timing settings and recent events |
-| `POST /alerts/target` | `trackingId`, optional `targetPrice` |
+| `GET /alerts` | Product rules, timing settings and recent events |
+| `POST /alerts/target` | `code`, optional `targetPrice`; legacy `trackingId` still accepted |
 | `POST /alerts/drop` | `trackingId`, `enabled` |
 | `POST /alerts/settings` | `quietStart`, `quietEnd`, `summaryTime` |
 | `POST /alerts/events/{eventId}/{action}` | `action` is `read` or `snooze` |
@@ -158,6 +162,7 @@ These are normal HTML pages and POST forms, not a separate JSON API.
 | `POST /budget` | `period` (`WEEKLY`/`MONTHLY`), `limit` |
 | `GET /reminders?code=…` | Saved reminders; optional product to configure |
 | `POST /reminders/create` | `code`, `quantity`, `intervalDays`, optional `retailerCode` |
+| `POST /reminders/{id}/retailer` | Replacement `retailerCode` with a current price |
 | `POST /reminders/{id}/{action}` | `action` is `clear`, `snooze`, `add`, or `delete` |
 
 `/planned/saved` redirects to `/saved`; `/planned/updates` redirects to `/alerts`.
@@ -177,6 +182,6 @@ links focused cases; [history](Test/history.md) records actual commands, version
 outcomes and limits. Earlier J01–J04 results do not verify this extension.
 
 J09 chat, J10 separate-copy transfer, J11 offline reopening and full J12
-translation/accessibility/personal-data work remain later jobs. Existing
-conditional scope rows keep their evidence conditions. No new cloud or device
-notification channel is included.
+translation/accessibility/personal-data work are planned under issue #21. See
+the [J09–J12 plan](Plan/j09-j12.md). Existing conditional scope rows keep their
+evidence conditions. No new cloud or device notification channel is included.

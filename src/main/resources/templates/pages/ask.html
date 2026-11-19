@@ -1,0 +1,97 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="ask-title">
+    <header class="page-heading">
+      <p class="eyebrow" th:text="#{ask.eyebrow}">ASK THE RECORD</p>
+      <h1 id="ask-title" th:text="#{ask.heading}">Ask about a checked price</h1>
+      <p class="intro" th:text="#{ask.intro}">Questions use the accepted catalogue. Prices and retailers are checked before any AI explanation.</p>
+    </header>
+
+    <form class="panel add-form ask-form" th:action="@{/ask}" method="post">
+      <label for="ask-question" th:text="#{ask.question}">Your question</label>
+      <textarea id="ask-question" name="question" rows="3" maxlength="500" required
+                th:placeholder="#{ask.placeholder}" th:text="${question}">How much is milk?</textarea>
+      <button class="button primary" type="submit" th:text="#{ask.submit}">Ask</button>
+    </form>
+
+    <section class="panel" th:if="${result != null and result.status.name() == 'NO_MATCH'}"
+             aria-labelledby="ask-no-match">
+      <h2 id="ask-no-match" th:text="#{ask.noMatchHeading}">No checked product matches</h2>
+      <p th:text="#{ask.noMatch}">No accepted product matches that question. Load or refresh prices, then try a product name, brand, or code.</p>
+    </section>
+
+    <section class="panel" th:if="${result != null and result.status.name() == 'CHOOSE'}"
+             aria-labelledby="ask-choose">
+      <h2 id="ask-choose" th:text="#{ask.chooseHeading}">Choose the product</h2>
+      <p th:text="#{ask.choose}">More than one product matches. Choose one before asking again.</p>
+      <form th:action="@{/ask}" method="post">
+        <input type="hidden" name="question" th:value="${result.question}">
+        <ul class="candidate-list">
+          <li th:each="candidate : ${result.candidates}">
+            <label class="check-label">
+              <input type="radio" name="productCode" th:value="${candidate.code}" required>
+              <span>
+                <strong th:text="${candidate.name}">Product</strong>
+                <small th:if="${candidate.brand != null and !candidate.brand.isBlank()}">
+                  <span th:text="${candidate.brand}">Brand</span> ·
+                </small>
+                <code th:text="${candidate.code}">CODE</code>
+              </span>
+            </label>
+          </li>
+        </ul>
+        <button class="button primary" type="submit" th:text="#{ask.chooseSubmit}">Use this product</button>
+      </form>
+    </section>
+
+    <th:block th:if="${result != null and result.status.name() == 'ANSWERED'}">
+      <section class="panel ask-answer" aria-labelledby="ask-answer">
+        <p class="eyebrow" th:id="ask-answer"
+           th:text="${result.fallback} ? #{ask.answer.fallback} : #{ask.answer.ai}">CHECKED ANSWER</p>
+        <p class="ask-text" th:text="${result.answer}">Checked answer</p>
+        <p class="source-note" th:text="#{ask.answerNote}">The checked facts below are the source of the answer. The model may explain them but cannot change a price or retailer.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="ask-facts">
+        <h2 id="ask-facts" th:text="#{ask.facts}">Checked facts</h2>
+        <dl class="facts-meta">
+          <div>
+            <dt th:text="#{ask.product}">Product</dt>
+            <dd><strong th:text="${result.facts.productName}">Product</strong>
+              <code th:text="${result.facts.productCode}">CODE</code></dd>
+          </div>
+          <div>
+            <dt th:text="#{ask.brand}">Brand</dt>
+            <dd th:text="${result.facts.brand == null or result.facts.brand.isBlank() ? #messages.msg('ask.unknown') : result.facts.brand}">Brand</dd>
+          </div>
+          <div>
+            <dt th:text="#{ask.lowest}">Lowest listed price</dt>
+            <dd th:text="${result.facts.lowestPrice == null ? #messages.msg('format.notListed') : format.money(result.facts.lowestPrice)}">Not listed</dd>
+          </div>
+          <div>
+            <dt th:text="#{ask.retrieved}">Price data retrieved</dt>
+            <dd th:text="${result.facts.retrievedAt == null ? #messages.msg('ask.unknown') : format.time(result.facts.retrievedAt)}">Unknown</dd>
+          </div>
+          <div>
+            <dt th:text="#{ask.sourceDate}">Source price date</dt>
+            <dd th:text="#{ask.unknown}">Unknown</dd>
+          </div>
+        </dl>
+        <table class="facts-table">
+          <thead>
+            <tr>
+              <th scope="col" th:text="#{ask.retailer}">Retailer</th>
+              <th scope="col" th:text="#{ask.price}">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="price : ${result.facts.prices}">
+              <td><code th:text="${price.retailerCode}">RETAILER</code></td>
+              <td th:text="${price.price == null ? #messages.msg('ask.unknown') : format.money(price.price)}">Unknown</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="source-note" th:text="#{ask.factsNote}">A missing price stays unknown; it does not prove the item is out of stock.</p>
+      </section>
+    </th:block>
+  </section>
+</th:block>

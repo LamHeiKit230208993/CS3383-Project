@@ -119,7 +119,7 @@ class TrackingServiceTest {
         assertEquals(0, alertEventRepository.count(), "Different retailers cannot form a drop comparison.");
         assertThrows(IllegalArgumentException.class, () -> tracking.stop(firstId));
         mvc.perform(get("/saved")).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Stop all retailers")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Stop tracking")));
 
         tracking.stopAll("TRACK-ALL");
         String third = "{\"supermarketCode\":\"STORE-C\",\"price\":\"3.00\"}";
@@ -128,6 +128,35 @@ class TrackingServiceTest {
         assertEquals(2, tracking.trackingPeriods().size());
         assertTrue(tracking.trackingPeriods().stream().noneMatch(TrackingView::enabled));
         assertTrue(tracking.allRetailersProducts().isEmpty());
+    }
+
+    @Test
+    void productTargetAppliesToEveryRetailerAndFutureEnrollment() {
+        catalog.accept(json(product("TRACK-TARGET", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"10.00\"},"
+                + "{\"supermarketCode\":\"STORE-B\",\"price\":\"12.00\"}]")), "LIVE", "fixture-live");
+        tracking.startAll("TRACK-TARGET");
+        tracking.configureTargetForProduct("TRACK-TARGET", new BigDecimal("11.00"));
+
+        List<TrackingView> periods = tracking.trackingPeriods();
+        assertEquals(2, periods.size());
+        assertTrue(periods.stream().allMatch(period ->
+                new BigDecimal("11.0000").compareTo(period.targetPrice()) == 0));
+        assertEquals(1, targetEvents());
+        assertEquals(1, tracking.alertProducts().size());
+        assertEquals(2, tracking.alertProducts().getFirst().periods().size());
+
+        catalog.accept(json(product("TRACK-TARGET", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"10.00\"},"
+                + "{\"supermarketCode\":\"STORE-B\",\"price\":\"12.00\"},"
+                + "{\"supermarketCode\":\"STORE-C\",\"price\":\"9.00\"}]")), "LIVE", "fixture-live");
+        TrackingView futureRetailer = tracking.trackingPeriods().stream()
+                .filter(period -> "STORE-C".equals(period.retailerCode())).findFirst().orElseThrow();
+        assertEquals(0, new BigDecimal("11.0000").compareTo(futureRetailer.targetPrice()));
+        assertEquals(2, targetEvents(), "A future retailer inherits the product target.");
+    }
+
+    private long targetEvents() {
+        return alertEventRepository.findAll().stream()
+                .filter(event -> "TARGET".equals(event.getType())).count();
     }
 
     @Test
