@@ -1,0 +1,177 @@
+@startuml
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam arrowColor #4b5563
+skinparam sequenceParticipantBackgroundColor #f3f4f6
+skinparam sequenceParticipantBorderColor #4b5563
+skinparam sequenceLifeLineBorderColor #4b5563
+skinparam sequenceGroupBorderColor #4b5563
+skinparam sequenceGroupBackgroundColor #ffffff
+skinparam noteBackgroundColor #e5e7eb
+skinparam noteBorderColor #4b5563
+skinparam maxMessageSize 180
+hide footbox
+autonumber
+title Market Desk | import, reminders, checked Ask, history and personal data
+
+participant "Web controller" as Web
+participant CatalogService as Catalog
+participant "CatalogReplacement\nService" as Replace
+participant "TrackingService /\nAlertService" as Tracking
+participant ReminderService as Reminder
+participant ShoppingService as Shopping
+participant "AskService /\nPersonalDataService /\nProductHistoryService" as J12
+participant "AI client" as AI
+database "H2 repositories" as DB
+
+== Manual live refresh: HelloController ==
+[-> Web: POST /data/refresh
+Web -> Catalog: refreshLive()
+Catalog -> Catalog: sourceClient.fetch(); parser.parse(bytes)
+alt download or validation fails
+  Catalog --> Web: failure; no replacement
+  [<-- Web: error; accepted data unchanged
+else valid input
+  Catalog -> Replace: replace(catalogue, LIVE, URL, retrievedAt, checksum)
+  group One Spring transaction
+    Replace -> DB: replace listings / offers; preserve product references
+    Replace -> Tracking: recordLiveImport(...)
+    Tracking -> DB: lock active periods; prune expired observations
+    loop Each enabled exact-product / retailer period
+      alt changed value or unknown transition
+        Tracking -> DB: save observation and deduplication state
+        Tracking -> Tracking: evaluateNewObservation(...)
+        Tracking -> DB: save qualifying event + repeat state
+      else unchanged value
+        Tracking -> Tracking: evaluateCurrentTarget(period, price, retrievedAt, generatedAt)
+        Tracking -> DB: save qualifying target + armed state; no new history
+      end
+    end
+    Tracking -> DB: enroll newly listed retailers for products tracking all retailers
+    Tracking -> DB: store each new retailer's own baseline
+    Replace -> DB: save accepted-import metadata
+    alt any database write fails
+      note over Replace,DB
+        Spring rolls back catalogue, observations and price events together.
+      end note
+    else all writes succeed
+      note over Replace,DB: Spring commits before the caller receives success.
+    end
+  end
+  Replace --> Catalog: ImportStatus, or propagated failure
+  Catalog --> Web: accepted status, or error
+  [<-- Web: show outcome after transaction completes
+end
+note over Replace,Tracking
+  SAMPLE replacement skips tracking and live alerts.
+  Unchanged values add no history; an armed target may still evaluate
+  the fresh LIVE price without a retained observation.
+  Unknown gaps, expired history and new periods cannot support a drop.
+  Drop events snapshot both prices and their retrieval times.
+end note
+
+== Daily summary: GET /alerts or scheduler while app runs ==
+Web -> Tracking: AlertService.processDue(now)
+Tracking -> DB: store at most one eligible summary per Hong Kong date
+note over Tracking,DB
+  Include unread, unsummarized, currently eligible price events.
+  Quiet hours and snooze delay availability.
+  A catch-up summary uses its actual generation time.
+  Reopening before today's schedule can catch up a missed earlier run.
+end note
+
+== Explicit reminder action: ReminderController ==
+[-> Web: POST /reminders/{id}/add
+Web -> Reminder: addToList(id), with no outer transaction
+Reminder -> DB: read product, quantity and saved retailer choice
+Reminder -> Shopping: add(productCode, quantity, selectedRetailerCode)
+note over Reminder,Shopping
+  Default: null retailer keeps the list item in Automatic lowest mode.
+  The estimate uses the lowest current known listing.
+  A pinned retailer uses that retailer's price.
+end note
+Shopping -> DB: validate / merge item in its own mutation transaction
+alt quantity / retailer conflict / unavailable product
+  Shopping --> Reminder: validation error; no list change
+  Reminder --> Web: error
+else valid request
+  DB --> Shopping: list change commits
+  Shopping --> Reminder: success
+  Reminder --> Web: success
+end
+[<-- Web: show outcome; reminder due state is unchanged
+note over Reminder,Shopping
+  Quiet hours do not block a manual add.
+  Only clear / snooze changes the reminder schedule.
+end note
+
+== J12 checked-facts Ask: POST /ask ==
+[-> Web: question, optional productCode
+Web -> J12: AskService.ask(...)
+J12 -> Catalog: deterministic product search
+alt zero or ambiguous matches
+  J12 --> Web: no-match page or product chooser; no AI call
+else exactly one product
+  J12 -> Catalog: build checked facts (retailers, prices, retrieval time)
+  J12 -> AI: answer(facts only)
+  alt key missing / provider error / timeout / answer amount mismatch
+    AI --> J12: failure or unsupported amount
+    J12 -> J12: use deterministic checked answer
+  else every amount matches a checked price
+    AI --> J12: explanation
+  end
+  J12 --> Web: answer plus checked-facts table
+end
+note over J12,AI
+  The question is never sent as a retrieval query to the model.
+  A null price is unknown, not out of stock.
+end note
+
+== J12 history: GET /history/{code} ==
+Web -> J12: ProductHistoryService.history(code)
+J12 -> DB: product + tracking periods + observations
+J12 -> J12: keep observations inside 90 days and not after now
+J12 -> J12: insert explicit gap when adjacent observations are 7+ days apart
+alt product unknown or not tracked
+  J12 --> Web: localized error; controller returns 404
+else tracked product
+  J12 --> Web: product / retailer views with real retrieval times
+end
+note over J12,DB
+  Only actual accepted LIVE observations are shown.
+  The page invents no daily values or source price dates.
+end note
+
+== J12 personal data: GET /privacy/export and POST /privacy/delete ==
+Web -> J12: PersonalDataService.export()
+J12 -> DB: read lists/items, wishlist, tracking, alerts, budget, reminders, preferences, timing
+J12 --> Web: versioned JSON attachment
+note over J12,DB: Catalogue products and accepted-import metadata are not in the export.
+
+[-> Web: POST /privacy/delete
+Web -> J12: delete(confirmDelete)
+alt confirmation missing
+  J12 --> Web: error flash; no writes
+else explicitly confirmed
+  J12 -> DB: delete personal rows only
+  J12 -> DB: reset product-wide tracking / target choices
+  J12 --> Web: success; accepted catalogue still present
+end
+note over J12,DB
+  Exported or shared copies cannot be recalled.
+  The accepted catalogue remains source data.
+end note
+
+legend bottom left
+  Grouped Tracking / Alert lifeline represents two actual services.
+  CatalogService delegates input to ConsumerCouncilSourceClient and CatalogJsonParser.
+  NotificationScheduler is the alternative caller for the daily summary check.
+  Retrieval time and alert generation time differ; source price date is unknown.
+  A closed app collects no prices and delivers no notifications.
+  Ask, history and personal-data services share repositories but use separate
+  read-only or personal-row transactions; the catalogue is never personal data.
+endlegend
+@enduml

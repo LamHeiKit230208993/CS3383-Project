@@ -10,6 +10,11 @@ import java.util.Optional;
 public interface ShoppingListItemRepository extends JpaRepository<ShoppingListItemEntity, Long> {
     @EntityGraph(attributePaths = {"product", "product.listings", "product.listings.offers"})
     List<ShoppingListItemEntity> findAllByShoppingList_NameOrderByIdAsc(String listName);
+
+    @EntityGraph(attributePaths = {"product", "product.listings", "product.listings.offers"})
+    List<ShoppingListItemEntity> findAllByShoppingList_IdOrderByIdAsc(Long listId);
+
     Optional<ShoppingListItemEntity> findByShoppingList_NameAndProduct_Code(String listName, String productCode);
     void deleteByShoppingList_NameAndProduct_Code(String listName, String productCode);
+    long countByShoppingList_Id(Long listId);
 }

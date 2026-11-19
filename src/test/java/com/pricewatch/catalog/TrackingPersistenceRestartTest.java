@@ -46,7 +46,7 @@ class TrackingPersistenceRestartTest {
             tracking.startAll("TRACK-RESTART");
             trackingId = period.id();
             tracking.configureDrop(trackingId, true);
-            tracking.configureTarget(trackingId, new BigDecimal("8.00"));
+            tracking.configureTargetForProduct("TRACK-RESTART", new BigDecimal("8.00"));
             catalog.accept(fixture("7.00"), "LIVE", "test-live");
 
             List<AlertEventEntity> events = firstRun.getBean(AlertEventRepository.class).findAll();
@@ -70,6 +70,10 @@ class TrackingPersistenceRestartTest {
                     .findFirst().orElseThrow();
             assertEquals(2, restored.observations().size());
             assertEquals("TRACK-RESTART", tracking.allRetailersProducts().getFirst().code());
+            assertEquals(new BigDecimal("8.0000"), restored.targetPrice());
+            assertEquals(new BigDecimal("8.0000"),
+                    tracking.alertProducts().getFirst().targetPrice(),
+                    "The product target survives reopening the database.");
             assertEquals(new BigDecimal("7.0000"), restored.observations().getFirst().price());
 
             AlertEventEntity targetEvent = reopened.getBean(AlertEventRepository.class)

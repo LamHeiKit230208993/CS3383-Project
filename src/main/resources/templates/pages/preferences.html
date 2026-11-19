@@ -1,0 +1,41 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="preferences-title">
+    <header class="page-heading">
+      <p class="eyebrow" th:text="#{preferences.eyebrow}">MAKE IT YOURS</p>
+      <h1 id="preferences-title" th:text="#{preferences.heading}">Language and contrast</h1>
+      <p class="intro" th:text="#{preferences.intro}">Choose how app text and colours appear on this device.</p>
+    </header>
+    <section class="panel">
+      <form class="add-form" th:action="@{/preferences}" method="post">
+        <fieldset class="preference-group">
+          <legend th:text="#{preferences.language}">Language</legend>
+          <label class="check-label">
+            <input type="radio" name="locale" value="en" required th:checked="${preferences.locale == 'en'}">
+            <span th:text="#{preferences.english}">English</span>
+          </label>
+          <label class="check-label">
+            <input type="radio" name="locale" value="zh-HK" required th:checked="${preferences.locale == 'zh-HK'}">
+            <span lang="zh-Hant" th:text="#{preferences.traditional}">Traditional Chinese</span>
+          </label>
+          <label class="check-label">
+            <input type="radio" name="locale" value="zh-CN" required th:checked="${preferences.locale == 'zh-CN'}">
+            <span lang="zh-Hans" th:text="#{preferences.simplified}">Simplified Chinese</span>
+          </label>
+        </fieldset>
+        <fieldset class="preference-group">
+          <legend th:text="#{preferences.contrast}">Contrast</legend>
+          <label class="check-label">
+            <input type="radio" name="contrast" value="normal" required th:checked="${preferences.contrast == 'normal'}">
+            <span th:text="#{preferences.contrastNormal}">Normal contrast</span>
+          </label>
+          <label class="check-label">
+            <input type="radio" name="contrast" value="high" required th:checked="${preferences.contrast == 'high'}">
+            <span th:text="#{preferences.contrastHigh}">High contrast</span>
+          </label>
+        </fieldset>
+        <button class="button primary" type="submit" th:text="#{preferences.save}">Save preferences</button>
+      </form>
+      <p class="source-note" th:text="#{preferences.note}">These settings are stored locally for the one local user.</p>
+    </section>
+  </section>
+</th:block>

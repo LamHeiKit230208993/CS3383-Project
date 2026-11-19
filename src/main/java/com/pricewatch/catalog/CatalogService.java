@@ -10,6 +10,7 @@ import com.pricewatch.catalog.persistence.ProductEntity;
 import com.pricewatch.catalog.persistence.RetailerListingEntity;
 import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
+import com.pricewatch.i18n.AppMessages;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -107,11 +108,11 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public ProductView find(String code) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("A product code is required.");
+            throw new IllegalArgumentException(AppMessages.text("error.product.codeRequired"));
         }
         return productRepository.findWithListingsByCode(code)
                 .map(ProductView::from)
-                .orElseThrow(() -> new IllegalArgumentException("Product " + code + " was not found."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.product.notFound", code)));
     }
 
     @Transactional(readOnly = true)

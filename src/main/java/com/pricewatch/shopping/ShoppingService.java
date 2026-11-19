@@ -4,6 +4,7 @@ import com.pricewatch.catalog.ListingView;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.catalog.persistence.ProductEntity;
 import com.pricewatch.catalog.repository.ProductRepository;
+import com.pricewatch.i18n.AppMessages;
 import com.pricewatch.shopping.persistence.ShoppingListEntity;
 import com.pricewatch.shopping.persistence.ShoppingListItemEntity;
 import com.pricewatch.shopping.repository.ShoppingListItemRepository;
@@ -46,6 +47,16 @@ public class ShoppingService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ItemView> items(long listId) {
+        if (!listRepository.existsById(listId)) {
+            throw new IllegalArgumentException(AppMessages.text("error.share.listNotFound"));
+        }
+        return itemRepository.findAllByShoppingList_IdOrderByIdAsc(listId).stream()
+                .map(this::toView)
+                .toList();
+    }
+
     public void add(String productCode, int quantity) {
         add(productCode, quantity, null);
     }
@@ -55,17 +66,16 @@ public class ShoppingService {
         String requestedRetailer = automaticIfBlank(retailerCode);
         mutate(() -> {
             ProductEntity product = productRepository.findById(productCode)
-                    .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
+                    .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.product.notAccepted")));
             if (!product.isActive()) {
-                throw new IllegalArgumentException("That product is no longer in the current catalogue.");
+                throw new IllegalArgumentException(AppMessages.text("error.product.inactive"));
             }
             ShoppingListEntity list = getOrCreateList();
             ShoppingListItemEntity existing = itemRepository
                     .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode).orElse(null);
             if (existing != null) {
                 if (!Objects.equals(existing.getSelectedRetailerCode(), requestedRetailer)) {
-                    throw new IllegalArgumentException("This product is already in your list with another retailer; "
-                            + "change retailer in My list.");
+                    throw new IllegalArgumentException(AppMessages.text("error.list.retailerConflict"));
                 }
                 int combined = existing.getQuantity() + quantity;
                 validateQuantity(combined);
@@ -84,7 +94,7 @@ public class ShoppingService {
         mutate(() -> {
             ShoppingListItemEntity item = itemRepository
                     .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode)
-                    .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."));
+                    .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.item.notOnList")));
             item.setQuantity(quantity);
             item.setChecked(checked);
         });
@@ -96,7 +106,7 @@ public class ShoppingService {
         mutate(() -> {
             ShoppingListItemEntity item = itemRepository
                     .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode)
-                    .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."));
+                    .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.item.notOnList")));
             if (!Objects.equals(item.getSelectedRetailerCode(), requestedRetailer)) {
                 if (requestedRetailer != null) {
                     validateRetailer(item.getProduct(), requestedRetailer);
@@ -148,7 +158,7 @@ public class ShoppingService {
         boolean available = product.getListings().stream()
                 .anyMatch(listing -> listing.getRetailerCode().equals(retailerCode) && listing.getPrice() != null);
         if (!available) {
-            throw new IllegalArgumentException("Choose a retailer with a current price for this product.");
+            throw new IllegalArgumentException(AppMessages.text("error.list.retailerPrice"));
         }
     }
 
@@ -158,7 +168,7 @@ public class ShoppingService {
 
     private void validateQuantity(int quantity) {
         if (quantity < MIN_QUANTITY || quantity > MAX_QUANTITY) {
-            throw new IllegalArgumentException("Quantity must be a whole number from 1 to 999.");
+            throw new IllegalArgumentException(AppMessages.text("error.quantity"));
         }
     }
 }

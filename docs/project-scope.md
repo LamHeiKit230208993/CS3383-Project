@@ -2,7 +2,7 @@
 
 Updated: 24 October 2026. Feature decisions remain those agreed on 17 October 2026.
 
-Status: Reflects the team's manual feature review. J01–J04 implementation checks have passed; see the [test catalogue](Test/test-case-catalog.md). The wider scope, later jobs, and remaining data questions are not complete.
+Status: Reflects the team's manual feature review. J01–J04 and J05–J08 implementation checks have passed and their PRs are merged; see the [test catalogue](Test/test-case-catalog.md). J09–J12 are implemented under issue #21; see the [implementation contract](implementation-j09-j12.md). The wider scope, later jobs, and remaining data questions are not complete.
 
 Team update, 17 October 2026: keep one local user, with no account, sign-in, or cloud saving. R32 shares a list by export and import; it does not require live shared editing.
 

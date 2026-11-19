@@ -1,5 +1,7 @@
 package com.pricewatch.notifications;
 
+import com.pricewatch.catalog.LocalizedText;
+import com.pricewatch.i18n.AppMessages;
 import com.pricewatch.notifications.persistence.AlertEventEntity;
 import com.pricewatch.notifications.repository.AlertEventRepository;
 import com.pricewatch.tracking.persistence.PriceObservationEntity;
@@ -120,14 +122,14 @@ public class AlertService {
     @Transactional
     public void markRead(long eventId) {
         AlertEventEntity event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Alert was not found."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.alert.notFound")));
         if (event.getReadAt() == null) event.markRead(clock.instant());
     }
 
     @Transactional
     public void snooze(long eventId) {
         AlertEventEntity event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Alert was not found."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.alert.notFound")));
         event.snoozeUntil(clock.instant().plusSeconds(SNOOZE_HOURS * 60 * 60));
     }
 
@@ -157,8 +159,9 @@ public class AlertService {
     private AlertEventView toView(AlertEventEntity event, Instant now) {
         TrackingEntity tracking = event.getTracking();
         String productCode = tracking == null ? null : tracking.getProductCode();
-        String productName = tracking == null || tracking.getProduct().getName() == null
-                ? productCode : tracking.getProduct().getName().getEn();
+        var name = tracking == null ? null : tracking.getProduct().getName();
+        String productName = name == null ? productCode
+                : LocalizedText.label(name.getEn(), name.getZhHant(), name.getZhHans());
         String retailerCode = tracking == null ? null : tracking.getRetailerCode();
         Instant base = event.getSnoozedUntil() != null && event.getSnoozedUntil().isAfter(event.getCreatedAt())
                 ? event.getSnoozedUntil() : event.getCreatedAt();
@@ -169,11 +172,12 @@ public class AlertService {
         }
         boolean available = !policy.isQuiet(now) && !now.isBefore(availableAt);
         String message = switch (event.getType()) {
-            case TARGET -> "Target reached for " + productName + " at " + retailerCode + ".";
-            case DROP -> "Price dropped for " + productName + " at " + retailerCode + ".";
-            case SUMMARY -> "You have " + event.getSummaryCount() + " new price alert"
-                    + (event.getSummaryCount() == 1 ? "" : "s") + " since your last summary.";
-            default -> "Price update.";
+            case TARGET -> AppMessages.text("alerts.message.target", productName, retailerCode);
+            case DROP -> AppMessages.text("alerts.message.drop", productName, retailerCode);
+            case SUMMARY -> event.getSummaryCount() == 1
+                    ? AppMessages.text("alerts.message.summaryOne")
+                    : AppMessages.text("alerts.message.summaryMany", event.getSummaryCount());
+            default -> AppMessages.text("alerts.message.default");
         };
         return new AlertEventView(event.getId(), event.getType(), message, productCode, productName,
                 retailerCode, event.getPrice(), event.getObservedAt(), event.getPreviousPrice(),

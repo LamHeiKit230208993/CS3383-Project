@@ -13,6 +13,8 @@ public interface AlertEventRepository extends JpaRepository<AlertEventEntity, Lo
 
     List<AlertEventEntity> findTop100ByOrderByCreatedAtDescIdDesc();
 
+    List<AlertEventEntity> findAllByOrderByCreatedAtDescIdDesc();
+
     List<AlertEventEntity> findByTypeInAndReadAtIsNullAndSummarizedAtIsNull(List<String> types);
 
     void deleteByTracking_IdAndTypeIn(Long trackingId, List<String> types);

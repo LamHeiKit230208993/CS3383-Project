@@ -1,10 +1,12 @@
 package com.pricewatch.tracking;
 
+import com.pricewatch.catalog.LocalizedText;
 import com.pricewatch.catalog.importer.ImportedCatalog;
 import com.pricewatch.catalog.persistence.AcceptedImportEntity;
 import com.pricewatch.catalog.persistence.ProductEntity;
 import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
+import com.pricewatch.i18n.AppMessages;
 import com.pricewatch.notifications.AlertService;
 import com.pricewatch.notifications.repository.AlertEventRepository;
 import com.pricewatch.tracking.persistence.PriceObservationEntity;
@@ -24,7 +26,9 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -98,14 +102,14 @@ public class TrackingService {
 
     private TrackingView startInTransaction(String productCode, String retailerCode) {
         if (retailerCode == null || retailerCode.isBlank()) {
-            throw new IllegalArgumentException("Choose a retailer to track.");
+            throw new IllegalArgumentException(AppMessages.text("error.tracking.chooseRetailer"));
         }
         ProductEntity product = lockProduct(productCode);
         requireActive(product);
         boolean retailerExists = product.getListings().stream()
                 .anyMatch(listing -> retailerCode.equals(listing.getRetailerCode()));
         if (!retailerExists) {
-            throw new IllegalArgumentException("Choose a retailer currently listed for this product.");
+            throw new IllegalArgumentException(AppMessages.text("error.tracking.retailerNotListed"));
         }
 
         return toView(startRetailer(product, retailerCode));
@@ -118,6 +122,9 @@ public class TrackingService {
         if (tracking == null) {
             Instant now = clock.instant();
             tracking = trackingRepository.saveAndFlush(new TrackingEntity(product, retailerCode, now));
+            if (product.getProductTargetPrice() != null) {
+                tracking.setTargetPrice(product.getProductTargetPrice());
+            }
             seedFromCurrentLiveImport(tracking, product);
         }
         return tracking;
@@ -142,7 +149,8 @@ public class TrackingService {
     @Transactional(readOnly = true)
     public List<AllRetailersView> allRetailersProducts() {
         return productRepository.findAllByTrackAllRetailersTrueOrderByCode().stream()
-                .map(product -> new AllRetailersView(product.getCode(), product.getName().getEn()))
+                .map(product -> new AllRetailersView(product.getCode(), product.getName() == null ? product.getCode()
+                        : LocalizedText.label(product.getName().getEn(), product.getName().getZhHant(), product.getName().getZhHans())))
                 .toList();
     }
 
@@ -151,25 +159,25 @@ public class TrackingService {
 
     private ProductEntity lockProduct(String code) {
         return productRepository.findLockedByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.product.notAccepted")));
     }
 
     @Transactional
     public void stop(long trackingId) {
         String code = trackingRepository.findProductCode(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.tracking.notFound")));
         if (lockProduct(code).isTrackAllRetailers()) {
-            throw new IllegalArgumentException("Use Stop all retailers to end product-wide tracking.");
+            throw new IllegalArgumentException(AppMessages.text("error.tracking.productWide"));
         }
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.tracking.notFound")));
         if (tracking.isEnabled()) tracking.stop(clock.instant());
     }
 
     @Transactional
     public void deleteHistory(long trackingId) {
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.tracking.notFound")));
         observationRepository.deleteByTracking_Id(trackingId);
         alertEventRepository.deleteByTracking_IdAndTypeIn(trackingId, PRICE_ALERT_TYPES);
         tracking.setTargetArmed(true);
@@ -191,6 +199,30 @@ public class TrackingService {
         }
     }
 
+    /** Applies one target to every active retailer period for the product. */
+    @Transactional
+    public void configureTargetForProduct(String productCode, BigDecimal targetPrice) {
+        ProductEntity product = lockProduct(productCode);
+        requireActive(product);
+        BigDecimal normalized = normalizePrice(targetPrice);
+        List<TrackingEntity> periods = trackingRepository.findEnabledForProductForUpdate(productCode);
+        if (periods.isEmpty()) {
+            throw new IllegalArgumentException(AppMessages.text("error.tracking.targetBeforeTrack"));
+        }
+
+        product.setProductTargetPrice(normalized);
+        Instant now = clock.instant();
+        pruneExpired(now);
+        for (TrackingEntity tracking : periods) {
+            if (samePrice(tracking.getTargetPrice(), normalized)) continue;
+            tracking.setTargetPrice(normalized);
+            if (normalized != null) {
+                currentLivePrice(tracking, now).ifPresent(current ->
+                        alertService.evaluateCurrentTarget(tracking, current.price(), current.retrievedAt(), now));
+            }
+        }
+    }
+
     @Transactional
     public void configureDrop(long trackingId, boolean enabled) {
         TrackingEntity tracking = activeTracking(trackingId);
@@ -201,6 +233,36 @@ public class TrackingService {
     public List<TrackingView> trackingPeriods() {
         pruneExpired(clock.instant());
         return trackingRepository.findAllByOrderByStartedAtDescIdDesc().stream().map(this::toView).toList();
+    }
+
+    /** Active retailer periods grouped under their product for the alert and history screens. */
+    @Transactional(readOnly = true)
+    public List<ProductAlertView> alertProducts() {
+        Map<String, List<TrackingView>> byProduct = new LinkedHashMap<>();
+        for (TrackingView period : trackingPeriods()) {
+            if (period.enabled()) {
+                byProduct.computeIfAbsent(period.productCode(), key -> new ArrayList<>()).add(period);
+            }
+        }
+        return byProduct.entrySet().stream().map(entry -> {
+            List<TrackingView> periods = entry.getValue();
+            BigDecimal target = productRepository.findById(entry.getKey())
+                    .map(ProductEntity::getProductTargetPrice).orElse(null);
+            if (target == null) target = commonLegacyTarget(periods);
+            return new ProductAlertView(entry.getKey(), periods.getFirst().productName(), target, periods);
+        }).toList();
+    }
+
+    public record ProductAlertView(String code, String name, BigDecimal targetPrice, List<TrackingView> periods) {
+        public ProductAlertView {
+            periods = List.copyOf(periods);
+        }
+    }
+
+    /** Before product-wide targets, each period could hold a different target. Show one only if all agree. */
+    private static BigDecimal commonLegacyTarget(List<TrackingView> periods) {
+        BigDecimal common = periods.getFirst().targetPrice();
+        return periods.stream().allMatch(period -> samePrice(common, period.targetPrice())) ? common : null;
     }
 
     /** Called from the catalogue replacement transaction, after the new listings have been stored. */
@@ -227,8 +289,11 @@ public class TrackingService {
             for (var listing : prices.getOrDefault(product.getCode(), Map.of()).entrySet()) {
                 if (trackingRepository.findByProduct_CodeAndRetailerCodeAndEnabledTrue(
                         product.getCode(), listing.getKey()).isEmpty()) {
-                    TrackingEntity period = trackingRepository.saveAndFlush(
-                            new TrackingEntity(product, listing.getKey(), now));
+                    TrackingEntity period = new TrackingEntity(product, listing.getKey(), now);
+                    if (product.getProductTargetPrice() != null) {
+                        period.setTargetPrice(product.getProductTargetPrice());
+                    }
+                    trackingRepository.saveAndFlush(period);
                     recordIfChanged(period, listing.getValue(), retrievedAt, sourceUrl, checksum);
                 }
             }
@@ -237,25 +302,25 @@ public class TrackingService {
 
     private ProductEntity currentProduct(String productCode) {
         if (productCode == null || productCode.isBlank()) {
-            throw new IllegalArgumentException("A product is required.");
+            throw new IllegalArgumentException(AppMessages.text("error.product.codeRequired"));
         }
         ProductEntity product = productRepository.findWithListingsByCode(productCode)
-                .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.product.notAccepted")));
         requireActive(product);
         return product;
     }
 
     private void requireActive(ProductEntity product) {
         if (!product.isActive()) {
-            throw new IllegalArgumentException("That product is no longer in the current catalogue.");
+            throw new IllegalArgumentException(AppMessages.text("error.product.inactive"));
         }
     }
 
     private TrackingEntity activeTracking(long trackingId) {
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new IllegalArgumentException(AppMessages.text("error.tracking.notFound")));
         if (!tracking.isEnabled()) {
-            throw new IllegalArgumentException("Start a new tracking period before changing its alerts.");
+            throw new IllegalArgumentException(AppMessages.text("error.tracking.alertsAfterStop"));
         }
         return tracking;
     }
@@ -315,7 +380,8 @@ public class TrackingService {
                 .toList();
         return new TrackingView(tracking.getId(), tracking.getProductCode(),
                 tracking.getProduct().getName() == null ? tracking.getProductCode()
-                        : tracking.getProduct().getName().getEn(),
+                        : LocalizedText.label(tracking.getProduct().getName().getEn(),
+                        tracking.getProduct().getName().getZhHant(), tracking.getProduct().getName().getZhHans()),
                 tracking.getRetailerCode(), tracking.isEnabled(), tracking.getStartedAt(), tracking.getStoppedAt(),
                 tracking.getTargetPrice(), tracking.isDropEnabled(), history);
     }
@@ -326,10 +392,10 @@ public class TrackingService {
         try {
             normalized = price.setScale(4, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException exception) {
-            throw new IllegalArgumentException("Use a price from 0 to 999999999999999.9999.");
+            throw new IllegalArgumentException(AppMessages.text("error.price.range"));
         }
         if (normalized.signum() < 0 || normalized.precision() > 19) {
-            throw new IllegalArgumentException("Use a price from 0 to 999999999999999.9999.");
+            throw new IllegalArgumentException(AppMessages.text("error.price.range"));
         }
         return normalized;
     }

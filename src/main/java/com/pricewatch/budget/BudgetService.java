@@ -2,6 +2,7 @@ package com.pricewatch.budget;
 
 import com.pricewatch.budget.persistence.BudgetSettingsEntity;
 import com.pricewatch.budget.repository.BudgetSettingsRepository;
+import com.pricewatch.i18n.AppMessages;
 import com.pricewatch.shopping.ItemView;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
@@ -20,7 +21,6 @@ public class BudgetService {
     private static final long SETTINGS_ID = 1L;
     private static final int LIMIT_PRECISION = 19;
     private static final int LIMIT_SCALE = 4;
-    private static final String UNCATEGORISED = "Uncategorised";
 
     private final BudgetSettingsRepository settingsRepository;
     private final ShoppingService shopping;
@@ -78,14 +78,13 @@ public class BudgetService {
     }
 
     private IllegalArgumentException invalidAmount() {
-        return new IllegalArgumentException(
-                "Enter a nonnegative limit with up to 15 digits before and 4 digits after the decimal point.");
+        return new IllegalArgumentException(AppMessages.text("error.budget.amount"));
     }
 
     private String category(ItemView item) {
         if (item.product().category2() == null || item.product().category2().en() == null
                 || item.product().category2().en().isBlank()) {
-            return UNCATEGORISED;
+            return AppMessages.text("budget.uncategorised");
         }
         return item.product().category2().en().trim();
     }

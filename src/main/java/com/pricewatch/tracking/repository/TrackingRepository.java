@@ -25,6 +25,9 @@ public interface TrackingRepository extends JpaRepository<TrackingEntity, Long> 
     List<TrackingEntity> findAllByOrderByStartedAtDescIdDesc();
 
     @EntityGraph(attributePaths = "product")
+    List<TrackingEntity> findByProduct_CodeOrderByStartedAtAscIdAsc(String productCode);
+
+    @EntityGraph(attributePaths = "product")
     List<TrackingEntity> findAllByEnabledTrueOrderByStartedAtDescIdDesc();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

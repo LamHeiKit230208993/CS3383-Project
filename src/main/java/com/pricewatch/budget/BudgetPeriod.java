@@ -1,5 +1,7 @@
 package com.pricewatch.budget;
 
+import com.pricewatch.i18n.AppMessages;
+
 public enum BudgetPeriod {
     WEEKLY("Weekly"),
     MONTHLY("Monthly");
@@ -22,6 +24,6 @@ public enum BudgetPeriod {
                 // Report invalid form input with the same message as an empty value.
             }
         }
-        throw new IllegalArgumentException("Choose a weekly or monthly budget period.");
+        throw new IllegalArgumentException(AppMessages.text("error.budget.period"));
     }
 }

@@ -22,6 +22,11 @@ public interface ProductRepository extends JpaRepository<ProductEntity, String> 
     @Query("update ProductEntity product set product.active = false where product.active = true")
     int deactivateAll();
 
+    /** Product-wide tracking and targets are personal choices, not catalogue source data. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update ProductEntity product set product.trackAllRetailers = false, product.productTargetPrice = null")
+    int clearTrackingChoices();
+
     @EntityGraph(attributePaths = {"listings", "listings.offers"})
     List<ProductEntity> findAllByActiveTrue();
 

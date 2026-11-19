@@ -2,6 +2,7 @@ package com.pricewatch.web;
 
 import com.pricewatch.budget.BudgetService;
 import com.pricewatch.catalog.CatalogService;
+import com.pricewatch.i18n.AppMessages;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,7 +41,9 @@ public class BudgetController {
                 RedirectAttributes redirect) {
         try {
             var savedPeriod = budgets.save(period, limit);
-            redirect.addFlashAttribute("notice", savedPeriod.label() + " budget saved on this device.");
+            String label = AppMessages.text(savedPeriod == com.pricewatch.budget.BudgetPeriod.WEEKLY
+                    ? "budget.weekly" : "budget.monthly");
+            redirect.addFlashAttribute("notice", AppMessages.text("notice.budgetSaved", label));
             return "redirect:/budget";
         } catch (IllegalArgumentException exception) {
             model.addAttribute("error", exception.getMessage());
@@ -56,7 +59,7 @@ public class BudgetController {
                 ? budget.limitAmount() == null ? "" : budget.limitAmount().toPlainString()
                 : limitInput);
         model.addAttribute("scene", "budget");
-        model.addAttribute("title", "Budget");
+        model.addAttribute("title", AppMessages.text("page.budget"));
         return "market-desk";
     }
 }

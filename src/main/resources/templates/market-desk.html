@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${htmlLang}" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,8 +12,8 @@
     <link rel="stylesheet" th:href="@{/css/market-desk.css}">
     <script th:src="@{/js/market-desk.js}" defer></script>
   </head>
-  <body>
-    <a class="skip-link" href="#main-content">Skip to content</a>
+  <body th:attr="data-contrast=${contrast}">
+    <a class="skip-link" href="#main-content" th:text="#{app.skipToContent}">Skip to content</a>
     <th:block th:replace="~{fragments/layout :: icon-library}"></th:block>
     <div class="workspace">
       <th:block th:replace="~{fragments/navigation :: sidebar}"></th:block>
@@ -32,14 +32,26 @@
           <th:block th:if="${scene == 'list'}">
             <th:block th:replace="~{pages/list :: content}"></th:block>
           </th:block>
+          <th:block th:if="${scene == 'sharing'}">
+            <th:block th:replace="~{pages/sharing :: content}"></th:block>
+          </th:block>
           <th:block th:if="${scene == 'data'}">
             <th:block th:replace="~{pages/data :: content}"></th:block>
           </th:block>
           <th:block th:if="${scene == 'planned'}">
             <th:block th:replace="~{pages/planned :: content}"></th:block>
           </th:block>
+          <th:block th:if="${scene == 'ask'}">
+            <th:block th:replace="~{pages/ask :: content}"></th:block>
+          </th:block>
           <th:block th:if="${scene == 'saved'}">
             <th:block th:replace="~{pages/saved :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'history'}">
+            <th:block th:replace="~{pages/history :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'privacy'}">
+            <th:block th:replace="~{pages/privacy :: content}"></th:block>
           </th:block>
           <th:block th:if="${scene == 'alerts'}">
             <th:block th:replace="~{pages/alerts :: content}"></th:block>
@@ -49,6 +61,9 @@
           </th:block>
           <th:block th:if="${scene == 'reminders'}">
             <th:block th:replace="~{pages/reminders :: content}"></th:block>
+          </th:block>
+          <th:block th:if="${scene == 'preferences'}">
+            <th:block th:replace="~{pages/preferences :: content}"></th:block>
           </th:block>
           <th:block th:if="${scene == 'error'}">
             <th:block th:replace="~{pages/error :: content}"></th:block>

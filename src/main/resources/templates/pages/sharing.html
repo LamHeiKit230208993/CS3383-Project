@@ -1,0 +1,93 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="share-title">
+    <div class="page-heading heading-with-action">
+      <div>
+        <p class="eyebrow" th:text="#{share.eyebrow}">MOVE A LIST, KEEP THE RECORD</p>
+        <h1 id="share-title" th:text="#{share.heading}">Export or import a list</h1>
+        <p class="intro" th:text="#{share.intro}">An export is a snapshot file. An import creates a separate list and never overwrites or merges an existing one.</p>
+      </div>
+      <a class="button secondary" th:href="@{/list}" th:text="#{share.backToLists}">Back to My list</a>
+    </div>
+
+    <section class="panel" aria-labelledby="share-export-heading">
+      <div class="section-heading">
+        <h2 id="share-export-heading" th:text="#{share.exportHeading}">Export a list</h2>
+      </div>
+      <p th:text="#{share.exportText}">Download a version 1 JSON file with product codes, quantities, checked states, and saved retailer choices.</p>
+      <table class="facts-table" th:if="${!lists.isEmpty()}">
+        <thead>
+          <tr>
+            <th scope="col" th:text="#{share.listName}">List</th>
+            <th scope="col" th:text="#{share.itemCount}">Items</th>
+            <th scope="col" th:text="#{share.actions}">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="list : ${lists}">
+            <td>
+              <strong th:text="${list.name}">My list</strong>
+              <span class="status-pill" th:if="${list.mainList}" th:text="#{share.mainBadge}">Main list</span>
+            </td>
+            <td th:text="${list.itemCount}">0</td>
+            <td class="share-actions">
+              <a class="button secondary" th:href="@{/list/export(listId=${list.id})}" th:text="#{share.exportAction}">Export</a>
+              <a class="button secondary" th:href="@{/list/offline(listId=${list.id})}" th:text="#{share.offlineAction}">Offline copy</a>
+              <a class="button secondary" th:href="@{/list/import(listId=${list.id})}" th:text="#{share.previewAction}">View</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="empty-state" th:if="${lists.isEmpty()}" th:text="#{share.emptyList}">No saved list yet. Add an item before exporting.</p>
+      <p class="source-note" th:text="#{share.snapshotNote}">Prices are not stored in the file. The importing copy uses its own current catalogue prices.</p>
+      <p class="source-note" th:text="#{share.offlineNote}">An offline copy is one self-contained HTML file. It shows the saved amounts and saved-on time, and opens without the app or a connection. It never refreshes.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="share-import-heading">
+      <div class="section-heading">
+        <h2 id="share-import-heading" th:text="#{share.importHeading}">Import a list file</h2>
+      </div>
+      <p th:text="#{share.importText}">Choose a pricewatch-list JSON file. The whole file is checked first; if any item is invalid, nothing is created.</p>
+      <form class="add-form" th:action="@{/list/import}" method="post" enctype="multipart/form-data">
+        <label for="share-file" th:text="#{share.file}">List file</label>
+        <input id="share-file" type="file" name="file" accept=".json,application/json" required>
+        <button class="button primary" type="submit" th:text="#{share.importSubmit}">Import as a new list</button>
+      </form>
+      <p class="source-note" th:text="#{share.importNote}">Limit: 2 MB, at most 999 different products, quantities from 1 to 999. Unknown or duplicate products reject the whole file.</p>
+    </section>
+
+    <section class="panel" th:if="${preview != null}" aria-labelledby="share-preview-heading">
+      <div class="section-heading">
+        <h2 id="share-preview-heading" th:text="#{share.previewHeading}">Imported list</h2>
+        <span th:text="#{list.productCount(${preview.items.size()})}">0 products</span>
+      </div>
+      <p>
+        <strong th:text="${preview.name}">Shared list</strong>
+        <span class="status-pill" th:text="#{share.separateBadge}">Separate list</span>
+      </p>
+      <p class="helper" th:text="#{share.previewIntro}">This preview shows the records that were created. The original file is not kept, and this list is separate from My list.</p>
+      <table class="facts-table" th:if="${!preview.items.isEmpty()}">
+        <thead>
+          <tr>
+            <th scope="col" th:text="#{share.product}">Product</th>
+            <th scope="col" th:text="#{share.quantity}">Packs</th>
+            <th scope="col" th:text="#{share.checked}">Checked</th>
+            <th scope="col" th:text="#{share.retailer}">Retailer</th>
+            <th scope="col" th:text="#{share.price}">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="item : ${preview.items}">
+            <td>
+              <strong th:text="${item.product.name.textFor(#locale)}" th:lang="${item.product.name.languageFor(#locale)}">Product</strong>
+              <code th:text="${item.product.code}">CODE</code>
+            </td>
+            <td th:text="${item.quantity}">1</td>
+            <td th:text="${item.checked ? #messages.msg('share.checkedYes') : #messages.msg('share.checkedNo')}">No</td>
+            <td th:text="${item.retailerCode == null ? #messages.msg('share.automatic') : item.retailerCode}">Automatic</td>
+            <td th:text="${item.unitPrice == null ? #messages.msg('format.notListed') : format.money(item.unitPrice)}">Not listed</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </section>
+</th:block>

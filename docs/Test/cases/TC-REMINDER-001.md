@@ -4,8 +4,9 @@
 
 Check that a reminder keeps its product, quantity, interval, and optional
 retailer choice; computes due dates from the controlled clock; respects shared
-quiet hours for the due indicator; and uses the saved-list rules when adding
-packs to My list.
+quiet hours for the due indicator; uses the saved-list rules when adding packs
+to My list; and never leaves an enabled add action when the pinned retailer has
+no current price.
 
 ## Setup
 
@@ -37,9 +38,13 @@ packs to My list.
    retailer. The action shows the existing retailer-conflict error and changes
    neither the list nor the reminder. Remove the conflict and retry. The chosen
    quantity and retailer are added; the reminder remains active and due.
-5. Create a reminder pinned to JASONS, then remove current listings. The page
-   reports that the price is unknown and preserves JASONS. Adding to My list
-   fails under the existing price validation and does not change either record.
+5. Create a reminder pinned to JASONS, then remove that retailer's current
+   listing while another listed retailer keeps a price. The page reports that
+   the pinned price is unknown, preserves JASONS, disables **Add to My list**,
+   and offers the priced retailers. Choose the priced retailer and confirm the
+   reminder keeps the same product and quantity, the new choice is stored, and
+   Add becomes available. A direct add request without the change still fails
+   under price validation and changes neither record.
 6. Check create validation. Quantities below 1 or above 999 and intervals below
    1 are rejected without saving a reminder. A shopping-list total above 999 is
    rejected without clearing the reminder or changing the existing item.

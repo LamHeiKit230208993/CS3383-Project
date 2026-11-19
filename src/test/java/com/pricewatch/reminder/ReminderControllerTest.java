@@ -180,6 +180,8 @@ class ReminderControllerTest {
 
         ReminderView withoutPrice = reminders.overview().reminders().getFirst();
         assertFalse(withoutPrice.currentPriceAvailable());
+        assertFalse(withoutPrice.addAllowed());
+        assertTrue(withoutPrice.availableRetailers().isEmpty());
         mvc.perform(post("/reminders/{id}/add", reminder.id()))
                 .andExpect(redirectedUrl("/reminders")).andExpect(flash().attributeExists("error"));
         assertTrue(shopping.items().isEmpty());
@@ -187,6 +189,49 @@ class ReminderControllerTest {
         assertEquals("JASONS", retained.selectedRetailerCode());
         assertFalse(retained.currentPriceAvailable());
         assertEquals(reminder.effectiveDueAt(), retained.effectiveDueAt());
+    }
+
+    @Test
+    void unavailablePinnedRetailerOffersAnotherPricedChoiceAndBlocksAdd() throws Exception {
+        catalog.importSample();
+        create("2", "5", "JASONS");
+        ReminderView reminder = reminders.overview().reminders().getFirst();
+
+        offers.deleteAllInBatch();
+        var jasosListing = products.findWithListingsByCode("P000000124").orElseThrow()
+                .getListings().stream()
+                .filter(listing -> "JASONS".equals(listing.getRetailerCode())).findFirst().orElseThrow();
+        listings.delete(jasosListing);
+        listings.flush();
+
+        ReminderView blocked = reminders.overview().reminders().getFirst();
+        assertEquals("JASONS", blocked.selectedRetailerCode());
+        assertFalse(blocked.currentPriceAvailable());
+        assertFalse(blocked.addAllowed());
+        assertTrue(blocked.availableRetailers().stream()
+                .anyMatch(choice -> "PARKNSHOP".equals(choice.code())));
+        assertTrue(blocked.availableRetailers().stream()
+                .noneMatch(choice -> "JASONS".equals(choice.code())));
+
+        mvc.perform(get("/reminders"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(containsString("Choose a listed retailer with a current price")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(containsString("PARKNSHOP")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(containsString("disabled")));
+
+        mvc.perform(post("/reminders/{id}/retailer", reminder.id()).param("retailerCode", "PARKNSHOP"))
+                .andExpect(redirectedUrl("/reminders"));
+        ReminderView changed = reminders.overview().reminders().getFirst();
+        assertEquals("PARKNSHOP", changed.selectedRetailerCode());
+        assertTrue(changed.currentPriceAvailable());
+        assertTrue(changed.addAllowed());
+
+        mvc.perform(post("/reminders/{id}/add", reminder.id())).andExpect(redirectedUrl("/reminders"));
+        assertEquals("PARKNSHOP", shopping.items().getFirst().selectedRetailerCode());
+        assertEquals(2, shopping.items().getFirst().quantity());
     }
 
     @Test
