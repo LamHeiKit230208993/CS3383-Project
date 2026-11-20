@@ -36,6 +36,10 @@ Sources: [`BudgetServiceTest`](../../../src/test/java/com/pricewatch/budget/Budg
    Open a second context against the same file. Expect the same period and exact
    decimal limit in its single settings row. The test uses a temporary database,
    not the user's production data file.
+8. Apply a saved limit to the totals supplied by Discover or Cart. For HK$78.00
+   of a HK$200.00 limit, expect 39% and HK$122.00 available. Confirm incomplete
+   prices do not produce a within-budget state. Check a zero limit with a known
+   subtotal and an empty total to cover both division-by-zero cases.
 
 The weekly/monthly choice labels the planned limit only. The app does not infer
 past spending, roll unused amounts forward, include offers, or add delivery and

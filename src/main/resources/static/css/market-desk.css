@@ -129,17 +129,27 @@ p + p { margin-top: 10px; }
 .wishlist-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 3px;
   border-top: 1px solid var(--line); padding: 5px; }
 .wishlist-row > label { display: grid; place-items: center; min-height: 68px; }
-.wishlist-row summary { list-style: none; cursor: pointer; }
-.wishlist-row summary::-webkit-details-marker { display: none; }
-.wishlist-row details[open] summary { background: var(--blue-soft); }
+.wishlist-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.wishlist-item.is-focused, .wishlist-row:has(input:checked) { background: var(--blue-soft); }
+.wishlist-item-copy { min-width: 0; }
+.wishlist-item-copy h2 { font-size: 1rem; overflow-wrap: anywhere; }
+.wishlist-item-copy p { margin: 2px 0 0; }
 .wishlist-price { text-align: end; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; max-width: 9rem; }
-.wishlist-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0 5px; }
-.wishlist-actions .button { font-size: .85rem; padding-inline: 12px; }
-.wishlist-row details[open] .wishlist-actions { animation: disclose 160ms ease-out both; }
+.wishlist-actions { display: flex; grid-column: 1 / -1; flex-wrap: wrap; gap: 8px; padding: 2px 0 5px; }
+@media (min-width: 1280px) {
+  .wishlist-item { grid-template-columns: minmax(145px, 1fr) auto minmax(0, auto); }
+  .wishlist-actions { grid-column: auto; justify-content: end; }
+}
 @media (max-width: 767px) {
   .wishlist-row { grid-template-columns: 34px minmax(0, 1fr); }
-  .wishlist-row .action-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-inline: 8px; }
-  .wishlist-row .action-row .icon { display: none; }
+  .wishlist-item { padding-inline: 4px 8px; gap: 8px; }
   .wishlist-price { max-width: 6rem; font-size: .83rem; }
 }
 .local-state { font-size: 12px; color: var(--muted); white-space: nowrap; }
@@ -150,6 +160,8 @@ main { max-width: 1560px; margin: auto; padding: 34px 36px 30px; }
 .intro { font-size: 15px; color: var(--muted); margin-top: 16px; }
 .heading-with-action { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
 .button { min-height: 46px; display: inline-flex; justify-content: center; align-items: center; gap: 10px; border: 1px solid transparent; border-radius: 9px; padding: 10px 18px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.button.icon-action { width: 46px; min-height: 46px; padding: 0; }
+.icon-action .icon { width: 20px; height: 20px; }
 .primary { background: var(--blue); color: #fff; }
 .primary:hover { background: #1c42b3; color: #fff; }
 .secondary { color: var(--blue); background: var(--surface); border-color: #bac8e2; }
@@ -213,35 +225,10 @@ input:not([type=checkbox]):not([type=radio]), select { background: var(--surface
 .add-form label { font-size: 14px; font-weight: 600; }
 .add-form small { color: var(--muted); font-weight: 400; }
 summary { min-height: 44px; padding-top: 10px; cursor: pointer; }
-.list-item { padding: 25px 0; border-top: 1px solid var(--line); }
-.list-item-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
-.list-item-heading > div { min-width: 0; }
-.line-total { font-size: 22px; font-variant-numeric: tabular-nums; min-width: 0; }
-.is-checked h3 { text-decoration: line-through; color: var(--muted); }
-.is-checked h3 a { color: inherit; }
-.cart-tools { display: flex; gap: 12px; align-items: end; justify-content: space-between; flex-wrap: wrap; margin-bottom: 18px; }
-.cart-tools form[data-cart-picker] { flex: 1; }
-.cart-tools [hidden], .cart-check [hidden] { display: none; }
-.cart-tools select { width: auto; max-width: min(100%, 20rem); }
-.cart-files { position: relative; }
-.cart-files summary { list-style: none; }
-.cart-file-menu { position: absolute; inset: calc(100% + 8px) 0 auto auto; z-index: 5; display: grid; gap: 12px;
-  width: min(calc(100vw - 36px), 20rem); padding: 14px; box-shadow: 0 10px 28px #17264220; }
-.cart-file-menu form { display: grid; gap: 8px; }
-[aria-labelledby="list-title"] .list-item-heading { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, auto); }
-.cart-check .check-label { min-width: 32px; min-height: 36px; display: grid; place-items: center; }
-.cart-check input[aria-disabled="true"] { cursor: wait; }
-.cart-edit { margin-top: 10px; }
-.cart-edit summary { min-height: 44px; padding-block: 9px; width: fit-content; cursor: pointer; color: var(--blue); }
-.cart-edit[open] > form, .cart-files[open] .cart-file-menu { animation: disclose 160ms ease-out both; }
+.product-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 10px; }
 @keyframes disclose { from { opacity: 0; transform: translateY(-4px); } }
-.list-edit-form { display: flex; align-items: end; flex-wrap: wrap; gap: 16px; margin-top: 18px; }
-.list-edit-form > label:first-child { max-width: 95px; font-size: 12px; }
 .check-label { display: flex; align-items: center; gap: 10px; min-height: 46px; font-size: 14px; }
 .check-label input { width: 20px; height: 20px; accent-color: var(--blue); flex-shrink: 0; }
-.remove-item { color: var(--muted); font-size: 12px; margin-top: 8px; }
-.remove-item form { margin: 10px 0; padding: 16px; background: #fff7f6; border-radius: 10px; }
-.remove-item .button { margin-top: 12px; }
 .data-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; gap: 26px; }
 .data-facts { display: grid; grid-template-columns: 145px minmax(0, 1fr); gap: 18px; margin: 26px 0; font-size: 14px; }
 dt { color: var(--muted); }
@@ -316,10 +303,6 @@ dd { margin: 0; }
   .product-identity > p { margin-top: 10px; }
   .product-identity .add-form { display: grid; grid-template-columns: auto 75px; }
   .add-form .button { grid-column: 1 / -1; }
-  .list-item-heading { gap: 12px; }
-  .line-total { font-size: 19px; }
-  .list-edit-form { gap: 12px; }
-  .list-edit-form .button { flex: 1; }
   .data-facts { grid-template-columns: minmax(0, 1fr); gap: 6px; }
   .data-facts dd { margin-bottom: 14px; }
   .planned-page { padding: 28px 22px; }
@@ -336,8 +319,6 @@ dd { margin: 0; }
 .selection-estimate strong { display: block; font-size: 27px; margin: 4px 0; font-variant-numeric: tabular-nums; }
 .offer-unapplied { font-size: 11px; font-weight: 600; color: var(--amber); margin-bottom: 7px; }
 .selection-mode { color: var(--blue); font-size: 12px; margin-top: 10px; }
-.list-edit-form .retailer-edit { display: grid; gap: 3px; font-size: 12px; flex: 1 1 190px; max-width: 280px; }
-.list-edit-form select { font-size: 14px; }
 .search-filters { margin-top: 16px; }
 .search-filters label { margin: 0; max-width: 380px; }
 .search-filters select { margin-top: 5px; font-size: 14px; }
@@ -349,7 +330,6 @@ dd { margin: 0; }
 @media (max-width: 767px) {
   html { scroll-padding-bottom: 105px; }
   .product-identity .add-form { display: flex; flex-direction: column; align-items: stretch; }
-  .list-edit-form .retailer-edit { max-width: none; flex-basis: calc(100% - 112px); }
   .mobile-nav { display: flex; align-items: stretch; gap: 4px; position: fixed; inset: auto 0 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 20; background: var(--surface); border-top: 1px solid var(--line); }
   .mobile-nav > a { flex: 1; min-width: 0; min-height: 54px; display: flex; flex-direction: column; gap: 4px;
     align-items: center; justify-content: center; border-radius: 9px; font-size: 11px; text-decoration: none; color: var(--muted); padding: 6px 2px; }
@@ -430,8 +410,7 @@ section[aria-labelledby="alerts-title"] > .panel + .panel { margin-top: 24px; }
 .history-table-wrap th { background: var(--page); color: var(--muted); font-weight: 600; }
 .history-table-wrap td { min-width: 110px; }
 .history-table-wrap tbody tr:last-child td { border-bottom: 0; }
-.data-facts dd, .list-item-heading > strong { overflow-wrap: anywhere; }
-section[aria-labelledby="alerts-title"] .list-item-heading > strong { flex-shrink: 0; max-width: 45%; font-variant-numeric: tabular-nums; }
+.data-facts dd { overflow-wrap: anywhere; }
 .milestone-grid .section-heading > span { flex-shrink: 0; }
 @media (max-width: 1100px) {
   .milestone-grid { grid-template-columns: minmax(0, 1fr); }

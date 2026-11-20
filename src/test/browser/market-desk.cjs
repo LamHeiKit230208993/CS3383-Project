@@ -55,6 +55,17 @@ async function tabTo(page, target) {
   assert.fail("Keyboard focus did not reach the expected control.");
 }
 
+async function waitForCartNavigation(page, action) {
+  await Promise.all([page.waitForNavigation({ waitUntil: "domcontentloaded" }), action()]);
+}
+
+async function setCartDone(page, row, checked) {
+  await Promise.all([
+    page.waitForResponse(response => response.url().includes("/list/items/check") && response.status() === 204),
+    row.getByRole("checkbox").setChecked(checked)
+  ]);
+}
+
 async function startApp(sourceUrl) {
   const java = process.env.JAVA_HOME
     ? path.join(process.env.JAVA_HOME, "bin", process.platform === "win32" ? "java.exe" : "java")
@@ -226,6 +237,29 @@ async function main() {
     await go("/data");
     await page.getByRole("button", { name: "Load checked sample" }).click();
     assert.match(await text(page.locator(".source-banner")), /Historical sample/);
+  });
+
+  await check("Discover shows a sticky shopping summary and keeps search easy to reach", async () => {
+    await go("/");
+    assert.equal(await page.locator(".product-card").count(), 2);
+    const planningCard = page.locator(".discover-shopping");
+    assert.equal(await planningCard.evaluate(card => getComputedStyle(card).position), "sticky");
+    const left = await page.locator(".discover-search").boundingBox();
+    const right = await planningCard.boundingBox();
+    assert.ok(right.x >= left.x + left.width, "The desktop card should sit to the right of search.");
+    assert.ok(await page.locator('.product-card [data-category-icon="dairy"]').count());
+    await page.screenshot({ path: path.join(artifacts, "discover-refresh-desktop.png") });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await tabTo(page, page.locator("#product-search"));
+    await page.keyboard.insertText("milk");
+    await page.keyboard.press("Enter");
+    await page.waitForURL(url => url.searchParams.get("q") === "milk");
+    assert.match(await page.locator(".product-grid").innerText(), /P000000124/);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(artifacts, "discover-refresh-mobile.png") });
+    await page.locator(".discover-review").click();
+    await page.waitForURL(base + "/list");
+    await page.setViewportSize({ width: 1440, height: 1000 });
   });
 
   await check("Ask saves messages ahead of replies, recovers interrupted turns, and reopens chats on mobile", async () => {
@@ -417,19 +451,61 @@ async function main() {
     await page.getByRole("button", { name: "Add to Cart" }).click();
     await page.waitForURL(base + "/list");
     await page.reload();
-    await page.locator(".cart-edit > summary").click();
-    assert.equal(await page.locator("[name=retailerCode]").inputValue(), "JASONS");
+    const item = page.locator(".cart-line").filter({ hasText: "P000000124" });
+    const card = await item.boundingBox();
+    await page.mouse.click(card.x + 8, card.y + card.height / 2);
+    await page.waitForURL(url => url.pathname === "/products/P000000124" && url.searchParams.has("fromCart"));
+    await page.getByRole("link", { name: /Back to Cart/ }).click();
+    assert.equal(new URL(page.url()).pathname, "/list");
+    const retailer = item.locator("[name=retailerCode]");
+    assert.equal(await item.locator('[data-category-icon="dairy"]').count(), 1);
+    assert.equal(await retailer.inputValue(), "JASONS");
     assert.match(await text(page.locator(".line-total")), /25\.00/);
-    await page.locator("[name=retailerCode]").selectOption("PARKNSHOP");
-    await page.locator("[name=quantity]").fill("3");
-    const savedCheck = page.waitForResponse(response => response.url().includes("/list/items/check") && response.status() === 204);
-    await page.locator("[name=checked]").check();
-    await savedCheck;
-    await page.getByRole("button", { name: /^Save changes/ }).click();
+    await waitForCartNavigation(page, () => retailer.selectOption("PARKNSHOP"));
+    const increment = item.getByRole("button", { name: "Add one pack" });
+    await tabTo(page, increment);
+    await waitForCartNavigation(page, () => page.keyboard.press("Enter"));
+    assert.equal(await item.locator("[name=quantity]").inputValue(), "3");
+    const checkDone = async (checked) => {
+      await setCartDone(page, item, checked);
+      assert.equal(await item.getByRole("checkbox").isChecked(), checked);
+      assert.equal(await item.evaluate(row => row.classList.contains("is-checked")), checked);
+      assert.equal(await item.locator("[data-cart-edit]").evaluate(form => form.inert), checked);
+      assert.equal(await item.locator(".cart-remove").evaluate(menu => menu.inert), checked);
+    };
+    await checkDone(true);
+    assert.match(await item.locator("h3").evaluate(heading => getComputedStyle(heading).textDecorationLine), /line-through/);
+    await checkDone(false);
+    await checkDone(true);
     await page.reload();
-    assert.equal(await page.locator("[name=retailerCode]").inputValue(), "PARKNSHOP");
-    assert.equal(await page.locator("[name=checked]").isChecked(), true);
+    assert.equal(await retailer.inputValue(), "PARKNSHOP");
+    assert.equal(await item.getByRole("checkbox").isChecked(), true);
     assert.match(await text(page.locator(".line-total")), /27\.00/);
+    const budgetSaved = await page.request.post(base + "/budget", {
+      form: { period: "WEEKLY", limit: "80" }, maxRedirects: 0
+    });
+    assert.equal(budgetSaved.status(), 302);
+    await go("/list");
+    assert.match(await page.locator(".shop-budget").innerText(), /HK\$53\.00/);
+    await page.screenshot({ path: path.join(artifacts, "cart-editorial-desktop.png"), animations: "disabled" });
+    const listActions = page.locator(".cart-files > summary");
+    await tabTo(page, listActions);
+    await page.keyboard.press("Enter");
+    assert.equal(await page.getByRole("link", { name: "Export JSON" }).isVisible(), true);
+    await page.getByRole("link", { name: "Export JSON" }).focus();
+    await page.keyboard.press("Escape");
+    assert.equal(await page.getByRole("link", { name: "Export JSON" }).isVisible(), false);
+    await page.setViewportSize({ width: 375, height: 900 });
+    await listActions.click();
+    assert.equal(await page.getByRole("link", { name: "Download offline checklist" }).isVisible(), true);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.screenshot({ path: path.join(artifacts, "cart-list-actions-mobile.png"), fullPage: true, animations: "disabled" });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByRole("link", { name: "Continue browsing" }).click();
+    assert.match(await page.locator(".discover-shopping").innerText(), /100 %Fresh Milk 236mL/);
+    assert.match(await page.locator(".shop-budget").innerText(), /HK\$53\.00/);
+    await page.screenshot({ path: path.join(artifacts, "discover-budget-desktop.png"), animations: "disabled" });
   });
 
   await check("forms work with JavaScript disabled", async () => {
@@ -444,7 +520,13 @@ async function main() {
       await tab.getByRole("button", { name: "Add to Cart" }).click();
       // A first flash redirect can include Tomcat's URL session marker.
       await tab.waitForURL(url => url.origin === base && url.pathname.split(";")[0] === "/list");
-      assert.match(await tab.locator("main").innerText(), /Your retailer: WELLCOME/);
+      const bread = tab.locator(".cart-line").filter({ hasText: "P000000229" });
+      assert.equal(await bread.locator("[name=retailerCode]").inputValue(), "WELLCOME");
+      await bread.locator("[name=quantity]").fill("2");
+      await bread.locator("[data-cart-edit] button[type=submit]").click();
+      assert.equal(await bread.locator("[name=quantity]").inputValue(), "2");
+      await bread.locator("[name=quantity]").fill("1");
+      await bread.locator("[data-cart-edit] button[type=submit]").click();
     } finally { await plain.close(); }
   });
 
@@ -521,9 +603,9 @@ async function main() {
   await check("missing selected price stays unknown after refresh", async () => {
     await go("/list");
     const item = page.locator(".list-item").filter({ hasText: "P000000124" });
-    await item.locator(".cart-edit > summary").click();
-    await item.locator("[name=retailerCode]").selectOption("JASONS");
-    await item.getByRole("button", { name: /^Save changes/ }).click();
+    await setCartDone(page, item, false);
+    await waitForCartNavigation(page, () => item.locator("[name=retailerCode]").selectOption("JASONS"));
+    await setCartDone(page, item, true);
     missingRetailer = true;
     await go("/data");
     await page.getByRole("button", { name: "Refresh live prices" }).click();
@@ -547,6 +629,8 @@ async function main() {
       for (const route of ["/", "/products/P000000124", "/products/TEST-LARGE", "/list", "/settings", "/data"]) {
         await go(route);
         assert.equal(await page.locator("h1").count(), 1);
+        assert.match(await page.locator("h1").evaluate(title => getComputedStyle(title).fontFamily), /^Georgia/);
+        assert.equal(await page.locator("body").evaluate(body => getComputedStyle(body).backgroundColor), "rgb(243, 239, 232)");
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
           `Horizontal overflow: ${width} ${route}`);
         assert.equal(await page.locator("#main-content").count(), 1);
@@ -558,6 +642,7 @@ async function main() {
           })), true, `Clipped card price at ${width}px`);
         }
         if (route === "/list") {
+          assert.doesNotMatch(await page.locator(".cart-product h3").first().evaluate(name => getComputedStyle(name).fontFamily), /^Georgia/);
           assert.equal(await page.locator(".line-total, .summary-total strong").evaluateAll(amounts =>
             amounts.every(amount => amount.scrollWidth <= amount.clientWidth &&
               amount.getBoundingClientRect().right <= amount.parentElement.getBoundingClientRect().right)),
@@ -601,14 +686,13 @@ async function main() {
   await check("J10 exports one list and imports an editable copy on a second local app", async () => {
     await go("/list");
     const precisionItem = page.locator(".list-item").filter({ hasText: "TEST-LARGE" });
-    await precisionItem.locator(".cart-edit > summary").click();
     await precisionItem.locator(".remove-item > summary").click();
     await precisionItem.getByRole("button", { name: /^Confirm remove/ }).click();
     assert.equal(await page.locator(".list-item").count(), 2);
     const milk = page.locator(".list-item").filter({ hasText: "P000000124" });
-    await milk.locator(".cart-edit > summary").click();
-    await milk.locator("select[name=retailerCode]").selectOption("AEON");
-    await milk.getByRole("button", { name: /Save changes/ }).click();
+    await setCartDone(page, milk, false);
+    await waitForCartNavigation(page, () => milk.locator("select[name=retailerCode]").selectOption("AEON"));
+    await setCartDone(page, milk, true);
     assert.equal(await milk.getByRole("checkbox").isChecked(), true);
     await page.locator(".cart-files > summary").click();
     const [download] = await Promise.all([
@@ -630,10 +714,11 @@ async function main() {
       await receiver.goto(receivingBase + "/list");
       const upload = async buffer => {
         await receiver.locator(".cart-files > summary").click();
+        await receiver.locator(".cart-import > summary").click();
         await receiver.locator("#list-file").setInputFiles({
           name: "shopping-list.json", mimeType: "application/json", buffer
         });
-        await receiver.getByRole("button", { name: "Import JSON" }).click();
+        await waitForCartNavigation(receiver, () => receiver.getByRole("button", { name: "Import JSON" }).click());
       };
       await upload(exportedList);
       assert.match(new URL(receiver.url()).searchParams.get("listId") ?? "", /^\d+$/,
@@ -643,15 +728,16 @@ async function main() {
       assert.equal(await copy.locator(".line-total").innerText(), "Unknown");
       assert.equal(await copy.locator("select[name=retailerCode]").inputValue(), "AEON");
       assert.equal(await copy.getByRole("checkbox").isChecked(), true);
-      await copy.locator(".cart-edit > summary").click();
+      await setCartDone(receiver, copy, false);
       await copy.getByRole("spinbutton").fill(String(original.quantity + 1));
-      await copy.getByRole("button", { name: /Save changes/ }).click();
+      await waitForCartNavigation(receiver, () => copy.getByRole("spinbutton").press("Tab"));
       assert.equal(await copy.locator("[name=quantity]").inputValue(), String(original.quantity + 1));
       assert.equal(await milk.locator("[name=quantity]").inputValue(), String(original.quantity));
       await upload(Buffer.from('{"version":1,"items":['));
       assert.match(await receiver.getByRole("alert").innerText(), /Could not import/);
-      assert.equal(await receiver.locator("#list-picker option").count(), 2);
-      await receiver.locator("#list-picker").selectOption({ index: 1 });
+      assert.equal(await receiver.locator("#list-picker").count(), 0);
+      await receiver.locator(".cart-files > summary").click();
+      await receiver.locator(".cart-other-lists a").click();
       await receiver.waitForURL(url => url.searchParams.has("listId"));
       assert.equal(await copy.locator("[name=quantity]").inputValue(), String(original.quantity + 1));
       await receiver.screenshot({ path: path.join(artifacts, "j10-imported-list.png"), fullPage: true });
@@ -669,6 +755,7 @@ async function main() {
       await offlinePage.getByRole("button", { name: "Refresh live prices" }).click();
       await offlinePage.goto(offlineBase + "/list");
       await offlinePage.locator(".cart-files > summary").click();
+      await offlinePage.locator(".cart-import > summary").click();
       await offlinePage.locator("#list-file").setInputFiles({
         name: "shopping-list.json", mimeType: "application/json", buffer: exportedList
       });
@@ -808,6 +895,18 @@ async function main() {
     const dates = await rows.locator("time").evaluateAll(items => items.map(item => Date.parse(item.dateTime)));
     assert.ok(Number.isFinite(dates[0]) && dates[0] >= dates[1]);
     assert.equal(await page.locator('.price-chart svg[role="img"]').isVisible(), true);
+    const observation = page.locator("#history-observation");
+    await observation.focus();
+    await page.keyboard.press("Home");
+    const readout = page.locator("[data-history-readout]");
+    assert.match(await readout.innerText(), /JASONS[\s\S]*HK\$12\.50/);
+    const seriesToggle = page.locator('button[data-history-series="JASONS"]');
+    await seriesToggle.click();
+    assert.equal(await seriesToggle.getAttribute("aria-pressed"), "false");
+    assert.equal(await page.locator('g[data-history-retailer="JASONS"]').isVisible(), false);
+    assert.doesNotMatch(await readout.innerText(), /JASONS/);
+    assert.equal(await rows.count(), 2);
+    await seriesToggle.click();
     await page.locator("#history-days").selectOption("30");
     await page.locator("#history-retailer").selectOption("JASONS");
     await page.locator(".history-filters button[type=submit]").click();
@@ -843,16 +942,33 @@ async function main() {
     await page.locator('form[action$="/preferences"] button[type=submit]').click();
     await page.setViewportSize({ width: 1440, height: 1000 });
   });
-  await check("Wishlist batch adds only missing products and opens item actions on mobile", async () => {
+  await check("Wishlist shows item actions and batch adds only missing products on mobile", async () => {
     await go("/saved?code=TEST-MILK");
     await page.getByRole("button", { name: "Save to wishlist" }).click();
-    await page.setViewportSize({ width: 375, height: 812 });
     const extraMilk = page.locator(".wishlist-row").filter({ has: page.locator('[value="TEST-MILK"]') });
-    await tabTo(page, extraMilk.locator("summary"));
-    await page.keyboard.press("Enter");
-    for (const name of ["View product", "Price history", "Set rules"]) {
-      assert.equal(await extraMilk.getByRole("link", { name, exact: true }).isVisible(), true);
+    const historyAction = extraMilk.getByRole("link", { name: "Price history", exact: true });
+    const caption = historyAction.locator("span");
+    assert.equal(await caption.evaluate(label => label.getBoundingClientRect().width), 0);
+    await historyAction.hover();
+    await page.waitForFunction(() => {
+      const label = document.querySelector(".wishlist-action:hover span");
+      return label?.textContent.trim() === "Price history" && label.getBoundingClientRect().width > 30;
+    });
+    await page.mouse.move(1, 1);
+    await page.setViewportSize({ width: 375, height: 812 });
+    assert.equal(await extraMilk.locator(".wishlist-actions .wishlist-action").count(), 3);
+    assert.equal(await extraMilk.locator(".product-category-icon").count(), 1);
+    for (const [role, name] of [["link", "Price history"], ["link", "Set rules"], ["button", "Remove"]]) {
+      const action = extraMilk.getByRole(role, { name, exact: true });
+      assert.equal(await action.getAttribute("title"), name);
+      assert.equal(await action.locator(".icon").count(), 1);
+      const bounds = await action.boundingBox();
+      assert.ok(bounds.width >= 44 && bounds.height >= 44);
     }
+    await tabTo(page, extraMilk.getByRole("link", { name: "Set rules", exact: true }));
+    await extraMilk.locator(".wishlist-product-link").click();
+    await page.getByRole("link", { name: /Back to Wishlist/ }).click();
+    await page.waitForURL(base + "/saved");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: path.join(artifacts, "wishlist-mobile.png"), animations: "disabled" });
     await extraMilk.getByRole("checkbox").check();
@@ -872,9 +988,11 @@ async function main() {
     ]) {
       assert.equal((await page.request.post(base + route, { form, maxRedirects: 0 })).status(), 302, route);
     }
-    await go("/alerts/rules?code=P000000124");
-    await page.locator("[name=targetPrice]").fill("8");
-    await page.getByRole("button", { name: "Save target" }).click();
+    const priceRule = await page.request.post(base + "/alerts/watch-rules/save", {
+      form: { code: "P000000124", targetPrice: "8" },
+      maxRedirects: 0
+    });
+    assert.equal(priceRule.status(), 302);
     await go("/data");
     await page.getByRole("button", { name: "Refresh live prices" }).click();
     await page.locator(".main-nav").getByRole("link", { name: "Settings", exact: true }).click();
@@ -886,9 +1004,10 @@ async function main() {
     };
     const before = await exportData();
     assert.equal(before.version, 1);
-    for (const key of ["lists", "wishlist", "tracking", "observations", "priceTargets", "productPriceAlerts", "reminders", "budgets", "chats"]) {
+    for (const key of ["lists", "wishlist", "tracking", "observations", "watchRules", "productPriceAlerts", "reminders", "budgets", "chats"]) {
       assert.ok(before[key].length > 0, key);
     }
+    assert.ok(before.productPriceAlerts.some(event => event.ruleId === before.watchRules[0].id));
     assert.ok(before.lists.some(list => list.entries.some(entry => entry.productCode === "P000000124")));
     assert.ok(before.chats.flatMap(chat => chat.messages).flatMap(message => message.priceCards)
       .some(card => card.productCode === "P000000124" && card.rows.some(row => row.retailer === "AEON" && row.price === 7.5)));
@@ -905,7 +1024,7 @@ async function main() {
     assert.match(await page.locator("main [role=status]").innerText(), /Personal data was reset/);
     const after = await exportData();
     for (const key of ["lists", "wishlist", "allRetailerTrackingProducts", "tracking", "observations", "alerts", "reminders", "budgets", "chats",
-      "priceTargets", "productPriceAlerts", "timeAlerts"]) {
+      "priceTargets", "productPriceAlerts", "timeAlerts", "watchRules"]) {
       assert.deepEqual(after[key], [], key);
     }
     assert.equal(after.preferences.display.highContrast, false);

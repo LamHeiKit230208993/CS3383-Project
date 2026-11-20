@@ -26,10 +26,10 @@ public class ProductTargetEventEntity {
     @Column(name = "product_code", length = 80, nullable = false)
     private String productCode;
 
-    @Column(precision = 19, scale = 4, nullable = false)
+    @Column(precision = 19, scale = 4)
     private BigDecimal target;
 
-    @Column(name = "retrieved_at", nullable = false)
+    @Column(name = "retrieved_at")
     private Instant retrievedAt;
 
     @Column(name = "created_at", nullable = false)
@@ -46,15 +46,29 @@ public class ProductTargetEventEntity {
     @Column(name = "snoozed_until")
     private Instant snoozedUntil;
 
+    @Column(name = "rule_id")
+    private Long ruleId;
+
+    @Column(name = "scheduled_due_at")
+    private Instant scheduledDueAt;
+
     protected ProductTargetEventEntity() {}
 
     public ProductTargetEventEntity(String productCode, BigDecimal target, Instant retrievedAt,
                                     Instant createdAt, List<ProductTargetRetailerPrice> retailers) {
+        this(productCode, target, retrievedAt, createdAt, retailers, null, null);
+    }
+
+    public ProductTargetEventEntity(String productCode, BigDecimal target, Instant retrievedAt,
+                                    Instant createdAt, List<ProductTargetRetailerPrice> retailers,
+                                    Long ruleId, Instant scheduledDueAt) {
         this.productCode = productCode;
         this.target = target;
         this.retrievedAt = retrievedAt;
         this.createdAt = createdAt;
         this.retailers.addAll(retailers);
+        this.ruleId = ruleId;
+        this.scheduledDueAt = scheduledDueAt;
     }
 
     public Long getId() { return id; }
@@ -65,6 +79,8 @@ public class ProductTargetEventEntity {
     public List<ProductTargetRetailerPrice> getRetailers() { return List.copyOf(retailers); }
     public Instant getReadAt() { return readAt; }
     public Instant getSnoozedUntil() { return snoozedUntil; }
+    public Long getRuleId() { return ruleId; }
+    public Instant getScheduledDueAt() { return scheduledDueAt; }
 
     public void markRead(Instant now) {
         if (readAt == null) readAt = now;

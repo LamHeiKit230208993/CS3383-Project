@@ -108,6 +108,10 @@ async function main() {
   const capture = async name => page.screenshot({
     path: path.join(artifacts, `${name}.png`), fullPage: true, animations: "disabled"
   });
+  const postRule = async (route, form) => {
+    const response = await page.request.post(base + route, { form, maxRedirects: 0 });
+    assert.equal(response.status(), 302, route);
+  };
 
   await check("accept the two-product local feed", async () => {
     await go("/data");
@@ -118,7 +122,6 @@ async function main() {
   await check("wishlist save starts price tracking and exposes row actions", async () => {
     await go("/saved?code=E2E-MILK");
     await submit(page.getByRole("button", { name: "Save to wishlist" }), "/saved");
-    await page.locator(".wishlist-row summary").click();
     await page.locator(".wishlist-actions").getByRole("link", { name: "Price history" }).click();
     assert.match(await page.locator("main").innerText(), /TEST-STORE/);
   });
@@ -128,11 +131,8 @@ async function main() {
     const trackingId = String(exportData.tracking.find(period => period.retailerCode === "TEST-STORE").id);
     const seeded = await page.request.post(base + "/alerts/drop", { form: { trackingId, enabled: "true" } });
     assert.equal(seeded.status(), 200);
-    await go("/saved?code=E2E-MILK");
-    await page.getByRole("link", { name: "Set rules", exact: true }).click();
-    await page.waitForURL(url => url.pathname === "/alerts/rules");
-    await page.locator('[action="/alerts/product-target"] [name="targetPrice"]').fill("9.00");
-    await submit(page.locator('[action="/alerts/product-target"] button'), "/alerts/rules");
+    await postRule("/alerts/watch-rules/save", { code: "E2E-MILK", targetPrice: "9.00" });
+    await go("/alerts/rules?code=E2E-MILK");
     assert.match(await page.locator("main").innerText(), /Retailer-specific rules/);
     milkPrice = "8.00";
     secondMilkPrice = "8.50";
@@ -141,6 +141,8 @@ async function main() {
     await go("/alerts");
     const grouped = page.locator(".alert-row").filter({ has: page.locator(".alert-retailers") });
     assert.equal(await grouped.count(), 1);
+    assert.ok(await page.locator(".alert-day-heading time").count());
+    assert.match(await grouped.locator(".alert-time").innerText(), /HKT/);
     assert.equal(await grouped.locator(".alert-retailers div").count(), 2);
     assert.match(await grouped.innerText(), /OTHER-STORE\s+HK\$8\.50/);
     assert.match(await grouped.innerText(), /TEST-STORE\s+HK\$8\.00/);
@@ -154,11 +156,26 @@ async function main() {
     await go("/products/E2E-NOODLE");
     await page.getByRole("link", { name: "Set rules" }).click();
     await page.waitForURL(url => url.pathname === "/alerts/rules");
-    await page.getByText("Add time reminder", { exact: true }).click();
-    const create = page.locator('form[action="/reminders/create"]');
-    await create.locator('[name="quantity"]').fill("2");
-    await create.locator('[name="retailerCode"]').selectOption("NOODLE-STORE");
-    await submit(create.getByRole("button", { name: "Save reminder" }), "/alerts/rules");
+    await postRule("/reminders/create", {
+      code: "E2E-NOODLE", quantity: "2", intervalDays: "7", retailerCode: "NOODLE-STORE"
+    });
+    await go("/alerts?tab=rules");
+    const reminderCard = page.locator(".alarm-rule-compact").filter({ hasText: "Instant Noodles 70g" });
+    assert.match(await reminderCard.innerText(), /Every 7 days[\s\S]*Type: Time reminder/);
+    const reminderSwitch = reminderCard.getByRole("switch");
+    await submit(reminderSwitch, "/alerts");
+    assert.equal(await reminderSwitch.getAttribute("aria-checked"), "false");
+    assert.match(await reminderCard.innerText(), /Off/);
+    await capture("alert-reminder-card");
+    const retailerSwitch = page.locator('form[action="/alerts/retailer-rule/enabled"]').getByRole("switch").first();
+    await submit(retailerSwitch, "/alerts");
+    assert.equal(await retailerSwitch.getAttribute("aria-checked"), "false");
+    await submit(retailerSwitch, "/alerts");
+    await go("/alerts/rules?code=E2E-NOODLE");
+    const editorSwitch = page.locator('form[action^="/reminders/"][action$="/enabled"]').getByRole("switch");
+    assert.equal(await editorSwitch.getAttribute("aria-checked"), "false");
+    await submit(editorSwitch, "/alerts/rules");
+    assert.equal(await editorSwitch.getAttribute("aria-checked"), "true");
     await page.getByText("2 packs · every 7 days", { exact: true }).click();
     const edit = page.locator('form[action$="/update"]');
     await edit.locator('[name="intervalDays"]').fill("14");
@@ -212,6 +229,123 @@ async function main() {
     assert.equal(await page.locator(".alert-retailers").count(), 2);
   });
 
+  await check("independent price and combined price-and-time rules stay editable together", async () => {
+    await postRule("/alerts/watch-rules/save", { code: "E2E-MILK", targetPrice: "6.00" });
+    await postRule("/alerts/watch-rules/save", { code: "E2E-MILK", targetPrice: "8.00", intervalDays: "5" });
+    await go("/alerts/rules?code=E2E-MILK");
+    const exactRule = page.locator("article.alarm-rule").filter({ hasText: "Price at or below HK$8.00 · every 5 days" });
+    await exactRule.locator("summary").click();
+    await exactRule.locator('[name="intervalDays"]').fill("14");
+    await submit(exactRule.getByRole("button", { name: "Save rule" }), "/alerts/rules");
+    const data = await (await page.request.get(base + "/personal-data/export")).json();
+    const rules = data.watchRules.filter(rule => rule.productCode === "E2E-MILK");
+    assert.deepEqual(rules.map(rule => [rule.target, rule.intervalDays]), [[9, null], [6, null], [8, 14]]);
+    assert.equal(data.productPriceAlerts.filter(event => event.ruleId === rules[0].id).length, 2);
+    assert.equal(data.productPriceAlerts.filter(event => event.ruleId === rules[2].id).length, 0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const updated = page.locator("article.alarm-rule").filter({ hasText: "Price at or below HK$8.00 · every 14 days" });
+    await updated.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    assert.ok(await updated.locator('[name="intervalDays"]').isVisible());
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await capture("alert-rules-mobile");
+    await submit(updated.getByRole("button", { name: "Delete rule" }), "/alerts/rules");
+    assert.equal(await updated.count(), 0);
+    await page.setViewportSize({ width: 1440, height: 960 });
+  });
+
+  await check("Wishlist and History share the alarm editor, with one-time and repeating rules", async () => {
+    const rulesForMilk = async () => {
+      const exported = await (await page.request.get(base + "/personal-data/export")).json();
+      return exported.watchRules.filter(rule => rule.productCode === "E2E-MILK");
+    };
+    const code = "E2E-MILK";
+    const dialog = page.locator("dialog.item-rules-dialog");
+    const activeDialog = page.locator("dialog.item-rules-dialog[open]");
+    const add = dialog.locator("#add-watch-rule");
+    const alarm = rule => dialog.locator(`article.alarm-rule[data-rule-id="${rule.id}"]`);
+    const waitForAlarm = async (button, matches) => {
+      await Promise.all([
+        page.waitForResponse(response => response.request().method() === "POST" &&
+          new URL(response.url()).pathname === "/alerts/watch-rules/save" && response.status() < 400),
+        button.click()
+      ]);
+      const rule = (await rulesForMilk()).find(matches);
+      assert.ok(rule, "The submitted rule should be stored");
+      await alarm(rule).waitFor({ state: "visible" });
+      return rule;
+    };
+
+    await go("/saved");
+    await page.locator(".wishlist-row").filter({ has: page.locator(`[value="${code}"]`) })
+      .getByRole("link", { name: "Set rules", exact: true }).click();
+    await activeDialog.getByRole("heading", { name: /alert rules/i }).waitFor();
+    assert.equal(new URL(page.url()).pathname, "/saved");
+
+    await add.locator("summary").click();
+    await add.locator('[name="condition"]').selectOption("price");
+    await add.locator('[name="targetPrice"]').fill("8.25");
+    await add.locator('[name="repeat"]').selectOption("ONCE");
+    const price = await waitForAlarm(add.getByRole("button", { name: "Save rule" }),
+      rule => rule.repeat === "ONCE" && rule.target === 8.25);
+    assert.equal(price.enabled, true);
+
+    await add.locator("summary").click();
+    await add.locator('[name="condition"]').selectOption("time");
+    const futureHongKong = new Date(Date.now() + 56 * 60 * 60 * 1000).toISOString().slice(0, 16);
+    await add.locator('[name="startAt"]').fill(futureHongKong);
+    await add.locator('[name="repeat"]').selectOption("WEEKLY");
+    const calendar = await waitForAlarm(add.getByRole("button", { name: "Save rule" }),
+      rule => rule.repeat === "WEEKLY" && rule.target == null && rule.startAt?.startsWith(futureHongKong));
+    assert.equal(calendar.enabled, true);
+    await capture("alert-editor-wishlist");
+
+    await page.keyboard.press("Escape");
+    await activeDialog.waitFor({ state: "hidden" });
+    await go("/alerts");
+    await page.getByRole("link", { name: "Current rules", exact: true }).click();
+    await page.waitForURL(url => url.pathname === "/alerts" && url.searchParams.get("tab") === "rules");
+    const ruleSet = page.locator('main a[data-open-alert-rules]').filter({ hasText: "Fresh Milk 236mL" });
+    await ruleSet.first().click();
+    await activeDialog.getByRole("heading", { name: /alert rules/i }).waitFor();
+    await alarm(calendar).waitFor();
+    await page.keyboard.press("Escape");
+    await activeDialog.waitFor({ state: "hidden" });
+
+    const currentRule = page.locator(`main article.alarm-rule[data-rule-id="${calendar.id}"]`);
+    const toggle = currentRule.getByRole("switch");
+    assert.equal(await toggle.getAttribute("aria-checked"), "true");
+    await submit(toggle, "/alerts");
+    await currentRule.locator('[role="switch"][aria-checked="false"]').waitFor();
+    assert.equal((await rulesForMilk()).find(rule => rule.id === calendar.id).enabled, false);
+    await submit(toggle, "/alerts");
+    await currentRule.locator('[role="switch"][aria-checked="true"]').waitFor();
+    assert.equal((await rulesForMilk()).find(rule => rule.id === calendar.id).enabled, true);
+    await submit(currentRule.getByRole("button", { name: "Delete rule" }), "/alerts");
+    await currentRule.waitFor({ state: "detached" });
+    assert.equal((await rulesForMilk()).some(rule => rule.id === calendar.id), false);
+
+    await go("/data");
+    const refresh = page.getByRole("button", { name: "Refresh live prices" });
+    await submit(refresh, "/data");
+    await submit(refresh, "/data");
+    const exported = await (await page.request.get(base + "/personal-data/export")).json();
+    const fired = exported.watchRules.find(rule => rule.id === price.id);
+    assert.equal(fired.enabled, false);
+    assert.equal(fired.completed, true);
+    assert.equal(exported.productPriceAlerts.filter(event => event.ruleId === price.id).length, 1);
+
+    await go("/alerts");
+    await page.getByRole("link", { name: "History", exact: true }).waitFor();
+    const priceEvent = page.locator(".alert-row").filter({ hasText: "HK$8.25" });
+    await priceEvent.locator(".alert-product-name a[data-open-alert-rules]").click();
+    await alarm(price).locator('[role="switch"][aria-checked="false"]').waitFor();
+    assert.match(await alarm(price).innerText(), /Completed/);
+    assert.equal(new URL(page.url()).pathname, "/alerts");
+    await page.keyboard.press("Escape");
+    await activeDialog.waitFor({ state: "hidden" });
+  });
+
   await check("invalid form parameters return client errors or validation redirects, never 500", async () => {
     const invalidReminder = await context.request.post(`${base}/reminders/create`, {
       form: { code: "E2E-NOODLE", quantity: "0", intervalDays: "7" }, maxRedirects: 0
@@ -229,7 +363,7 @@ async function main() {
     assert.equal(invalidBudget.status(), 200);
   });
 
-  await check("clean active pages refresh, but an edited reminder form is left alone", async () => {
+  await check("clean alert pages refresh, but an open editor is left alone", async () => {
     await go("/alerts");
     assert.equal(await page.locator('[data-timed-page="true"]').count(), 1);
     const cleanReload = page.waitForEvent("framenavigated", {
@@ -238,25 +372,29 @@ async function main() {
     await page.clock.fastForward(60_000);
     await cleanReload;
 
-    await go("/reminders?code=E2E-NOODLE");
-    await page.getByText("Add time reminder", { exact: true }).click();
+    await page.locator(".alert-product-name a[data-open-alert-rules]").first().click();
+    const editor = page.locator("dialog.item-rules-dialog[open]");
+    await editor.locator("#add-watch-rule summary").waitFor();
     let navigations = 0;
     const countNavigation = frame => { if (frame === page.mainFrame()) navigations++; };
     page.on("framenavigated", countNavigation);
-    const reminderQuantity = page.locator('form[action="/reminders/create"] [name="quantity"]');
-    await reminderQuantity.fill("3");
-    await page.locator("h1").click();
+    await page.clock.fastForward(120_000);
+    assert.equal(navigations, 0, "The open alert editor must prevent the background reload.");
+    await editor.locator("#add-watch-rule summary").click();
+    const target = editor.locator('#add-watch-rule [name="targetPrice"]');
+    await target.fill("3.25");
+    await editor.getByRole("heading", { name: /alert rules/i }).click();
     await page.clock.fastForward(120_000);
     await new Promise(resolve => setTimeout(resolve, 250));
     assert.equal(navigations, 0, "An edited form must not reload even after focus leaves it.");
-    assert.equal(await reminderQuantity.inputValue(), "3");
+    assert.equal(await target.inputValue(), "3.25");
     page.off("framenavigated", countNavigation);
   });
 
-  await check("all four milestone routes fit desktop and mobile", async () => {
+  await check("milestone routes fit desktop and mobile", async () => {
     for (const width of [375, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const route of ["/saved", "/alerts", "/budget", "/reminders?code=E2E-MILK"]) {
+      for (const route of ["/saved", "/alerts", "/alerts?tab=rules", "/budget", "/reminders?code=E2E-MILK"]) {
         await go(route);
         assert.equal(await page.locator("h1").count(), 1, route);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true,
@@ -268,7 +406,8 @@ async function main() {
             return range.getClientRects().length === 1;
           })), true, `Short alert prices wrapped at ${width}px`);
         }
-        await capture(route.slice(1).split("?")[0] + (width === 375 ? "-mobile" : ""));
+        const scene = route === "/alerts?tab=rules" ? "current-alert-rules" : route.slice(1).split("?")[0];
+        await capture(scene + (width === 375 ? "-mobile" : ""));
       }
     }
   });
@@ -277,16 +416,24 @@ async function main() {
     const nativeContext = await browser.newContext({ javaScriptEnabled: false });
     try {
       const nativePage = await nativeContext.newPage();
-      for (const route of ["/saved", "/alerts", "/budget", "/reminders"]) {
+      for (const route of ["/saved", "/alerts", "/alerts?tab=rules", "/budget", "/reminders"]) {
         assert.equal((await nativePage.goto(base + route)).status(), 200);
         assert.equal(await nativePage.locator("h1").count(), 1);
       }
+      await nativePage.goto(base + "/saved");
+      await nativePage.getByRole("link", { name: "Set rules", exact: true }).click();
+      await nativePage.waitForURL(url => url.pathname === "/alerts/rules");
       await nativePage.goto(base + "/budget");
-      await nativePage.locator('[name="limit"]').fill("20.00");
-      await Promise.all([
-        nativePage.waitForNavigation(),
-        nativePage.getByRole("button", { name: "Save budget" }).click()
+      const limit = nativePage.locator('#budget [name="limit"]');
+      await limit.fill("20.00");
+      assert.equal(await limit.evaluate(input => input.form.checkValidity()), true);
+      const [savedBudget] = await Promise.all([
+        nativePage.waitForResponse(response => response.request().method() === "POST" &&
+          new URL(response.url()).pathname.split(";")[0] === "/personal-data/budget"),
+        limit.press("Enter")
       ]);
+      assert.equal(savedBudget.status(), 302);
+      await nativePage.locator("#budget [role=status]").waitFor();
       assert.match(await nativePage.locator("main").innerText(), /within your planned limit/);
     } finally {
       await nativeContext.close();

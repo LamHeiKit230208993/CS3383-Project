@@ -44,7 +44,8 @@ class SecondaryDisplayTest {
         expectPage("/planned/ask", "價格助手");
         expectPage("/personal-data", "儲存預算");
         expectPage("/saved", "鮮牛奶 236毫升");
-        expectPage("/alerts", "提示規則");
+        expectPage("/alerts", "記錄");
+        expectPage("/alerts?tab=rules", "目前規則");
         expectPage("/alerts/rules?code=" + MILK, "鮮牛奶 236毫升");
         mvc.perform(post("/reminders/create").param("code", MILK)
                         .param("quantity", "invalid").param("intervalDays", "7"))
@@ -59,7 +60,8 @@ class SecondaryDisplayTest {
         expectPage("/planned/ask", "价格助手");
         expectPage("/personal-data", "保存预算");
         expectPage("/saved", "鲜牛奶 236毫升");
-        expectPage("/alerts", "提醒规则");
+        expectPage("/alerts", "记录");
+        expectPage("/alerts?tab=rules", "当前规则");
         expectPage("/alerts/rules?code=" + MILK, "鲜牛奶 236毫升");
         mvc.perform(post("/budget").param("period", "INVALID").param("limit", "100"))
                 .andExpect(status().isOk())

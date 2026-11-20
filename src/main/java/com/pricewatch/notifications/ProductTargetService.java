@@ -48,16 +48,47 @@ public class ProductTargetService {
         return rules.findById(code).map(ProductTargetRuleEntity::getTarget);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<RuleView> rule(String code) {
+        return rules.findById(code).map(ProductTargetService::view);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RuleView> rules() {
+        return rules.findAllByOrderByProductCode().stream().map(ProductTargetService::view).toList();
+    }
+
+    private static RuleView view(ProductTargetRuleEntity rule) {
+        return new RuleView(rule.getProductCode(), rule.getTarget(), rule.isEnabled());
+    }
+
+    public record RuleView(String productCode, BigDecimal target, boolean enabled) {}
+
+    @Transactional(readOnly = true)
+    public List<String> ruleProductCodes() {
+        return rules.findProductCodes();
+    }
+
     @Transactional
     public void setTarget(String code, BigDecimal amount) {
         BigDecimal target = normalizePrice(amount);
         lockProduct(code);
-        if (!wishlist.existsById(code)) {
-            throw new IllegalArgumentException("Save this product to Wishlist before setting a price target.");
-        }
         var existing = rules.findById(code);
-        if (existing.isPresent()) existing.get().updateTarget(target);
-        else rules.save(new ProductTargetRuleEntity(code, target));
+        if (existing.isPresent()) {
+            existing.get().updateTarget(target);
+        } else {
+            if (!wishlist.existsById(code)) {
+                throw new IllegalArgumentException("Save this product to Wishlist before setting a price target.");
+            }
+            rules.save(new ProductTargetRuleEntity(code, target));
+        }
+    }
+
+    @Transactional
+    public void setEnabled(String code, boolean enabled) {
+        lockProduct(code);
+        rules.findById(code).orElseThrow(() -> new IllegalArgumentException("Alert rule was not found."))
+                .setEnabled(enabled);
     }
 
     @Transactional
@@ -96,7 +127,7 @@ public class ProductTargetService {
                         event.getRetrievedAt(), event.getCreatedAt(), event.getRetailers(), event.getReadAt() != null,
                         !now.isBefore(event.getCreatedAt())
                                 && (event.getSnoozedUntil() == null || !now.isBefore(event.getSnoozedUntil())),
-                        event.getReadAt(), event.getSnoozedUntil()))
+                        event.getReadAt(), event.getSnoozedUntil(), event.getRuleId(), event.getScheduledDueAt()))
                 .toList();
     }
 
@@ -125,7 +156,7 @@ public class ProductTargetService {
         return events.findLocked(id).orElseThrow(() -> new IllegalArgumentException("Alert was not found."));
     }
 
-    private static BigDecimal normalizePrice(BigDecimal price) {
+    static BigDecimal normalizePrice(BigDecimal price) {
         if (price == null || price.signum() < 0 || price.compareTo(MAX_PRICE) > 0) {
             throw new IllegalArgumentException(INVALID_PRICE);
         }

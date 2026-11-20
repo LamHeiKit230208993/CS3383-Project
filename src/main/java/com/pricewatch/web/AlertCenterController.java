@@ -6,9 +6,13 @@ import com.pricewatch.notifications.AlertEventView;
 import com.pricewatch.notifications.AlertService;
 import com.pricewatch.notifications.ProductTargetEventView;
 import com.pricewatch.notifications.ProductTargetService;
+import com.pricewatch.notifications.WatchRuleService;
+import com.pricewatch.notifications.WatchRuleView;
 import com.pricewatch.reminder.ReminderOccurrenceView;
 import com.pricewatch.reminder.ReminderService;
+import com.pricewatch.reminder.ReminderView;
 import com.pricewatch.tracking.TrackingService;
+import com.pricewatch.tracking.TrackingView;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -23,33 +27,46 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static com.pricewatch.web.MilestoneMessages.inputError;
 import static com.pricewatch.web.MilestoneMessages.text;
 
 @Controller
 class AlertCenterController {
+    private static final ZoneId HONG_KONG = ZoneId.of("Asia/Hong_Kong");
+    private static final DateTimeFormatter TIMELINE_CLOCK = DateTimeFormatter.ofPattern("HH:mm");
     private final CatalogService catalog;
     private final TrackingService tracking;
     private final AlertService legacyAlerts;
     private final ProductTargetService priceTargets;
+    private final WatchRuleService watchRules;
     private final ReminderService reminders;
     private final HelloController format;
     private final MessageSource messages;
     private final Clock clock;
 
     AlertCenterController(CatalogService catalog, TrackingService tracking, AlertService legacyAlerts,
-                          ProductTargetService priceTargets, ReminderService reminders, HelloController format,
-                          MessageSource messages, Clock clock) {
+                          ProductTargetService priceTargets, WatchRuleService watchRules, ReminderService reminders,
+                          HelloController format, MessageSource messages, Clock clock) {
         this.catalog = catalog;
         this.tracking = tracking;
         this.legacyAlerts = legacyAlerts;
         this.priceTargets = priceTargets;
+        this.watchRules = watchRules;
         this.reminders = reminders;
         this.format = format;
         this.messages = messages;
@@ -57,8 +74,20 @@ class AlertCenterController {
     }
 
     @GetMapping("/alerts")
-    String alerts(Model model, Locale locale) {
+    String alerts(@RequestParam(defaultValue = "history") String tab, Model model, Locale locale) {
         reminders.recordDue();
+        watchRules.checkDue();
+        boolean currentRules = "rules".equals(tab);
+        model.addAttribute("currentRules", currentRules);
+        if (currentRules) {
+            model.addAttribute("ruleProducts", ruleProducts(locale));
+        } else {
+            addTimeline(model, locale);
+        }
+        return screen(model, "alerts", "Alerts");
+    }
+
+    private void addTimeline(Model model, Locale locale) {
         Instant now = clock.instant();
         var history = new ArrayList<TimelineEntry>();
         for (var legacy : legacyAlerts.events(now)) {
@@ -74,39 +103,47 @@ class AlertCenterController {
         }
         history.sort(Comparator.comparing(TimelineEntry::createdAt).reversed());
 
-        var ruleCodes = new TreeSet<String>();
-        tracking.savedProducts().forEach(saved -> ruleCodes.add(saved.product().code()));
-        reminders.overview().reminders().forEach(reminder -> ruleCodes.add(reminder.productCode()));
-        tracking.activeLegacyRules().stream()
-                .forEach(period -> ruleCodes.add(period.productCode()));
-        var labelCodes = new TreeSet<>(ruleCodes);
+        var labelCodes = new TreeSet<String>();
         history.forEach(item -> labelCodes.add(item.productCode()));
-        var labels = catalog.localizedLabels(labelCodes, locale);
-        model.addAttribute("productLabels", labels);
+        model.addAttribute("productLabels", catalog.localizedLabels(labelCodes, locale));
         var visible = new ArrayList<>(history.stream().limit(100).toList());
         history.stream().skip(100).filter(item -> item.time() != null && item.time().active()).forEach(visible::add);
-        model.addAttribute("history", visible);
-        model.addAttribute("ruleProducts", ruleCodes.stream().map(code -> new RuleProduct(code, name(labels, code)))
-                .sorted(Comparator.comparing(RuleProduct::name)).toList());
-        return screen(model, "alerts", "Alerts");
+        model.addAttribute("timelineDays", timelineDays(visible, locale));
+    }
+
+    private List<RuleProduct> ruleProducts(Locale locale) {
+        var existingRules = watchRules.allRules().stream().collect(Collectors.groupingBy(WatchRuleView::productCode));
+        var targets = priceTargets.rules().stream().collect(Collectors.toMap(ProductTargetService.RuleView::productCode, rule -> rule));
+        var timeRules = reminders.overview().reminders().stream().collect(Collectors.groupingBy(ReminderView::productCode));
+        var retailerRules = tracking.legacyRules().stream().collect(Collectors.groupingBy(TrackingView::productCode));
+        var codes = new TreeSet<>(existingRules.keySet());
+        codes.addAll(targets.keySet());
+        codes.addAll(timeRules.keySet());
+        codes.addAll(retailerRules.keySet());
+        var labels = catalog.localizedLabels(codes, locale);
+        return codes.stream()
+                .map(code -> new RuleProduct(code, name(labels, code), existingRules.getOrDefault(code, List.of()),
+                        targets.get(code), timeRules.getOrDefault(code, List.of()), retailerRules.getOrDefault(code, List.of())))
+                .sorted(Comparator.comparing(RuleProduct::name)).toList();
     }
 
     @GetMapping("/alerts/rules")
-    String rules(@RequestParam String code, Model model) {
+    String rules(@RequestParam String code, @RequestParam(defaultValue = "") String from, Model model) {
         ProductView product;
         try {
             product = catalog.find(code);
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        var target = priceTargets.target(code).orElse(null);
         model.addAttribute("product", product);
+        model.addAttribute("rulesFrom", from);
         model.addAttribute("wishlistTracking", tracking.savedProducts().stream()
                 .anyMatch(saved -> saved.product().code().equals(code)));
-        model.addAttribute("productTarget", target == null ? "" : target.toPlainString());
+        model.addAttribute("productTarget", priceTargets.rule(code).orElse(null));
+        model.addAttribute("watchRules", watchRules.rules(code));
         model.addAttribute("timeRules", reminders.overview().reminders().stream()
                 .filter(rule -> rule.productCode().equals(code)).toList());
-        model.addAttribute("legacyRules", tracking.activeLegacyRules().stream()
+        model.addAttribute("legacyRules", tracking.legacyRules().stream()
                 .filter(period -> period.productCode().equals(code)).toList());
         return screen(model, "rules", "Alert rules");
     }
@@ -123,10 +160,108 @@ class AlertCenterController {
     }
 
     @PostMapping("/alerts/product-target/delete")
-    String deleteTarget(@RequestParam String code, RedirectAttributes redirect) {
+    String deleteTarget(@RequestParam String code, @RequestParam(defaultValue = "") String from, RedirectAttributes redirect) {
         priceTargets.deleteTarget(code);
         redirect.addFlashAttribute("notice", text(messages, "alerts.notice.targetRemoved"));
-        return toRules(code, redirect);
+        return toRules(code, from, redirect);
+    }
+
+    @PostMapping("/alerts/product-target/enabled")
+    String enableTarget(@RequestParam String code, @RequestParam boolean enabled,
+                        @RequestParam(defaultValue = "") String from, RedirectAttributes redirect) {
+        return toggleLegacy(code, from, enabled, redirect, () -> priceTargets.setEnabled(code, enabled));
+    }
+
+    @PostMapping("/alerts/retailer-rule/enabled")
+    String enableRetailerRule(@RequestParam String code, @RequestParam long id, @RequestParam boolean enabled,
+                              @RequestParam(defaultValue = "") String from, RedirectAttributes redirect) {
+        return toggleLegacy(code, from, enabled, redirect, () -> tracking.setLegacyAlertsEnabled(code, id, enabled));
+    }
+
+    @PostMapping("/alerts/retailer-rule/delete")
+    String deleteRetailerRule(@RequestParam String code, @RequestParam long id,
+                              @RequestParam(defaultValue = "") String from, RedirectAttributes redirect) {
+        try {
+            tracking.deleteLegacyAlerts(code, id);
+            redirect.addFlashAttribute("notice", text(messages, "watchRules.removed"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", text(messages, "watchRules.missing"));
+        }
+        return toRules(code, from, redirect);
+    }
+
+    private String toggleLegacy(String code, String from, boolean enabled, RedirectAttributes redirect, Runnable toggle) {
+        try {
+            toggle.run();
+            redirect.addFlashAttribute("notice", text(messages, enabled ? "watchEditor.enabled" : "watchEditor.disabled"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", text(messages, "watchRules.missing"));
+        }
+        return toRules(code, from, redirect);
+    }
+
+    @PostMapping("/alerts/watch-rules/save")
+    String saveWatchRule(@RequestParam String code, @RequestParam(required = false) Long id,
+                         @RequestParam(required = false) String targetPrice, @RequestParam(required = false) String intervalDays,
+                         @RequestParam(required = false) String condition, @RequestParam(required = false) String startAt,
+                         @RequestParam(required = false) String repeat, @RequestParam(defaultValue = "") String from,
+                         RedirectAttributes redirect) {
+        try {
+            if (condition == null || condition.equals("legacy")) {
+                var interval = intervalDays == null ? null : Integer.valueOf(intervalDays.strip());
+                watchRules.save(code, id, price(targetPrice), interval);
+            } else {
+                switch (condition) {
+                    case "price" -> watchRules.save(code, id, price(targetPrice), null, repeat);
+                    case "time" -> watchRules.save(code, id, null, schedule(startAt), repeat);
+                    case "combined" -> watchRules.save(code, id, price(targetPrice), schedule(startAt), repeat);
+                    default -> throw new IllegalArgumentException("Unknown alert condition");
+                }
+            }
+            redirect.addFlashAttribute("notice", text(messages, "watchRules.saved"));
+        } catch (IllegalArgumentException | DateTimeParseException exception) {
+            redirect.addFlashAttribute("error", text(messages, "watchEditor.invalid"));
+        }
+        return toRules(code, from, redirect);
+    }
+
+    private static BigDecimal price(String input) {
+        if (input == null) {
+            throw new IllegalArgumentException("Missing target price");
+        }
+        return new BigDecimal(input.strip());
+    }
+
+    private static LocalDateTime schedule(String input) {
+        if (input == null) {
+            throw new IllegalArgumentException("Missing start date");
+        }
+        return LocalDateTime.parse(input.strip());
+    }
+
+    @PostMapping("/alerts/watch-rules/enabled")
+    String setWatchRuleEnabled(@RequestParam String code, @RequestParam long id, @RequestParam boolean enabled,
+                               @RequestParam(defaultValue = "") String from, RedirectAttributes redirect) {
+        try {
+            watchRules.setEnabled(code, id, enabled);
+            redirect.addFlashAttribute("notice", text(messages,
+                    enabled ? "watchEditor.enabled" : "watchEditor.disabled"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", text(messages, "watchRules.missing"));
+        }
+        return toRules(code, from, redirect);
+    }
+
+    @PostMapping("/alerts/watch-rules/delete")
+    String deleteWatchRule(@RequestParam String code, @RequestParam long id,
+                           @RequestParam(defaultValue = "") String from, RedirectAttributes redirect) {
+        try {
+            watchRules.delete(code, id);
+            redirect.addFlashAttribute("notice", text(messages, "watchRules.removed"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", text(messages, "watchRules.missing"));
+        }
+        return toRules(code, from, redirect);
     }
 
     @PostMapping("/alerts/product-events/{id}/read")
@@ -158,7 +293,17 @@ class AlertCenterController {
     }
 
     private static String toRules(String code, RedirectAttributes redirect) {
+        return toRules(code, "", redirect);
+    }
+
+    private static String toRules(String code, String from, RedirectAttributes redirect) {
+        if (from.equals("center")) {
+            return "redirect:/alerts?tab=rules";
+        }
         redirect.addAttribute("code", code);
+        if (from.equals("saved") || from.equals("rules")) {
+            redirect.addAttribute("from", from);
+        }
         return "redirect:/alerts/rules";
     }
 
@@ -166,7 +311,39 @@ class AlertCenterController {
         return labels.containsKey(code) ? labels.get(code).name() : code;
     }
 
+    static List<TimelineDay> timelineDays(List<TimelineEntry> entries, Locale locale) {
+        var byDate = new LinkedHashMap<LocalDate, List<TimelineEntry>>();
+        for (var entry : entries) {
+            var day = entry.createdAt().atZone(HONG_KONG).toLocalDate();
+            byDate.computeIfAbsent(day, key -> new ArrayList<>()).add(entry);
+        }
+        var dateLabel = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale);
+        return byDate.entrySet().stream()
+                .map(day -> new TimelineDay(day.getKey(), dateLabel.format(day.getKey()), List.copyOf(day.getValue())))
+                .toList();
+    }
+
     public record TimelineEntry(Instant createdAt, String productCode, AlertEventView legacy,
-                                ProductTargetEventView price, ReminderOccurrenceView time) {}
-    public record RuleProduct(String code, String name) {}
+                                ProductTargetEventView price, ReminderOccurrenceView time) {
+        public String clockTime() {
+            return TIMELINE_CLOCK.withZone(HONG_KONG).format(createdAt);
+        }
+    }
+    public record TimelineDay(LocalDate date, String label, List<TimelineEntry> entries) {
+        public List<TimelineGroup> groups() {
+            var byTrigger = new LinkedHashMap<TimelineTrigger, List<TimelineEntry>>();
+            for (var entry : entries) {
+                var key = new TimelineTrigger(entry.productCode(), entry.createdAt());
+                byTrigger.computeIfAbsent(key, ignored -> new ArrayList<>()).add(entry);
+            }
+            return byTrigger.values().stream()
+                    .map(group -> new TimelineGroup(group.getFirst(), List.copyOf(group)))
+                    .toList();
+        }
+    }
+
+    private record TimelineTrigger(String productCode, Instant triggeredAt) {}
+    public record TimelineGroup(TimelineEntry first, List<TimelineEntry> entries) {}
+    public record RuleProduct(String code, String name, List<WatchRuleView> rules, ProductTargetService.RuleView target,
+                              List<ReminderView> reminders, List<TrackingView> retailers) {}
 }

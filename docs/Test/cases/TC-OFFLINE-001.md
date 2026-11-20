@@ -1,7 +1,7 @@
 # TC-OFFLINE-001 · Use a downloaded checklist offline
 
 1. Use an isolated app and controlled live price fixture. Import a list and
-   choose **List files → Download offline checklist**.
+   choose **List actions → Download offline checklist**.
 2. Stop that app, disconnect the Chrome context from the network, and open
    the file by its local path. Verify quantities, checked states, retailer
    choices, estimates, and retrieval time against the Cart. Check that the

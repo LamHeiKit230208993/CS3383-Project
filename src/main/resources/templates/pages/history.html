@@ -22,7 +22,7 @@
     <button class="button secondary" type="submit" th:text="#{history.apply}">Apply filters</button>
   </form>
 
-  <figure th:if="${chart != null}" class="panel price-chart" aria-labelledby="history-chart-title">
+  <figure th:if="${chart != null}" class="panel price-chart" aria-labelledby="history-chart-title" data-price-chart>
     <figcaption>
       <h2 id="history-chart-title" th:text="#{history.chart}">Listed prices by retailer</h2>
       <p class="helper" th:text="#{history.chartHelp}"></p>
@@ -32,15 +32,16 @@
         <span th:text="${format.money(chart.maximum)}"></span>
         <span th:if="${chart.minimum.compareTo(chart.maximum) != 0}" th:text="${format.money(chart.minimum)}"></span>
       </div>
-      <svg viewBox="0 0 640 216" preserveAspectRatio="none" role="img" aria-labelledby="history-chart-title"
+      <svg viewBox="0 0 640 216" preserveAspectRatio="none" role="img" aria-labelledby="history-chart-title" data-history-plot
            aria-describedby="history-chart-table-title">
-        <path class="chart-grid" d="M12 12h616M12 108h616M12 204h616M12 12v192M628 12v192"/>
-        <g th:each="series : ${chart.series}" th:attr="data-palette=${series.palette},data-retailer=${series.retailer}">
+        <path class="chart-grid" d="M12 12h616M12 60h616M12 108h616M12 156h616M12 204h616M12 12v192M628 12v192"/>
+        <line class="chart-guide" y1="12" y2="204" data-history-guide hidden/>
+        <g th:each="series : ${chart.series}" th:attr="data-palette=${series.palette},data-history-retailer=${series.retailer}">
           <g th:each="segment : ${series.segments}">
             <polyline class="chart-segment" th:if="${segment.points.size() > 1}"
                       th:attr="points=${segment.coordinates()},stroke-dasharray=${series.dash}"/>
             <circle th:each="point : ${segment.points}" class="chart-point"
-                    th:attr="cx=${point.x},cy=${point.y}" r="3.5"/>
+                    th:attr="cx=${point.x},cy=${point.y},data-observed-at=${point.observedAt}" r="3.5"/>
           </g>
         </g>
       </svg>
@@ -51,12 +52,24 @@
     </div>
     <ul class="chart-legend" role="list">
       <li th:each="series : ${chart.series}" th:attr="data-palette=${series.palette}">
-        <svg viewBox="0 0 28 12" aria-hidden="true">
-          <path class="chart-segment" d="M0 6h28" th:attr="stroke-dasharray=${series.dash}"/>
-        </svg>
-        <span th:text="${series.retailer}"></span>
+        <button class="chart-series-toggle" type="button" disabled aria-pressed="true" th:attr="data-history-series=${series.retailer}">
+          <svg viewBox="0 0 28 12" aria-hidden="true">
+            <path class="chart-segment" d="M0 6h28" th:attr="stroke-dasharray=${series.dash}"/>
+          </svg>
+          <span th:text="${series.retailer}"></span>
+        </button>
       </li>
     </ul>
+    <div class="chart-explorer" data-history-controls hidden>
+      <label for="history-observation">
+        <span th:text="#{history.observation}">Inspect a recording</span>
+        <select id="history-observation" data-history-observation></select>
+      </label>
+      <div class="chart-readout" data-history-readout th:attr="data-empty=#{history.noSeries}" role="status">
+        <time data-history-time></time>
+        <dl data-history-prices></dl>
+      </div>
+    </div>
   </figure>
 
   <section class="panel price-chart-table" th:if="${observations.isEmpty()}">
@@ -75,7 +88,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr th:each="entry : ${observations}">
+          <tr th:each="entry : ${observations}" th:attr="data-history-x=${chart == null ? null : chart.dateX(entry.retrievedAt)}">
             <th scope="row" th:text="${entry.retailerCode}"></th>
             <td><time th:datetime="${entry.retrievedAt}" th:text="${format.time(entry.retrievedAt)}"></time></td>
             <td th:if="${entry.price != null}" th:text="${format.money(entry.price)}"></td>

@@ -6,6 +6,7 @@ import com.pricewatch.catalog.persistence.LocalizedLabel;
 import com.pricewatch.notifications.persistence.AlertEventEntity;
 import com.pricewatch.notifications.persistence.NotificationSettingsEntity;
 import com.pricewatch.notifications.ProductTargetService;
+import com.pricewatch.notifications.WatchRuleService;
 import com.pricewatch.notifications.persistence.ProductTargetEventEntity;
 import com.pricewatch.notifications.persistence.ProductTargetRuleEntity;
 import com.pricewatch.preferences.DisplayPreferencesService;
@@ -31,12 +32,14 @@ public class PersonalDataService {
     private final EntityManager entities;
     private final DisplayPreferencesService displayPreferences;
     private final ProductTargetService priceTargets;
+    private final WatchRuleService watchRules;
 
     public PersonalDataService(EntityManager entities, DisplayPreferencesService displayPreferences,
-                               ProductTargetService priceTargets) {
+                               ProductTargetService priceTargets, WatchRuleService watchRules) {
         this.entities = entities;
         this.displayPreferences = displayPreferences;
         this.priceTargets = priceTargets;
+        this.watchRules = watchRules;
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
@@ -58,7 +61,7 @@ public class PersonalDataService {
         var tracking = rows(TrackingEntity.class, "id").stream()
                 .map(row -> new PersonalDataExport.TrackedRetailer(row.getId(), row.getProductCode(),
                         row.getRetailerCode(), row.isEnabled(), row.getStartedAt(), row.getStoppedAt(),
-                        row.getTargetPrice(), row.isTargetArmed(), row.isDropEnabled())).toList();
+                        row.getTargetPrice(), row.isTargetArmed(), row.isDropEnabled(), row.isAlertsEnabled())).toList();
         var observations = rows(PriceObservationEntity.class, "id").stream()
                 .map(row -> new PersonalDataExport.Observation(row.getId(), row.getTracking().getId(),
                         row.getPrice(), row.getObservedAt())).toList();
@@ -67,19 +70,24 @@ public class PersonalDataService {
         var reminders = rows(ReminderEntity.class, "id").stream()
                 .map(row -> new PersonalDataExport.Reminder(row.getId(), row.getProduct().getCode(), row.getQuantity(),
                         row.getIntervalDays(), row.getSelectedRetailerCode(), row.getNextDueAt(),
-                        row.getSnoozedUntil())).toList();
+                        row.getSnoozedUntil(), row.isEnabled())).toList();
         var budgets = rows(BudgetSettingsEntity.class, "id").stream()
                 .map(row -> new PersonalDataExport.Budget(row.getPeriod().name(), row.getLimitAmount())).toList();
         var targets = rows(ProductTargetRuleEntity.class, "productCode").stream()
-                .map(row -> new PersonalDataExport.PriceTarget(row.getProductCode(), row.getTarget(), row.isArmed())).toList();
+                .map(row -> new PersonalDataExport.PriceTarget(row.getProductCode(), row.getTarget(), row.isArmed(),
+                        row.isEnabled())).toList();
         var priceAlerts = rows(ProductTargetEventEntity.class, "id").stream().map(this::productPriceAlert).toList();
         var timeAlerts = rows(ReminderOccurrenceEntity.class, "id").stream()
                 .map(row -> new PersonalDataExport.TimeAlert(row.getId(), row.getReminderId(), row.getProductCode(),
                         row.getQuantity(), row.getRetailerCode(), row.getDueAt(), row.getCreatedAt(), row.getReadAt(),
                         row.getSnoozedUntil())).toList();
+        var rules = watchRules.allRules().stream()
+                .map(rule -> new PersonalDataExport.WatchRule(rule.id(), rule.productCode(), rule.target(),
+                        rule.intervalDays(), rule.nextDueAt(), rule.armed(), rule.waitingForLive(),
+                        rule.enabled(), rule.repeat(), rule.startAt(), rule.completed())).toList();
         return new PersonalDataExport(1, lists(locale), wishlist, productsTrackedAtAllRetailers,
                 tracking, observations, alerts, reminders, budgets, preferences(), List.copyOf(chats),
-                targets, priceAlerts, timeAlerts);
+                targets, priceAlerts, timeAlerts, rules);
     }
 
     @Transactional
@@ -89,6 +97,7 @@ public class PersonalDataService {
                 where product.trackAllRetailers = true
                 """).executeUpdate();
         delete(AlertEventEntity.class);
+        watchRules.reset();
         priceTargets.reset();
         delete(ReminderOccurrenceEntity.class);
         delete(PriceObservationEntity.class);
@@ -143,7 +152,8 @@ public class PersonalDataService {
         var retailers = row.getRetailers().stream()
                 .map(price -> new PersonalDataExport.RetailerPrice(price.retailerCode(), price.price())).toList();
         return new PersonalDataExport.ProductPriceAlert(row.getId(), row.getProductCode(), row.getTarget(),
-                row.getRetrievedAt(), row.getCreatedAt(), retailers, row.getReadAt(), row.getSnoozedUntil());
+                row.getRetrievedAt(), row.getCreatedAt(), retailers, row.getReadAt(), row.getSnoozedUntil(),
+                row.getRuleId(), row.getScheduledDueAt());
     }
 
     private PersonalDataExport.Preferences preferences() {

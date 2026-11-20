@@ -2,6 +2,9 @@
 
 Source: [persistence-check.cjs](../../../src/test/browser/persistence-check.cjs).
 
+On the current Cart, the browser waits for the checkmark save before
+restarting. On older baseline builds, it uses the legacy Save changes form.
+
 ## Purpose and setup
 
 Verify a catalogue and shopping list survive reopening an existing H2 file

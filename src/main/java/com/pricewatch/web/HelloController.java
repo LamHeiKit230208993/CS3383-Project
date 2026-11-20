@@ -1,5 +1,6 @@
 package com.pricewatch.web;
 
+import com.pricewatch.budget.BudgetService;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.shopping.ListTransfer;
@@ -34,11 +35,13 @@ public class HelloController {
             "saved", "Wishlist and tracking", "updates", "Alerts and reminders", "ask", "Price assistant");
     private final CatalogService catalog;
     private final ShoppingService shopping;
+    private final BudgetService budgets;
     private final MessageSource messages;
 
-    public HelloController(CatalogService catalog, ShoppingService shopping, MessageSource messages) {
+    public HelloController(CatalogService catalog, ShoppingService shopping, BudgetService budgets, MessageSource messages) {
         this.catalog = catalog;
         this.shopping = shopping;
+        this.budgets = budgets;
         this.messages = messages;
     }
     @ModelAttribute
@@ -52,7 +55,10 @@ public class HelloController {
                     @RequestParam(defaultValue = "") String category,
                     @RequestParam(defaultValue = "false") boolean related, Model model) {
         related = related && !q.isBlank();
-        model.addAttribute("summary", shopping.summary());
+        var cartItems = shopping.items();
+        addEstimate(model, Summary.from(cartItems));
+        model.addAttribute("cartLineCount", cartItems.size());
+        model.addAttribute("previewItems", cartItems.subList(0, Math.min(cartItems.size(), 3)));
         var search = catalog.searchResults(q, category);
         var results = related ? search.related() : search.matches();
         model.addAttribute("category", category);
@@ -71,9 +77,14 @@ public class HelloController {
         return screen(model, "discover", "Discover");
     }
     @GetMapping("/products/{code}")
-    String compare(@PathVariable String code, Model model) {
+    String compare(@PathVariable String code, @RequestParam(defaultValue = "false") boolean fromCart,
+                   @RequestParam(defaultValue = "false") boolean fromWishlist,
+                   @RequestParam(required = false) Long listId, Model model) {
         try { model.addAttribute("product", catalog.find(code)); }
         catch (IllegalArgumentException exception) { throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"); }
+        model.addAttribute("fromCart", fromCart);
+        model.addAttribute("fromWishlist", !fromCart && fromWishlist);
+        model.addAttribute("returnListId", listId);
         return screen(model, "compare", "Compare listed prices");
     }
     @GetMapping("/list")
@@ -87,8 +98,13 @@ public class HelloController {
         model.addAttribute("selectedList", selected);
         model.addAttribute("listId", listId);
         model.addAttribute("items", items);
-        model.addAttribute("summary", Summary.from(items));
+        addEstimate(model, Summary.from(items));
         return screen(model, "list", "Cart");
+    }
+
+    private void addEstimate(Model model, Summary summary) {
+        model.addAttribute("summary", summary);
+        model.addAttribute("budget", budgets.forSummary(summary));
     }
     @GetMapping(value = "/list/export", produces = "application/json")
     ResponseEntity<ListTransfer> exportList(

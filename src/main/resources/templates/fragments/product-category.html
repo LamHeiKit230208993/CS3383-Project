@@ -1,0 +1,9 @@
+<span xmlns:th="http://www.thymeleaf.org" th:fragment="icon(product)" class="product-category-icon" aria-hidden="true"
+      th:with="category=${#strings.toLowerCase(product.category2.en + ' ' + product.category3.en)},
+               kind=${category.matches('.*(milk|dairy|egg|yoghurt|cheese).*') ? 'dairy'
+                    : (category.matches('.*(drink|beverage|juice|water|tea|coffee).*') ? 'drink'
+                    : (category.matches('.*(noodle|oil|rice|canned|sauce|pantry|condiment|bread|bakery|cereal).*') ? 'pantry'
+                    : (category.matches('.*(household|clean|laundry|detergent).*') ? 'home' : 'pack')))}"
+      th:attr="data-category-icon=${kind}">
+  <svg class="icon"><use th:href="${kind == 'pack' ? '#i-pack' : '#i-category-' + kind}"/></svg>
+</span>

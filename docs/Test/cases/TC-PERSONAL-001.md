@@ -27,5 +27,7 @@ that is absent from the catalogue.
 The test uses a local chat fixture and makes no external price or chat calls.
 It tests HTTP routes and H2 transactions. The Chrome suite also follows the
 actual confirmation and download controls.
+It creates an independent price rule, verifies its export and the linked price
+event, and checks that confirming reset clears both.
 
 Source [PersonalDataControllerTest](../../../src/test/java/com/pricewatch/web/PersonalDataControllerTest.java).

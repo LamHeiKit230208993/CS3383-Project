@@ -11,6 +11,14 @@ show only that selection. Check that rows with unknown prices stay in the table.
 Each retailer has a labeled line style. A gap or a new tracking period starts
 a separate line. A single known price shows as a point.
 
+With multiple recordings, move the pointer over the plot or tap it. The guide
+snaps to an actual recording and the readout shows its retrieval time and
+recorded retailer prices. The first and last recordings can also be reached
+with the keyboard using the recording selector. Toggle a retailer and check
+that its line and readout values are hidden while the dated table keeps its
+records. An unknown price has no point but can appear in the readout for a
+retailer with known prices elsewhere in the chart.
+
 The tracking test places a record outside the 90-day window and verifies that the
 table excludes it without writing to the database. Chrome checks the same pack
 as Ask and list sharing, with localized headings and a 375 px viewport.

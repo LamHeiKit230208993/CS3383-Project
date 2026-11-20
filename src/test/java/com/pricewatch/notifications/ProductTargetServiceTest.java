@@ -107,6 +107,29 @@ class ProductTargetServiceTest {
     }
 
     @Test
+    void switchPausesAlertEvaluationAndKeepsTheTargetAndHistory() {
+        targets.setEnabled(PACK, false);
+        importPrices("LIVE", "5", "8", null);
+        assertTrue(targets.events(now).isEmpty());
+        assertFalse(targets.rule(PACK).orElseThrow().enabled());
+        assertEquals(List.of(new ProductTargetService.RuleView(PACK, new BigDecimal("10.0000"), false)),
+                targets.rules());
+        assertFalse(tracking.priceHistory(PACK).isEmpty());
+
+        tracking.removeSaved(PACK);
+        targets.setTarget(PACK, new BigDecimal("9"));
+        assertFalse(targets.rule(PACK).orElseThrow().enabled());
+        tracking.save(PACK);
+        targets.setEnabled(PACK, true);
+        importPrices("LIVE", "5", "8", null);
+        assertEquals(new BigDecimal("9.0000"), targets.events(now).getFirst().target());
+
+        targets.setEnabled(PACK, false);
+        importPrices("LIVE", "6", "7", null);
+        assertEquals(1, targets.events(now).size());
+    }
+
+    @Test
     void failedCatalogueAcceptanceRollsBackTheEventAndLeavesTheTargetArmed() {
         var earlier = catalog.status();
         jdbc.execute("alter table accepted_import add constraint ck_product_target_rollback check (checksum <> 'ROLLBACK')");

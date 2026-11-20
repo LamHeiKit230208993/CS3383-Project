@@ -51,18 +51,26 @@ public record PriceHistoryChart(Instant first, Instant last, BigDecimal minimum,
             }
             period = entry.trackingId();
             if (entry.price() == null) continue;
-            double timeSpan = last.toEpochMilli() - first.toEpochMilli();
-            double xFraction = timeSpan == 0 ? 0.5 : (entry.retrievedAt().toEpochMilli() - first.toEpochMilli()) / timeSpan;
             var priceSpan = max.subtract(min);
             double yFraction = priceSpan.signum() == 0 ? 0.5
                     : entry.price().subtract(min).divide(priceSpan, MathContext.DECIMAL64).doubleValue();
-            points.add(new Point(Math.round(12 + 616 * xFraction), Math.round(204 - 192 * yFraction)));
+            points.add(new Point(dateX(entry.retrievedAt(), first, last),
+                    Math.round(204 - 192 * yFraction), entry.retrievedAt()));
         }
         if (!points.isEmpty()) segments.add(new Segment(List.copyOf(points)));
         return List.copyOf(segments);
     }
 
-    public record Point(long x, long y) {}
+    public long dateX(Instant observedAt) {
+        return dateX(observedAt, first, last);
+    }
+
+    private static long dateX(Instant observedAt, Instant first, Instant last) {
+        double duration = last.toEpochMilli() - first.toEpochMilli();
+        return duration == 0 ? 320 : Math.round(12 + 616 * (observedAt.toEpochMilli() - first.toEpochMilli()) / duration);
+    }
+
+    public record Point(long x, long y, Instant observedAt) {}
     public record Segment(List<Point> points) {
         public String coordinates() {
             return points.stream().map(point -> point.x() + "," + point.y()).collect(Collectors.joining(" "));

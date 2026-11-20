@@ -31,6 +31,7 @@ public class AlertService {
     @Transactional
     public void evaluateNewObservation(TrackingEntity tracking, PriceObservationEntity observation,
                                        PriceObservationEntity previous, Instant generatedAt) {
+        if (!tracking.isAlertsEnabled()) return;
         evaluateTarget(tracking, observation, generatedAt);
         if (tracking.isDropEnabled() && observation.getPrice() != null && previous != null
                 && previous.getPrice() != null && observation.getPrice().compareTo(previous.getPrice()) < 0) {
@@ -40,7 +41,7 @@ public class AlertService {
 
     @Transactional
     public void evaluateTarget(TrackingEntity tracking, PriceObservationEntity observation, Instant generatedAt) {
-        if (observation.getPrice() == null || tracking.getTargetPrice() == null) return;
+        if (!tracking.isAlertsEnabled() || observation.getPrice() == null || tracking.getTargetPrice() == null) return;
         if (observation.getPrice().compareTo(tracking.getTargetPrice()) > 0) {
             tracking.setTargetArmed(true);
             return;
@@ -53,7 +54,7 @@ public class AlertService {
 
     @Transactional
     public void evaluateCurrentTarget(TrackingEntity tracking, BigDecimal price, Instant retrievedAt, Instant generatedAt) {
-        if (price == null || tracking.getTargetPrice() == null) return;
+        if (!tracking.isAlertsEnabled() || price == null || tracking.getTargetPrice() == null) return;
         if (price.compareTo(tracking.getTargetPrice()) > 0) {
             tracking.setTargetArmed(true);
             return;

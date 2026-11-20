@@ -2,85 +2,146 @@
   <header class="page-heading">
     <h1 id="alerts-title" th:text="#{app.nav.alerts}">Alerts</h1>
   </header>
-  <div class="alerts-layout">
-    <section class="panel alert-history" aria-labelledby="events-title">
-      <h2 id="events-title" th:text="#{alertCenter.history}">Alert history</h2>
-      <div th:if="${history.isEmpty()}" class="empty-state">
+  <nav class="alerts-tabs" th:attr="aria-label=#{app.nav.alerts}">
+    <a class="button secondary" th:href="@{/alerts}" th:attr="aria-current=${currentRules ? null : 'page'}" th:text="#{watchEditor.history}">History</a>
+    <a class="button secondary" th:href="@{/alerts(tab='rules')}" th:attr="aria-current=${currentRules ? 'page' : null}" th:text="#{watchEditor.current}">Current rules</a>
+  </nav>
+  <div class="alerts-layout alerts-tab-content">
+    <section class="alert-history" th:unless="${currentRules}" aria-labelledby="events-title">
+      <h2 class="sr-only" id="events-title" th:text="#{alertCenter.history}">Alert history</h2>
+      <div th:if="${timelineDays.isEmpty()}" class="panel empty-state">
+        <svg class="icon large" aria-hidden="true"><use href="#i-bell"/></svg>
         <p th:text="#{alertCenter.empty}">Price alerts and scheduled reminders will appear here.</p>
       </div>
-      <article class="alert-row" th:each="row : ${history}"
-               th:with="label=${productLabels.get(row.productCode)},name=${label == null ? row.productCode : label.name}">
-        <div class="alert-row-heading">
-          <h3 th:text="${name}"></h3>
-          <time th:datetime="${row.createdAt}" th:text="${format.time(row.createdAt)}"></time>
-        </div>
-        <th:block th:if="${row.legacy != null}" th:with="event=${row.legacy}">
-          <span class="status-pill" th:text="#{${'alerts.type.' + event.type}}"></span>
-          <p th:text="${event.retailerCode}"></p>
-          <p th:if="${event.price != null and event.observedAt != null}"
-             th:text="#{alerts.currentPrice(${format.money(event.price)},${format.time(event.observedAt)})}"></p>
-          <p th:if="${event.previousPrice != null and event.previousObservedAt != null}"
-             th:text="#{alerts.previousPrice(${format.money(event.previousPrice)},${format.time(event.previousObservedAt)})}"></p>
-          <div class="alert-actions">
-            <span class="helper" th:if="${event.read}" th:text="#{alerts.read}">Read</span>
-            <span class="helper" th:if="${!event.available}" th:text="#{alertCenter.snoozed}">Snoozed</span>
-            <form th:if="${!event.read}" th:action="@{/alerts/events/{id}/read(id=${event.id})}" method="post">
-              <button class="button secondary" th:text="#{alerts.markRead}">Mark read</button>
-            </form>
-            <form th:if="${!event.read and event.available}" th:action="@{/alerts/events/{id}/snooze(id=${event.id})}" method="post">
-              <button class="button secondary" th:text="#{common.snooze}">Snooze</button>
-            </form>
+      <section class="alert-day" th:each="day : ${timelineDays}" th:attr="aria-labelledby=${'alert-day-' + day.date}">
+        <h3 class="alert-day-heading" th:id="${'alert-day-' + day.date}">
+          <time th:datetime="${day.date}" th:text="${day.label}"></time>
+        </h3>
+        <article class="alert-row" th:each="group : ${day.groups()}"
+                 th:with="row=${group.first}, label=${productLabels.get(row.productCode)}, name=${label == null ? row.productCode : label.name}"
+                 th:classappend="${row.time != null or (row.price != null and row.price.scheduledDueAt != null) ? 'alert-row-reminder' : ''}">
+          <div class="alert-time">
+            <time th:datetime="${row.createdAt}" th:attr="aria-label=${format.time(row.createdAt)},title=${format.time(row.createdAt)}">
+              <strong th:text="${row.clockTime()}"></strong>
+              <small>HKT</small>
+            </time>
           </div>
-        </th:block>
-        <th:block th:if="${row.price != null}" th:with="event=${row.price}">
-          <span class="status-pill" th:text="#{alerts.type.TARGET}">Target price</span>
-          <p th:text="#{alertCenter.target(${format.money(event.target)})}"></p>
-          <dl class="alert-retailers">
-            <div th:each="retailer : ${event.retailers}">
-              <dt th:text="${retailer.retailerCode}"></dt>
-              <dd th:text="${format.money(retailer.price)}"></dd>
+          <div class="alert-details">
+            <h4 class="alert-product-name">
+              <a th:href="@{/alerts/rules(code=${row.productCode})}" data-open-alert-rules th:text="${name}"></a>
+            </h4>
+            <div class="alert-event" th:each="entry : ${group.entries}">
+            <th:block th:if="${entry.legacy != null}" th:with="event=${entry.legacy}">
+              <span class="status-pill" th:text="#{${'alerts.type.' + event.type}}"></span>
+              <p th:text="${event.retailerCode}"></p>
+              <p th:if="${event.price != null and event.observedAt != null}"
+                 th:text="#{alerts.currentPrice(${format.money(event.price)},${format.time(event.observedAt)})}"></p>
+              <p th:if="${event.previousPrice != null and event.previousObservedAt != null}"
+                 th:text="#{alerts.previousPrice(${format.money(event.previousPrice)},${format.time(event.previousObservedAt)})}"></p>
+              <div class="alert-actions">
+                <span class="helper" th:if="${event.read}" th:text="#{alerts.read}">Read</span>
+                <span class="helper" th:if="${!event.available}" th:text="#{alertCenter.snoozed}">Snoozed</span>
+                <form th:if="${!event.read}" th:action="@{/alerts/events/{id}/read(id=${event.id})}" method="post">
+                  <button class="button secondary" th:text="#{alerts.markRead}">Mark read</button>
+                </form>
+                <form th:if="${!event.read and event.available}" th:action="@{/alerts/events/{id}/snooze(id=${event.id})}" method="post">
+                  <button class="button secondary" th:text="#{common.snooze}">Snooze</button>
+                </form>
+              </div>
+            </th:block>
+            <th:block th:if="${entry.price != null}" th:with="event=${entry.price}">
+              <span class="status-pill" th:text="${event.target == null} ? #{alertCenter.time} : (${event.scheduledDueAt != null} ? #{watchRules.combined} : #{alerts.type.TARGET})">Target price</span>
+              <p th:if="${event.target != null}" th:text="#{alertCenter.target(${format.money(event.target)})}"></p>
+              <p th:if="${event.scheduledDueAt != null}" th:text="#{alertCenter.due(${format.time(event.scheduledDueAt)})}"></p>
+              <dl class="alert-retailers" th:unless="${event.retailers.isEmpty()}">
+                <div th:each="retailer : ${event.retailers}">
+                  <dt th:text="${retailer.retailerCode}"></dt>
+                  <dd th:text="${format.money(retailer.price)}"></dd>
+                </div>
+              </dl>
+              <p class="helper" th:if="${event.retrievedAt != null}" th:text="#{alerts.retrievedAt(${format.time(event.retrievedAt)})}"></p>
+              <div class="alert-actions">
+                <span class="helper" th:if="${event.read}" th:text="#{alerts.read}">Read</span>
+                <span class="helper" th:if="${!event.available}" th:text="#{alertCenter.snoozed}">Snoozed</span>
+                <form th:if="${!event.read}" th:action="@{/alerts/product-events/{id}/read(id=${event.id})}" method="post">
+                  <button class="button secondary" th:text="#{alerts.markRead}">Mark read</button>
+                </form>
+                <form th:if="${!event.read and event.available}" th:action="@{/alerts/product-events/{id}/snooze(id=${event.id})}" method="post">
+                  <button class="button secondary" th:text="#{common.snooze}">Snooze</button>
+                </form>
+              </div>
+            </th:block>
+            <th:block th:if="${entry.time != null}" th:with="event=${entry.time}">
+              <span class="status-pill" th:text="#{alertCenter.time}">Time reminder</span>
+              <p th:text="#{alertCenter.due(${format.time(event.dueAt)})}"></p>
+              <p class="helper" th:text="#{cart.quantity(${event.quantity})}"></p>
+              <p class="helper" th:if="${event.retailerCode != null}" th:text="#{reminders.chosen(${event.retailerCode})}"></p>
+              <div class="alert-actions">
+                <span class="helper" th:if="${event.read}" th:text="#{alertCenter.dismissed}">Dismissed</span>
+                <span class="helper" th:if="${!event.read and !event.available}" th:text="#{alertCenter.snoozed}">Snoozed</span>
+                <form th:if="${event.active and event.available}" th:action="@{/alerts/reminders/{id}/add(id=${event.id})}" method="post">
+                  <button class="button primary" th:text="#{compare.add}">Add to Cart</button>
+                </form>
+                <form th:if="${event.active}" th:action="@{/alerts/reminders/{id}/clear(id=${event.id})}" method="post">
+                  <button class="button secondary" th:text="#{alertCenter.dismiss}">Dismiss</button>
+                </form>
+                <form th:if="${event.active and event.available}" th:action="@{/alerts/reminders/{id}/snooze(id=${event.id})}" method="post">
+                  <button class="button secondary" th:text="#{common.snooze}">Snooze</button>
+                </form>
+              </div>
+            </th:block>
             </div>
-          </dl>
-          <p class="helper" th:text="#{alerts.retrievedAt(${format.time(event.retrievedAt)})}"></p>
-          <div class="alert-actions">
-            <span class="helper" th:if="${event.read}" th:text="#{alerts.read}">Read</span>
-            <span class="helper" th:if="${!event.available}" th:text="#{alertCenter.snoozed}">Snoozed</span>
-            <form th:if="${!event.read}" th:action="@{/alerts/product-events/{id}/read(id=${event.id})}" method="post">
-              <button class="button secondary" th:text="#{alerts.markRead}">Mark read</button>
-            </form>
-            <form th:if="${!event.read and event.available}" th:action="@{/alerts/product-events/{id}/snooze(id=${event.id})}" method="post">
-              <button class="button secondary" th:text="#{common.snooze}">Snooze</button>
-            </form>
           </div>
-        </th:block>
-        <th:block th:if="${row.time != null}" th:with="event=${row.time}">
-          <span class="status-pill" th:text="#{alertCenter.time}">Time reminder</span>
-          <p th:text="#{alertCenter.due(${format.time(event.dueAt)})}"></p>
-          <p class="helper" th:text="#{cart.quantity(${event.quantity})}"></p>
-          <p class="helper" th:if="${event.retailerCode != null}" th:text="#{reminders.chosen(${event.retailerCode})}"></p>
-          <div class="alert-actions">
-            <span class="helper" th:if="${event.read}" th:text="#{alertCenter.dismissed}">Dismissed</span>
-            <span class="helper" th:if="${!event.read and !event.available}" th:text="#{alertCenter.snoozed}">Snoozed</span>
-            <form th:if="${event.active and event.available}" th:action="@{/alerts/reminders/{id}/add(id=${event.id})}" method="post">
-              <button class="button primary" th:text="#{compare.add}">Add to Cart</button>
-            </form>
-            <form th:if="${event.active}" th:action="@{/alerts/reminders/{id}/clear(id=${event.id})}" method="post">
-              <button class="button secondary" th:text="#{alertCenter.dismiss}">Dismiss</button>
-            </form>
-            <form th:if="${event.active and event.available}" th:action="@{/alerts/reminders/{id}/snooze(id=${event.id})}" method="post">
-              <button class="button secondary" th:text="#{common.snooze}">Snooze</button>
-            </form>
-          </div>
-        </th:block>
-      </article>
+        </article>
+      </section>
     </section>
-    <section class="panel alert-rule-list" aria-labelledby="rules-title">
-      <h2 id="rules-title" th:text="#{alertRules.heading}">Alert rules</h2>
+    <section class="alert-rule-list" th:if="${currentRules}" aria-labelledby="rules-title">
+      <h2 class="sr-only" id="rules-title" th:text="#{watchEditor.current}">Current rules</h2>
       <p class="helper" th:if="${ruleProducts.isEmpty()}" th:text="#{alertRules.none}">Open a product to set its rules.</p>
-      <a th:each="product : ${ruleProducts}" class="action-row" th:href="@{/alerts/rules(code=${product.code})}">
-        <svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>
-        <span th:text="${product.name}"></span><span aria-hidden="true">›</span>
-      </a>
+      <th:block th:each="product : ${ruleProducts}">
+        <article class="alarm-rule alarm-rule-compact" th:each="rule : ${product.rules}" th:attr="data-rule-id=${rule.id}">
+          <div>
+            <th:block th:replace="~{pages/alerts :: rule-product(${product})}"></th:block>
+            <th:block th:replace="~{pages/alert-rules :: rule-description(${rule},'current')}"></th:block>
+          </div>
+          <th:block th:replace="~{pages/alert-rules :: switch-form(${product.code},${rule},'center','current')}"></th:block>
+          <th:block th:replace="~{pages/alert-rules :: delete-form(${product.code},${rule},'center')}"></th:block>
+        </article>
+        <article class="alarm-rule alarm-rule-compact" th:if="${product.target != null}">
+          <div>
+            <th:block th:replace="~{pages/alerts :: rule-product(${product})}"></th:block>
+            <p th:text="#{watchRules.priceRule(${format.money(product.target.target)})}"></p>
+            <p class="helper" th:text="#{alarmCard.type(#{alarmCard.price})}">Type: Price alert</p>
+          </div>
+          <th:block th:replace="~{pages/alert-rules :: legacy-switch(@{/alerts/product-target/enabled},${product.code},null,'center',${product.target.enabled},#{alarmCard.price})}"></th:block>
+          <th:block th:replace="~{pages/alert-rules :: legacy-delete(@{/alerts/product-target/delete},${product.code},null,'center')}"></th:block>
+        </article>
+        <article class="alarm-rule alarm-rule-compact" th:each="rule : ${product.reminders}">
+          <div>
+            <th:block th:replace="~{pages/alerts :: rule-product(${product})}"></th:block>
+            <p th:text="#{alarmCard.days(${rule.intervalDays})}"></p>
+            <p class="helper" th:text="#{alarmCard.type(#{alertCenter.time})}">Type: Time reminder</p>
+          </div>
+          <th:block th:replace="~{pages/alert-rules :: legacy-switch(@{/reminders/{id}/enabled(id=${rule.id})},${product.code},null,'center',${rule.enabled},#{alertCenter.time})}"></th:block>
+          <th:block th:replace="~{pages/alert-rules :: legacy-delete(@{/reminders/{id}/delete(id=${rule.id})},${product.code},null,'center')}"></th:block>
+        </article>
+        <article class="alarm-rule alarm-rule-compact" th:each="rule : ${product.retailers}">
+          <div>
+            <th:block th:replace="~{pages/alerts :: rule-product(${product})}"></th:block>
+            <p th:text="${rule.retailerCode}"></p>
+            <p th:if="${rule.targetPrice != null}" th:text="#{watchRules.priceRule(${format.money(rule.targetPrice)})}"></p>
+            <p th:if="${rule.dropEnabled}" th:text="#{alerts.type.DROP}">Price drop</p>
+            <p class="helper" th:text="#{alarmCard.type(#{alarmCard.price})}">Type: Price alert</p>
+          </div>
+          <th:block th:replace="~{pages/alert-rules :: legacy-switch(@{/alerts/retailer-rule/enabled},${product.code},${rule.id},'center',${rule.alertsEnabled},${rule.retailerCode})}"></th:block>
+          <th:block th:replace="~{pages/alert-rules :: legacy-delete(@{/alerts/retailer-rule/delete},${product.code},${rule.id},'center')}"></th:block>
+        </article>
+      </th:block>
     </section>
   </div>
 </section>
+
+<h3 xmlns:th="http://www.thymeleaf.org" th:fragment="rule-product(product)" class="alarm-card-product">
+  <a th:href="@{/alerts/rules(code=${product.code},from='rules')}"
+     data-open-alert-rules th:text="${product.name}"></a>
+</h3>

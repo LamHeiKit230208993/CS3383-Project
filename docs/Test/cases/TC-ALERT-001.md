@@ -40,6 +40,14 @@ alert state after the timing change.
 9. Reopen the H2 database. Check the alert evidence, read and snooze state,
    prior summary, and historical timing preferences. Reimport the same prices
    and confirm there are no repeated alerts.
+10. Switch off a retailer rule with a target and drop condition. Accept a lower
+    price. Verify that price history updates and no alert fires. Remove the item
+    from Wishlist and re-add it. The switch stays off. Turn it on, then accept
+    qualifying prices and verify that alerts resume.
+11. Delete both conditions. Verify that tracking and earlier history stay
+    intact. Reopen an older database without a switch column and verify its
+    existing rules start enabled. Switch a rule off and verify that it stays
+    off after another restart.
 
 ## Expected result
 

@@ -42,6 +42,9 @@ public class ReminderEntity {
     @Column(name = "snoozed_until")
     private Instant snoozedUntil;
 
+    @Column(name = "paused")
+    private Boolean paused;
+
     protected ReminderEntity() {
     }
 
@@ -81,6 +84,11 @@ public class ReminderEntity {
     public String getSelectedRetailerCode() { return selectedRetailerCode; }
     public Instant getNextDueAt() { return nextDueAt; }
     public Instant getSnoozedUntil() { return snoozedUntil; }
+    public boolean isEnabled() { return !Boolean.TRUE.equals(paused); }
+
+    public void setEnabled(boolean enabled) {
+        paused = !enabled;
+    }
 
     public Instant effectiveDueAt() {
         return snoozedUntil != null && snoozedUntil.isAfter(nextDueAt) ? snoozedUntil : nextDueAt;

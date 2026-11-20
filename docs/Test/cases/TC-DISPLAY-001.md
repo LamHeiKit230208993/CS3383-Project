@@ -20,7 +20,7 @@ label. An unsupported language leaves the previous settings in place.
 
 The secondary page test loads the sample, saves and tracks the milk pack, and
 creates a reminder. It checks rendered Chinese text on the data, planned,
-budget, saved, alerts, and reminders pages. It submits invalid reminder and
+budget, saved, Alert history, Current rules, and reminders pages. It submits invalid reminder and
 budget inputs to check localized validation.
 
 Sources [browser suite](../../../src/test/browser/market-desk.cjs) and

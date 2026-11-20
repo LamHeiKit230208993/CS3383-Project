@@ -35,6 +35,15 @@ public interface TrackingRepository extends JpaRepository<TrackingEntity, Long> 
     @EntityGraph(attributePaths = "product")
     List<TrackingEntity> findAllByEnabledTrueOrderByStartedAtDescIdDesc();
 
+    @EntityGraph(attributePaths = "product")
+    @Query("""
+            select tracking from TrackingEntity tracking
+            where (tracking.enabled = true or tracking.wishlistPaused = true)
+              and (tracking.targetPrice is not null or tracking.dropEnabled = true)
+            order by tracking.startedAt desc, tracking.id desc
+            """)
+    List<TrackingEntity> findLegacyRules();
+
     @Query("select distinct tracking.product.code from TrackingEntity tracking where tracking.enabled = true")
     List<String> enabledProductCodes();
 

@@ -6,7 +6,7 @@ if (document.querySelector('[data-timed-page="true"]')) {
   document.addEventListener("change", event => { if (event.target.closest("form")) edited = true; });
   window.setInterval(() => {
     if (document.visibilityState === "visible" && !edited &&
-        !document.activeElement?.closest("form") && !document.querySelector("details[open]")) {
+        !document.activeElement?.closest("form") && !document.querySelector("details[open], dialog[open]")) {
       window.location.reload();
     }
   }, 60000);

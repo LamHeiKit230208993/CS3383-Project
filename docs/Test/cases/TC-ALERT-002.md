@@ -20,5 +20,22 @@ with two exact packs, save one pack, and set its target to HK$10.
 5. Force the accepted-import write to fail after evaluation. The catalogue
    and alert history stay as they were, and the next qualifying successful
    refresh can still trigger the rule.
+6. Group timeline entries sent at 23:59 and 00:00 Hong Kong time on the same
+   UTC date. Expect two local date groups and preserve the original order of
+   alerts in each group. Check that the display clock shows 23:59 and 00:00.
+7. Group two history entries with the same product and exact trigger time.
+   Keep different products and different trigger seconds in separate rows,
+   even when the displayed minute is the same. Preserve both grouped entries.
+8. Switch off a saved target. Qualifying live imports keep recording price
+   history and create no alerts. Remove the pack from Wishlist and edit its
+   saved target. After saving the pack again and turning the rule back on, a
+   qualifying live import creates an alert at the edited price.
+9. Reopen a database with an old target and no switch column. Verify the target
+   starts enabled and retains its amount. Switch it off and reopen again to
+   verify the switch persists.
 
-Source [ProductTargetServiceTest](../../../src/test/java/com/pricewatch/notifications/ProductTargetServiceTest.java).
+## Sources
+
+- [ProductTargetServiceTest](../../../src/test/java/com/pricewatch/notifications/ProductTargetServiceTest.java)
+- [AlertTimelineTest](../../../src/test/java/com/pricewatch/web/AlertTimelineTest.java)
+- [TrackingPersistenceRestartTest](../../../src/test/java/com/pricewatch/catalog/TrackingPersistenceRestartTest.java)

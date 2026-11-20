@@ -11,13 +11,16 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "pricewatch.jobs.enabled", havingValue = "true", matchIfMissing = true)
 public class NotificationScheduler {
     private final ReminderService reminders;
+    private final WatchRuleService watchRules;
 
-    public NotificationScheduler(ReminderService reminders) {
+    public NotificationScheduler(ReminderService reminders, WatchRuleService watchRules) {
         this.reminders = reminders;
+        this.watchRules = watchRules;
     }
 
     @Scheduled(fixedDelay = 60_000)
     public void processDueEvents() {
         reminders.recordDue();
+        watchRules.checkDue();
     }
 }

@@ -137,8 +137,9 @@ This branch now adds J05–J08 wishlist/tracking, alerts, planned budgets/catego
 totals, and reminders. Local validation on 6 November passed 86 Java tests,
 20 browser scenarios and an old-to-new database upgrade check; use the
 [test catalogue](../Test/test-case-catalog.md) for the latest local results.
-The Market Desk redesign adds the retailer chart, product-wide targets and
-combined Alerts history. Quiet hours and scheduled summaries are retired.
+The Market Desk redesign adds the retailer chart, independent price and time
+rules, combined price-and-time rules, and one Alerts history. Quiet hours and
+scheduled summaries are retired.
 See the [setup guide](../SETUP.md) and [dated test results](../Test/history.md).
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

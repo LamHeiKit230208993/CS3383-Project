@@ -7,7 +7,7 @@ no prices. Check that both rows are present, the pinned retailer and checked
 state survive, and prices show **Unknown**. Edit the imported quantity and
 check that the sender's list keeps its original quantity.
 
-Upload malformed JSON. Check that the error is visible and the list picker can
+Upload malformed JSON. Check that the error is visible and List actions can
 still reopen the edited copy. The service checks also cover receiving-catalogue
 prices and rejected file content without partial saves.
 

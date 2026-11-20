@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -127,6 +128,53 @@ class AlertServiceTest {
         assertEquals(now.get(), event.getObservedAt());
         assertEquals(now.get(), event.getCreatedAt(), "Generation time is recorded independently.");
         assertTrue(event.getPreviousObservedAt().isBefore(event.getObservedAt()));
+    }
+
+    @Test
+    void retailerSwitchSurvivesWishlistPauseAndDeleteKeepsTrackingAndHistory() {
+        String code = "ALERT-SWITCH";
+        replaceLive(code, "12");
+        tracking.save(code);
+        long id = tracking.start(code, "STORE-A").id();
+        tracking.configureTarget(id, new BigDecimal("9"));
+        tracking.configureDrop(id, true);
+        assertThrows(IllegalArgumentException.class, () -> tracking.setLegacyAlertsEnabled("OTHER", id, false));
+        tracking.setLegacyAlertsEnabled(code, id, false);
+
+        now.set(now.get().plusSeconds(60));
+        replaceLive(code, "8");
+        assertEquals(2, tracking.priceHistory(code).size());
+        assertEquals(0, count("TARGET"));
+        assertEquals(0, count("DROP"));
+
+        tracking.removeSaved(code);
+        var paused = tracking.legacyRules().getFirst();
+        assertFalse(paused.enabled());
+        assertFalse(paused.alertsEnabled());
+        assertEquals(new BigDecimal("9.0000"), paused.targetPrice());
+        assertTrue(paused.dropEnabled());
+        tracking.save(code);
+        var resumed = tracking.legacyRules().getFirst();
+        assertTrue(resumed.enabled());
+        assertFalse(resumed.alertsEnabled());
+        assertTrue(id != resumed.id());
+        tracking.setLegacyAlertsEnabled(code, resumed.id(), true);
+
+        now.set(now.get().plusSeconds(60));
+        replaceLive(code, "8");
+        now.set(now.get().plusSeconds(60));
+        replaceLive(code, "7");
+        assertEquals(1, count("TARGET"));
+        assertEquals(1, count("DROP"));
+
+        tracking.deleteLegacyAlerts(code, resumed.id());
+        assertTrue(tracking.legacyRules().isEmpty());
+        now.set(now.get().plusSeconds(60));
+        replaceLive(code, "6");
+        assertEquals(5, tracking.priceHistory(code).size());
+        assertEquals(1, count("TARGET"));
+        assertEquals(1, count("DROP"));
+        assertTrue(trackingRepository.findById(resumed.id()).orElseThrow().isEnabled());
     }
 
     @Test

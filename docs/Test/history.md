@@ -4,6 +4,74 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Per-rule alert cards and saved switches — 21 November 2026
+
+- 142 Maven tests and 32 Chrome scenarios passed. Chrome checked the reminder
+  card's product, interval, and type. Pausing from Current rules persisted
+  in the product editor, and resuming returned the rule to On.
+- Older reminder and price-rule switches survived file database upgrade and
+  restart. Pausing a rule kept its history.
+
+## Alert rule editor and Wishlist actions — 21 November 2026
+
+- 139 Maven tests, 19 Chrome shopper scenarios, and 13 milestone scenarios
+  passed. Both Alert tabs render in all three supported languages.
+- Tests verified the shared editor, persisted switches, deletion with retained
+  history, single-fire and repeat scheduling, exact-trigger history groups,
+  and Wishlist action labels. The older-file upgrade preserved price targets
+  and history while allowing time-only events without price evidence.
+
+## Shared page styling and product navigation — 21 November 2026
+
+- 132 Maven tests and 19 Chrome shopper scenarios passed. Chrome checked
+  card-area navigation, return links to Cart and Wishlist, and the warm
+  background and serif headings at four viewport widths. Cart product names
+  retained their sans-serif font.
+
+## Cart completion and catalogue colors — 21 November 2026
+
+- 132 Maven tests, 19 Chrome shopper scenarios, 12 milestone scenarios, and
+  the Cart restart check passed. Chrome verified the product return link,
+  locked completed controls, and reopening imported lists from List actions.
+- Discover's browser check verified that category colors survive filtering,
+  with neutral category art in high contrast.
+
+## Discover and Cart layout — 20 November 2026
+
+- Maven packaging passed 132 tests with no skips. Chrome passed 19 shopper
+  scenarios and 12 milestone scenarios. The file-backed upgrade preserved
+  retailer choice, quantity, done state, and tracked prices.
+- Chrome checked the desktop sticky budget rail, responsive Cart, keyboard
+  quantity edits, done and undo, and the List actions panel at phone width.
+  JSON sharing and the offline checklist still passed. The preview captures
+  use the checked sample and a saved weekly budget.
+
+## Flat palette, shopping icons, and alert conditions — 20 November 2026
+
+- The UI stage passed 124 Maven tests, 19 Chrome shopper scenarios, 11 Chrome
+  milestone scenarios, and a file-backed Cart restart. The chart checks covered
+  pointer and keyboard inspection, retailer visibility, and recorded gaps.
+- The final Maven build passed 130 tests with no skips. The controlled clock
+  covered a combined occurrence waiting for a qualifying live refresh, grouped
+  retailer evidence, rollback, and a concurrent refresh. The older H2 schema
+  reopened with its price target and event history intact.
+- Chrome passed 19 shopper and 12 milestone scenarios. These include the named
+  icon controls and touch targets, independent price and combined rule editing,
+  personal-data export and reset, and existing independent time reminders. The
+  older JAR to current JAR check preserved the Cart and tracked history.
+
+## Mint and coral glass theme — 20 November 2026
+
+- The final build passed 123 Maven tests and 19 Chrome shopper scenarios,
+  including mobile chat-history selection and transcript spacing. The mint
+  and coral build also passed 11 milestone scenarios and the Cart restart test.
+
+## Market Desk visual refresh — 20 November 2026
+
+- Maven packaging passed 123 tests. Chrome passed 19 shopper and 11
+  milestone scenarios. The Discover check verifies the artwork, mobile
+  keyboard search, and Cart shortcut. The file-backed Cart restart also passed.
+
 ## Market Desk redesign · Retailer history and Alerts — 20 November 2026
 
 - The chart passed 14 focused Maven tests and the Chrome shopper workflow.

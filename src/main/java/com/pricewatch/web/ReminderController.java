@@ -42,6 +42,14 @@ public class ReminderController {
         return redirectToRules(code, redirect);
     }
 
+    @PostMapping("/reminders/{id}/enabled")
+    String setEnabled(@PathVariable long id, @RequestParam boolean enabled,
+                      @RequestParam(defaultValue = "") String code, @RequestParam(defaultValue = "") String from,
+                      RedirectAttributes redirect) {
+        act(enabled ? "watchEditor.enabled" : "watchEditor.disabled", redirect, () -> reminders.setEnabled(id, enabled));
+        return redirectToRules(code, code.isBlank() ? "center" : from, redirect);
+    }
+
     @PostMapping("/reminders/{id}/clear")
     String clear(@PathVariable long id, RedirectAttributes redirect) {
         act("reminders.notice.cleared", redirect, () -> reminders.clear(id));
@@ -61,9 +69,10 @@ public class ReminderController {
     }
 
     @PostMapping("/reminders/{id}/delete")
-    String delete(@PathVariable long id, @RequestParam(defaultValue = "") String code, RedirectAttributes redirect) {
+    String delete(@PathVariable long id, @RequestParam(defaultValue = "") String code,
+                  @RequestParam(defaultValue = "") String from, RedirectAttributes redirect) {
         act("reminders.notice.deleted", redirect, () -> reminders.delete(id));
-        return redirectToRules(code, redirect);
+        return redirectToRules(code, from, redirect);
     }
 
     @PostMapping("/alerts/reminders/{id}/clear")
@@ -94,8 +103,14 @@ public class ReminderController {
     }
 
     private String redirectToRules(String code, RedirectAttributes redirect) {
+        return redirectToRules(code, "", redirect);
+    }
+
+    private String redirectToRules(String code, String from, RedirectAttributes redirect) {
+        if ("center".equals(from)) return "redirect:/alerts?tab=rules";
         if (code.isBlank()) return "redirect:/alerts";
         redirect.addAttribute("code", code);
+        if ("saved".equals(from) || "rules".equals(from)) redirect.addAttribute("from", from);
         return "redirect:/alerts/rules";
     }
 }

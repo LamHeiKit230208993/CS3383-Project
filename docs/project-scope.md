@@ -64,9 +64,9 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 
 | ID | Feature | Original mark | Decision and boundary |
 |---|---|---|---|
-| R21 | Target-price alerts and price-drop alerts | ⚠️ + | One product-wide target alerts after an accepted live refresh and lists the retailers that meet it. Existing retailer-specific targets and drops keep their rules and evidence. |
+| R21 | Target-price alerts and price-drop alerts | ⚠️ + | Each product-wide target lists the retailers that qualify. Each price or calendar rule can run once or repeat. Previously saved combined rules wait after their due time for a qualifying live price. Existing retailer-specific targets and drops keep their rules and evidence. |
 | R22 | Amount or percentage change thresholds | ⚠️ ! | Tracked; conditional on a stated comparison price. A percentage change is not a verified store discount. |
-| R23 | Prevention of repeated alerts and snooze | ✅ + | Keep 24-hour snooze and repeat prevention. Retire quiet-hour delays from the active app. |
+| R23 | Prevention of repeated alerts and snooze | ✅ + | A one-time rule turns off after it fires. Repeating rules follow their selected cadence, with a fresh accepted refresh required for a repeat price alert. Keep 24-hour snooze and event history. |
 | R24 | Different notification channels | ⚠️ | Conditional. Choose and test the channels; daily data does not support live flash-sale alerts. |
 | R25 | Alerts near a store branch | ❌ # | Future consideration. Branch location data is not established. |
 | R26 | Morning summary | ❌ | Retired during the Market Desk redesign. Use Wishlist to review tracked products and Alerts to review events. Prior summaries remain in personal-data exports. |

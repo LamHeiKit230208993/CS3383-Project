@@ -3,6 +3,7 @@ package com.pricewatch.catalog;
 import com.pricewatch.PricewatchApplication;
 import com.pricewatch.notifications.AlertService;
 import com.pricewatch.notifications.NotificationPolicy;
+import com.pricewatch.notifications.ProductTargetService;
 import com.pricewatch.notifications.persistence.AlertEventEntity;
 import com.pricewatch.notifications.repository.AlertEventRepository;
 import com.pricewatch.tracking.TrackingService;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -129,7 +131,10 @@ class TrackingPersistenceRestartTest {
             tracking.configureTarget(periodId, new BigDecimal("8.00"));
             tracking.configureDrop(periodId, true);
             tracking.startAll("LEGACY-FLAGGED");
+            legacyRun.getBean(ProductTargetService.class).setTarget("LEGACY-SAVED", new BigDecimal("4.00"));
             jdbc.execute("alter table product_tracking_periods drop column wishlist_paused");
+            jdbc.execute("alter table product_tracking_periods drop column alerts_paused");
+            jdbc.execute("alter table product_target_rules drop column paused");
         }
 
         try (ConfigurableApplicationContext upgraded = start(databaseUrl)) {
@@ -143,10 +148,16 @@ class TrackingPersistenceRestartTest {
             var existing = tracking.trackingPeriods().getFirst();
             assertEquals(periodId, existing.id());
             assertTrue(existing.dropEnabled());
+            assertTrue(existing.alertsEnabled());
             assertEquals(new BigDecimal("8.0000"), existing.targetPrice());
             assertEquals(new BigDecimal("7.0000"), existing.observations().getFirst().price());
             assertEquals(1, upgraded.getBean(AlertEventRepository.class).count());
             assertEquals(1, upgraded.getBean(PriceObservationRepository.class).count());
+            var targets = upgraded.getBean(ProductTargetService.class);
+            assertEquals(new ProductTargetService.RuleView("LEGACY-SAVED", new BigDecimal("4.0000"), true),
+                    targets.rule("LEGACY-SAVED").orElseThrow());
+            targets.setEnabled("LEGACY-SAVED", false);
+            tracking.setLegacyAlertsEnabled("LEGACY-TRACKED", periodId, false);
 
             var feed = catalogue(saved, product("LEGACY-TRACKED",
                     store("STORE-A", "7.00") + "," + store("STORE-B", "6.00")), flagged);
@@ -165,6 +176,8 @@ class TrackingPersistenceRestartTest {
             assertEquals(2, tracking.savedProducts().size(), "A removed product must not reappear after restart.");
             assertEquals(1, tracking.trackingPeriods().stream().filter(TrackingView::enabled).count());
             assertEquals(2, tracking.priceHistory("LEGACY-TRACKED").size());
+            assertFalse(tracking.legacyRules().getFirst().alertsEnabled());
+            assertFalse(reopened.getBean(ProductTargetService.class).rule("LEGACY-SAVED").orElseThrow().enabled());
         }
     }
 

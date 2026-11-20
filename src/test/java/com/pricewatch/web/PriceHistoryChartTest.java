@@ -38,6 +38,10 @@ class PriceHistoryChartTest {
         assertEquals(List.of(2, 1, 2), chart.series().getFirst().segments().stream()
                 .map(segment -> segment.points().size()).toList());
         assertEquals("12,127 135,50", chart.series().getFirst().segments().getFirst().coordinates());
+        assertEquals(NOW.minus(5, ChronoUnit.DAYS),
+                chart.series().getFirst().segments().getFirst().points().getFirst().observedAt());
+        // The chart guide has a position for the recorded gap even though it has no price point.
+        assertEquals(258, chart.dateX(NOW.minus(3, ChronoUnit.DAYS)));
         assertEquals(new BigDecimal("5.00"), chart.minimum());
         assertEquals(new BigDecimal("10.00"), chart.maximum());
     }
@@ -47,6 +51,7 @@ class PriceHistoryChartTest {
         var known = entry("STORE-A", 0, "7.00", 1);
         var chart = PriceHistoryChart.from(List.of(known)).orElseThrow();
         assertEquals("320,108", chart.series().getFirst().segments().getFirst().coordinates());
+        assertEquals(320, chart.dateX(known.retrievedAt()));
         assertEquals(chart.first(), chart.last());
         assertTrue(PriceHistoryChart.from(List.of(entry("STORE-A", 0, null, 1))).isEmpty());
     }

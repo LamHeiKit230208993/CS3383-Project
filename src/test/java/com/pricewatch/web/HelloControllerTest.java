@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -283,7 +284,7 @@ class HelloControllerTest {
         assertEquals("JASONS", shopping.items().getFirst().selectedRetailerCode());
         assertEquals(0, shopping.items().getFirst().lineTotal().compareTo(new java.math.BigDecimal("25.00")));
         mvc.perform(get("/list")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("Your retailer: JASONS")));
+                .andExpect(content().string(matchesPattern("(?s).*<option value=\"JASONS\"\\s+selected=\"selected\">.*")));
         mvc.perform(post("/list/items/P000000124/update").param("quantity", "2")
                         .param("retailerCode", "PARKNSHOP").param("checked", "true"))
                 .andExpect(redirectedUrl("/list"));

@@ -115,25 +115,25 @@ See the [baseline guide](implementation-baseline-j01-j04.md) and
 
 1. Open a product comparison and choose **Save to wishlist**. The app starts
    watching all retailers for the exact pack. New retailers are picked up on
-   accepted live refreshes. Select the Wishlist row to see its actions or select
+   accepted live refreshes. Use the actions on the Wishlist row or select
    several products to add one pack of each missing item to the default Cart.
    Removing a product stops new price tracking and keeps its recorded history.
-2. Select **Set rules** on the pack. Set one target price for all retailers.
-   An accepted live refresh at or below the target makes one alert listing
-   all qualifying retailers. A later lowest known price above the target
-   rearms it. Existing retailer-specific price rules stay editable. Historical
-   samples are useful for checking the UI and list estimates.
+2. Select **Set rules** on the pack. Use **Add rule** to choose a price
+   condition or a calendar time in Hong Kong time. A price condition checks
+   accepted live refreshes and lists the retailers that meet the target.
+   Choose one time, daily, weekly, every two weeks, or monthly. One-time
+   rules turn off after they fire. A repeating price rule needs a new
+   qualifying live refresh in a later repeat period.
 3. Open **Settings → Personal data**, choose Weekly or Monthly in the Budget
    card, and save a planned limit. It is
    compared with the current My list estimate, including checked items. An
    explicit retailer choice stays selected when its price becomes unknown.
-4. In **Set rules**, add a time reminder with packs, an interval in days,
-   and an optional retailer. Open **Alerts** for one history of price and
-   time events. Adding a reminder's quantity to Cart leaves it active.
-   Dismiss it to start the next interval and keep the previous entry. Snooze
-   delays a due reminder by 24 hours.
+4. Open **Alerts → History** to see what fired. Open a history row's rule
+   editor to make a change. Each **Current rules** card shows the product,
+   condition, and On or Off switch. Switches also work on earlier retailer
+   rules and quantity-based reminders. Removing a rule keeps its history.
 
-The running app checks due reminders each minute and when Alerts opens. Its
+The running app checks due rules each minute and when Alerts opens. Its
 scheduled work can be disabled for isolated checks with
 `--pricewatch.jobs.enabled=false`. Page opening still checks due reminders.
 Alert and price records show Hong Kong time. Quiet hours and scheduled
@@ -163,16 +163,20 @@ service. Saved data on this computer does not by itself make a phone work offlin
 
 ### Share or review a saved list
 
-Open **Cart** and select a list. Tick an item to keep it checked and
-cross out its name. Use **Edit item** to change packs or the retailer.
-In **List files**, **Export JSON** downloads the open list. **Import JSON**
-creates a separate editable copy.
+Open **Cart**. Select a product card to open its comparison, then use **Back
+to Cart** to return to the same list. Use **Mark done** to cross out and lock
+a row. Select **Done** to reopen it before changing packs or retailer.
+**Continue browsing** takes you back to Discover.
+Open **List actions** below the summary to switch to an imported list.
+**Export JSON** downloads the open
+list. **Import list** creates a separate editable copy from a JSON file.
 The file keeps each pack, quantity, checked state, and retailer choice.
 The receiving app gets prices from its own catalogue. Missing products or
-retailer prices appear as **Unknown**. Quick-add, budgets, and reminders use
-the default **My list**.
+retailer prices appear as **Unknown**. Quick-add and reminders use the default
+list. Discover shows that list against your saved budget. Cart compares the
+list you are viewing with the same limit.
 
-Choose **List files → Download offline checklist** to save an HTML copy.
+Choose **List actions → Download offline checklist** to save an HTML copy.
 Open the file in a browser without a connection or the local app running.
 It shows saved estimates and their retrieval time. Checkmarks changed in the
 file last while it is open and stay separate from the app's Cart.

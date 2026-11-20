@@ -25,6 +25,7 @@ public interface ReminderRepository extends JpaRepository<ReminderEntity, Long> 
     @Query("""
             select reminder.id from ReminderEntity reminder
             where reminder.nextDueAt <= :now and (reminder.snoozedUntil is null or reminder.snoozedUntil <= :now)
+            and (reminder.paused is null or reminder.paused = false)
             and not exists (
                 select occurrence.id from ReminderOccurrenceEntity occurrence
                 where occurrence.reminderId = reminder.id and occurrence.dueAt = reminder.nextDueAt

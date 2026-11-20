@@ -220,12 +220,12 @@ public class TrackingService {
 
     @Transactional
     public void configureTarget(long trackingId, BigDecimal targetPrice) {
-        TrackingEntity tracking = activeTracking(trackingId);
+        TrackingEntity tracking = editableAlertPeriod(trackingId);
         BigDecimal normalized = normalizePrice(targetPrice);
         BigDecimal currentTarget = tracking.getTargetPrice();
         if (samePrice(currentTarget, normalized)) return;
         tracking.setTargetPrice(normalized);
-        if (normalized != null) {
+        if (normalized != null && tracking.isEnabled() && tracking.isAlertsEnabled()) {
             Instant now = clock.instant();
             pruneExpired(now);
             currentLivePrice(tracking, now).ifPresent(current ->
@@ -235,8 +235,20 @@ public class TrackingService {
 
     @Transactional
     public void configureDrop(long trackingId, boolean enabled) {
-        TrackingEntity tracking = activeTracking(trackingId);
+        TrackingEntity tracking = editableAlertPeriod(trackingId);
         tracking.setDropEnabled(enabled);
+    }
+
+    @Transactional
+    public void setLegacyAlertsEnabled(String code, long trackingId, boolean enabled) {
+        legacyRule(code, trackingId).setAlertsEnabled(enabled);
+    }
+
+    @Transactional
+    public void deleteLegacyAlerts(String code, long trackingId) {
+        TrackingEntity tracking = legacyRule(code, trackingId);
+        tracking.setTargetPrice(null);
+        tracking.setDropEnabled(false);
     }
 
     @Transactional
@@ -247,8 +259,13 @@ public class TrackingService {
 
     @Transactional(readOnly = true)
     public List<TrackingView> activeLegacyRules() {
-        return trackingRepository.findAllByEnabledTrueOrderByStartedAtDescIdDesc().stream()
-                .filter(period -> period.getTargetPrice() != null || period.isDropEnabled())
+        return trackingRepository.findLegacyRules().stream().filter(TrackingEntity::isEnabled)
+                .map(period -> toView(period, List.of())).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TrackingView> legacyRules() {
+        return trackingRepository.findLegacyRules().stream()
                 .map(period -> toView(period, List.of())).toList();
     }
 
@@ -294,10 +311,18 @@ public class TrackingService {
         }
     }
 
-    private TrackingEntity activeTracking(long trackingId) {
+    private TrackingEntity legacyRule(String code, long trackingId) {
+        TrackingEntity tracking = editableAlertPeriod(trackingId);
+        if (!tracking.getProductCode().equals(code) || (tracking.getTargetPrice() == null && !tracking.isDropEnabled())) {
+            throw new IllegalArgumentException("Alert rule was not found.");
+        }
+        return tracking;
+    }
+
+    private TrackingEntity editableAlertPeriod(long trackingId) {
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
                 .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
-        if (!tracking.isEnabled()) {
+        if (!tracking.isEnabled() && !tracking.isWishlistPaused()) {
             throw new IllegalArgumentException("Start a new tracking period before changing its alerts.");
         }
         return tracking;
@@ -364,7 +389,7 @@ public class TrackingService {
                 tracking.getProduct().getName() == null ? tracking.getProductCode()
                         : tracking.getProduct().getName().getEn(),
                 tracking.getRetailerCode(), tracking.isEnabled(), tracking.getStartedAt(), tracking.getStoppedAt(),
-                tracking.getTargetPrice(), tracking.isDropEnabled(), history);
+                tracking.getTargetPrice(), tracking.isDropEnabled(), tracking.isAlertsEnabled(), history);
     }
 
     private static BigDecimal normalizePrice(BigDecimal price) {

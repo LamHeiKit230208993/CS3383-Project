@@ -103,6 +103,57 @@ class ReminderControllerTest {
     }
 
     @Test
+    void pausingKeepsTheScheduleAndHistoryAndBlocksActionsUntilResumed() throws Exception {
+        catalog.importSample();
+        create("2", "7", "JASONS");
+        var rule = reminders.overview().reminders().getFirst();
+        assertTrue(rule.enabled());
+
+        mvc.perform(post("/reminders/{id}/enabled", rule.id()).param("enabled", "false").param("from", "center"))
+                .andExpect(redirectedUrl("/alerts?tab=rules")).andExpect(flash().attributeExists("notice"));
+        now.set(rule.nextDueAt());
+        reminders.recordDue();
+        assertTrue(reminders.occurrences(now.get()).isEmpty());
+        var paused = reminders.overview().reminders().getFirst();
+        assertFalse(paused.enabled());
+        assertFalse(paused.due());
+        for (String action : java.util.List.of("clear", "snooze", "add")) {
+            mvc.perform(post("/reminders/{id}/" + action, rule.id()))
+                    .andExpect(redirectedUrl("/alerts")).andExpect(flash().attributeExists("error"));
+        }
+        assertEquals(rule.nextDueAt(), reminders.overview().reminders().getFirst().nextDueAt());
+        assertTrue(shopping.items().isEmpty());
+
+        mvc.perform(post("/reminders/{id}/enabled", rule.id()).param("enabled", "true")
+                        .param("code", rule.productCode()).param("from", "saved"))
+                .andExpect(redirectedUrl(RULES + "&from=saved")).andExpect(flash().attributeExists("notice"));
+        reminders.recordDue();
+        var due = reminders.occurrences(now.get()).getFirst();
+        assertEquals(rule.nextDueAt(), due.dueAt());
+        assertTrue(due.active());
+
+        reminders.setEnabled(rule.id(), false);
+        for (String action : java.util.List.of("clear", "snooze", "add")) {
+            mvc.perform(post("/alerts/reminders/{id}/" + action, due.id()))
+                    .andExpect(redirectedUrl("/alerts")).andExpect(flash().attributeExists("error"));
+        }
+        var historical = reminders.occurrences(now.get()).getFirst();
+        assertEquals(due.id(), historical.id());
+        assertFalse(historical.active());
+        assertFalse(historical.read());
+
+        mvc.perform(post("/reminders/{id}/enabled", rule.id()).param("enabled", "true")
+                        .param("code", rule.productCode()).param("from", "rules"))
+                .andExpect(redirectedUrl(RULES + "&from=rules"));
+        reminders.recordDue();
+        assertEquals(java.util.List.of(due), reminders.occurrences(now.get()));
+        mvc.perform(post("/reminders/{id}/delete", rule.id()).param("code", rule.productCode()).param("from", "center"))
+                .andExpect(redirectedUrl("/alerts?tab=rules"));
+        assertTrue(reminders.overview().reminders().isEmpty());
+        assertEquals(due.id(), reminders.occurrences(now.get()).getFirst().id());
+    }
+
+    @Test
     void snoozeMovesCurrentDueByTwentyFourHoursAndClearStartsIntervalFromActionTime() throws Exception {
         catalog.importSample();
         create("2", "7", "");

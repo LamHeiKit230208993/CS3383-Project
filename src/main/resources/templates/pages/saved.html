@@ -26,29 +26,43 @@
         <input type="checkbox" form="wishlist-batch" name="codes" th:value="${p.code}"
                th:attr="aria-label=#{wishlist.select(${p.name.forLocale(#locale)})}">
       </label>
-      <details th:open="${openCode == p.code}">
-        <summary class="action-row">
-          <svg class="icon" aria-hidden="true"><use href="#i-pack"/></svg>
-          <span><strong th:text="${p.name.forLocale(#locale)}"></strong>
-            <small th:text="${p.brand.forLocale(#locale)}"></small>
-            <small th:unless="${p.active}" th:text="#{saved.productMissing}"></small></span>
-          <span class="wishlist-price" th:text="${p.lowestPrice == null} ? #{common.unknown} : ${format.money(p.lowestPrice)}"></span>
-        </summary>
+      <div class="wishlist-item" th:classappend="${openCode == p.code} ? 'is-focused'">
+        <div class="wishlist-item-copy">
+          <th:block th:replace="~{fragments/product-category :: icon(${p})}"></th:block>
+          <div>
+            <h2>
+              <a th:if="${p.active}" class="wishlist-product-link"
+                 th:href="@{/products/{code}(code=${p.code},fromWishlist=true)}"
+                 th:text="${p.name.forLocale(#locale)}"></a>
+              <th:block th:unless="${p.active}" th:text="${p.name.forLocale(#locale)}"></th:block>
+            </h2>
+            <p class="helper" th:text="${p.brand.forLocale(#locale)}"></p>
+            <span class="wishlist-category" th:unless="${p.category2.forLocale(#locale).isBlank()}"
+                  th:text="${p.category2.forLocale(#locale)}"></span>
+            <p class="helper" th:unless="${p.active}" th:text="#{saved.productMissing}"></p>
+          </div>
+        </div>
+        <strong class="wishlist-price" th:text="${p.lowestPrice == null} ? #{common.unknown} : ${format.money(p.lowestPrice)}"></strong>
         <div class="wishlist-actions">
-          <form th:if="${p.active}" th:action="@{/saved/cart}" method="post">
-            <input type="hidden" name="codes" th:value="${p.code}">
-            <button class="button primary" th:text="#{compare.add}">Add to Cart</button>
-          </form>
-          <a class="button secondary" th:if="${p.active}" th:href="@{/products/{code}(code=${p.code})}"
-             th:text="#{wishlist.view}">View product</a>
-          <a class="button secondary" th:href="@{/products/{code}/history(code=${p.code})}" th:text="#{wishlist.history}">Price history</a>
-          <a class="button secondary" th:href="@{/alerts/rules(code=${p.code})}" th:text="#{wishlist.rules}">Set rules</a>
-          <form th:action="@{/saved/remove}" method="post">
+          <a class="button secondary wishlist-action" th:href="@{/products/{code}/history(code=${p.code})}"
+             th:attr="aria-label=#{wishlist.history},title=#{wishlist.history}">
+            <svg class="icon" aria-hidden="true"><use href="#i-history-chart"/></svg>
+            <span aria-hidden="true" th:text="#{wishlist.history}"></span>
+          </a>
+          <a class="button secondary wishlist-action" th:href="@{/alerts/rules(code=${p.code},from='saved')}" data-open-alert-rules
+             th:attr="aria-label=#{wishlist.rules},title=#{wishlist.rules}">
+            <svg class="icon" aria-hidden="true"><use href="#i-bell-ring"/></svg>
+            <span aria-hidden="true" th:text="#{wishlist.rules}"></span>
+          </a>
+          <form class="wishlist-remove" th:action="@{/saved/remove}" method="post">
             <input type="hidden" name="code" th:value="${p.code}">
-            <button class="button secondary" th:text="#{saved.remove}">Remove</button>
+            <button class="button secondary wishlist-action" th:attr="aria-label=#{saved.remove},title=#{saved.remove}">
+              <svg class="icon" aria-hidden="true"><use href="#i-remove-item"/></svg>
+              <span aria-hidden="true" th:text="#{saved.remove}"></span>
+            </button>
           </form>
         </div>
-      </details>
+      </div>
     </div>
   </div>
 </section>

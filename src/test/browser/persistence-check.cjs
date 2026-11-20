@@ -75,11 +75,18 @@ async function main() {
     has: page.getByRole("radio", { name: "Choose JASONS", exact: true })
   }).click();
   await page.locator("#quantity").fill("2");
-  await page.getByRole("button", { name: "Add to my list", exact: true }).click();
+  await page.getByRole("button", { name: /^(Add to Cart|Add to my list)$/ }).click();
   await page.waitForURL(url => url.pathname.split(";")[0] === "/list");
-  await page.locator("[name=checked]").check();
-  await page.getByRole("button", { name: /Save changes for/ }).click();
-  await page.waitForLoadState("load");
+  if (await page.locator("[data-cart-check]").count()) {
+    await Promise.all([
+      page.waitForResponse(response => response.url().includes("/list/items/check") && response.status() === 204),
+      page.locator("[name=checked]").check()
+    ]);
+  } else {
+    await page.locator("[name=checked]").check();
+    await page.getByRole("button", { name: /Save changes for/ }).click();
+    await page.waitForLoadState("load");
+  }
   assert.equal(await page.locator(".list-item").count(), 1);
   assert.equal(await page.locator("[name=checked]").isChecked(), true);
   if (checkTracking) {
@@ -88,7 +95,7 @@ async function main() {
       assert.equal(result.status(), 302, route);
     }
     await page.goto(base + "/saved");
-    assert.ok(await page.locator('form[action$="/tracking/stop-all"] input[value="P000000124"]').count());
+    assert.ok(await page.locator('form[action$="/tracking/stop-all"] input[value="P000000124"], .wishlist-row input[value="P000000124"]').count());
   }
   await stopApp();
 
@@ -103,7 +110,7 @@ async function main() {
   console.log("PASS file-database restart/upgrade preserves catalogue, retailer, quantity, checked state, and exact total.");
   if (checkTracking) {
     await page.goto(base + "/saved");
-    assert.ok(await page.locator('form[action$="/tracking/stop-all"] input[value="P000000124"]').count());
+    assert.ok(await page.locator('.wishlist-row input[value="P000000124"]').count());
     const historyPage = await page.goto(base + "/products/P000000124/history");
     assert.equal(historyPage.status(), 200);
     assert.match(await page.locator("main").innerText(), /JASONS[\s\S]*12\.50/);

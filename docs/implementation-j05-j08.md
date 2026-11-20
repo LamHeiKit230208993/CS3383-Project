@@ -5,6 +5,10 @@ The changes await commit/PR review and merge; this is not an issue-closure or
 release claim. Use the [test catalogue](Test/test-case-catalog.md) and
 [dated history](Test/history.md) for observed results.
 
+This guide records the original J05–J08 implementation. For current Wishlist,
+Cart, and Alerts controls, follow the [setup walkthrough](SETUP.md#try-the-j05j08-flow).
+The current app supports independent and combined rules in one Alerts history.
+
 Read the [J01–J04 baseline](implementation-baseline-j01-j04.md) for source parsing,
 search, exact money, retailer choice and list rules. The
 [milestone plan](Plan/tracking-alerts-budgets-reminders-j05-j08.md) records D01–D07,

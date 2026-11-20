@@ -119,6 +119,11 @@ public class ReminderService {
         }
     }
 
+    @Transactional
+    public void setEnabled(long id, boolean enabled) {
+        lockedRule(id).setEnabled(enabled);
+    }
+
     private void validateRule(int quantity, int intervalDays) {
         if (quantity < MIN_QUANTITY || quantity > MAX_QUANTITY) {
             throw new IllegalArgumentException("Quantity must be a whole number from 1 to 999.");
@@ -142,7 +147,7 @@ public class ReminderService {
 
     @Transactional
     public void clear(long id) {
-        ReminderEntity reminder = lockedRule(id);
+        ReminderEntity reminder = requireEnabled(lockedRule(id));
         Instant now = clock.instant();
         dismissCurrent(reminder, now);
         reminder.clear(now);
@@ -150,7 +155,7 @@ public class ReminderService {
 
     @Transactional
     public void snooze(long id) {
-        ReminderEntity reminder = lockedRule(id);
+        ReminderEntity reminder = requireEnabled(lockedRule(id));
         Instant now = clock.instant();
         var occurrence = currentOccurrence(reminder, now);
         reminder.snooze(now);
@@ -159,7 +164,7 @@ public class ReminderService {
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void addToList(long id) {
-        ReminderEntity reminder = reminders.findWithProductById(id).orElseThrow(ReminderService::notFound);
+        ReminderEntity reminder = requireEnabled(reminders.findWithProductById(id).orElseThrow(ReminderService::notFound));
         shopping.add(reminder.getProduct().getCode(), reminder.getQuantity(), reminder.getSelectedRetailerCode());
     }
 
@@ -206,7 +211,7 @@ public class ReminderService {
     }
 
     private boolean isCurrent(ReminderOccurrenceEntity event, ReminderEntity rule) {
-        return rule != null && event.getReadAt() == null && event.getDueAt().equals(rule.getNextDueAt());
+        return rule != null && rule.isEnabled() && event.getReadAt() == null && event.getDueAt().equals(rule.getNextDueAt());
     }
 
     private record CurrentAlert(ReminderOccurrenceEntity event, ReminderEntity rule, Instant now) {}
@@ -215,9 +220,14 @@ public class ReminderService {
         return reminders.findLockedById(id).orElseThrow(ReminderService::notFound);
     }
 
+    private static ReminderEntity requireEnabled(ReminderEntity reminder) {
+        if (!reminder.isEnabled()) throw alertNotFound();
+        return reminder;
+    }
+
     private Optional<ReminderOccurrenceEntity> currentOccurrence(ReminderEntity reminder, Instant now) {
         var current = history.findByReminderIdAndDueAt(reminder.getId(), reminder.getNextDueAt());
-        if (current.isPresent() || now.isBefore(reminder.effectiveDueAt())) return current;
+        if (current.isPresent() || !reminder.isEnabled() || now.isBefore(reminder.effectiveDueAt())) return current;
         return Optional.of(history.save(new ReminderOccurrenceEntity(reminder, now)));
     }
 
@@ -238,7 +248,7 @@ public class ReminderService {
         return new ReminderView(reminder.getId(), product.getCode(), productName, brandName,
                 reminder.getQuantity(), reminder.getIntervalDays(),
                 retailerCode, priceAvailable, product.isActive(), reminder.getNextDueAt(), effectiveDueAt,
-                !now.isBefore(effectiveDueAt));
+                reminder.isEnabled() && !now.isBefore(effectiveDueAt), reminder.isEnabled());
     }
 
     private boolean hasKnownPrice(ProductEntity product, String retailerCode) {

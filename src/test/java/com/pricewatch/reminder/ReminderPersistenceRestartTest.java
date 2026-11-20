@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReminderPersistenceRestartTest {
     @Test
-    void reminderOccurrenceAndSnoozeSurviveClosingAndReopeningTheApplication(@TempDir Path directory) {
+    void reminderOccurrenceSnoozeAndPauseSurviveClosingAndReopeningTheApplication(@TempDir Path directory) {
         String databaseUrl = "jdbc:h2:file:" + directory.resolve("reminder-restart").toAbsolutePath()
                 .toString().replace('\\', '/') + ";DB_CLOSE_ON_EXIT=FALSE";
         Long reminderId;
@@ -40,14 +40,18 @@ class ReminderPersistenceRestartTest {
             reminderId = created.id();
             assertEquals(due, created.nextDueAt());
             assertTrue(service.occurrences(now).isEmpty());
-            firstRun.getBean(JdbcTemplate.class).execute("DROP TABLE reminder_occurrences");
+            var jdbc = firstRun.getBean(JdbcTemplate.class);
+            jdbc.execute("DROP TABLE reminder_occurrences");
+            jdbc.execute("ALTER TABLE replenishment_reminders DROP COLUMN paused");
         }
 
         try (ConfigurableApplicationContext atDue = start(databaseUrl, due)) {
             ReminderService service = atDue.getBean(ReminderService.class);
+            assertTrue(service.overview().reminders().getFirst().enabled());
             service.recordDue();
             occurrenceId = service.occurrences(due).getFirst().id();
             service.snoozeOccurrence(occurrenceId);
+            service.setEnabled(reminderId, false);
         }
 
         try (ConfigurableApplicationContext reopened = start(databaseUrl, due)) {
@@ -58,6 +62,7 @@ class ReminderPersistenceRestartTest {
             assertEquals(4, restored.quantity());
             assertEquals(21, restored.intervalDays());
             assertEquals("JASONS", restored.selectedRetailerCode());
+            assertFalse(restored.enabled());
             assertEquals(due.plusSeconds(24 * 60 * 60L), restored.effectiveDueAt());
             assertNotNull(reopened.getBean(ReminderRepository.class).findWithProductById(reminderId).orElse(null));
             service.recordDue();
@@ -65,7 +70,9 @@ class ReminderPersistenceRestartTest {
             assertEquals(1, events.size());
             assertEquals(occurrenceId, events.getFirst().id());
             assertFalse(events.getFirst().available());
-            assertTrue(events.getFirst().active());
+            assertFalse(events.getFirst().active());
+            service.setEnabled(reminderId, true);
+            assertTrue(service.occurrences(due).getFirst().active());
         }
     }
 

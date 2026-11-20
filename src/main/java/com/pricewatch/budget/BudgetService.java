@@ -33,10 +33,6 @@ public class BudgetService {
     @Transactional(readOnly = true)
     public BudgetView view() {
         var items = shopping.items();
-        var summary = Summary.from(items);
-        var settings = settingsRepository.findById(SETTINGS_ID).orElse(null);
-        BudgetPeriod period = settings == null ? BudgetPeriod.WEEKLY : settings.getPeriod();
-        BigDecimal limit = settings == null ? null : settings.getLimitAmount();
         Map<String, BigDecimal> totals = new LinkedHashMap<>();
 
         for (ItemView item : items) {
@@ -45,13 +41,25 @@ public class BudgetService {
             }
         }
 
+        List<CategoryTotal> categoryTotals = new ArrayList<>(totals.size());
+        totals.forEach((name, amount) -> categoryTotals.add(new CategoryTotal(name, amount)));
+        return evaluate(Summary.from(items), categoryTotals);
+    }
+
+    @Transactional(readOnly = true)
+    public BudgetView forSummary(Summary summary) {
+        return evaluate(summary, List.of());
+    }
+
+    private BudgetView evaluate(Summary summary, List<CategoryTotal> categoryTotals) {
+        var settings = settingsRepository.findById(SETTINGS_ID).orElse(null);
+        BudgetPeriod period = settings == null ? BudgetPeriod.WEEKLY : settings.getPeriod();
+        BigDecimal limit = settings == null ? null : settings.getLimitAmount();
         boolean overLimit = limit != null && summary.knownSubtotal().compareTo(limit) > 0;
         BudgetState state = limit == null ? BudgetState.NOT_SET
                 : overLimit ? BudgetState.OVER_LIMIT
                 : summary.unknownItemCount() > 0 ? BudgetState.UNKNOWN_TOTAL
                 : BudgetState.WITHIN_LIMIT;
-        List<CategoryTotal> categoryTotals = new ArrayList<>(totals.size());
-        totals.forEach((name, amount) -> categoryTotals.add(new CategoryTotal(name, amount)));
         return new BudgetView(period, limit, summary.knownSubtotal(), summary.unknownItemCount(), categoryTotals, state);
     }
 

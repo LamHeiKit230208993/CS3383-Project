@@ -21,10 +21,16 @@ checked sample catalogue, isolated H2 databases, and a controlled clock.
    conflict and retry. Verify that the saved quantity and retailer are added
    and the occurrence stays active. Check invalid quantities and intervals,
    capacity failures, and missing prices on a pinned retailer.
-6. Save a rule to a temporary H2 file and remove the empty occurrence
-   table to represent the previous schema. Reopen it when the rule is due.
-   Record and snooze its occurrence. Reopen the app again and verify that
-   the rule, occurrence ID, and snoozed due time survive.
+6. Pause a rule until its due time passes. Check that the saved schedule
+   stays and no occurrence is created. Resume it and confirm one occurrence.
+   Pause it again and check that its history stays visible while Cart,
+   clear and snooze actions are blocked. Resume it and check that the same
+   occurrence becomes active. Check redirects from Alerts and the item editor.
+7. Save a rule to a temporary H2 file and remove the empty occurrence table
+   and pause column to represent the previous schema. Reopen it when due and
+   verify that it defaults to on. Record and snooze its occurrence. Pause it
+   and reopen the app. Verify that the rule, occurrence ID, snoozed due time,
+   and pause state survive.
 
 The tests advance the application clock and call the due check directly.
 They exercise in-app alert history and Cart, including the legacy form routes.

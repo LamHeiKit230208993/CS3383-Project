@@ -1,6 +1,8 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
   <section aria-labelledby="compare-title">
-    <a class="back-link" th:href="@{/}" th:text="#{compare.back}">← Back to discover</a>
+    <a class="back-link" th:if="${fromCart}" th:href="@{/list(listId=${returnListId})}" th:text="#{cart.back}">← Back to Cart</a>
+    <a class="back-link" th:if="${fromWishlist}" th:href="@{/saved}" th:text="#{wishlist.back}">← Back to Wishlist</a>
+    <a class="back-link" th:unless="${fromCart or fromWishlist}" th:href="@{/}" th:text="#{compare.back}">← Back to Discover</a>
     <div class="page-heading">
       <p class="eyebrow" th:text="#{compare.eyebrow}">ONE PRODUCT. A CLEAR COMPARISON.</p>
       <h1 id="compare-title" th:text="#{app.scene.compare}">Compare listed prices</h1>
@@ -23,8 +25,10 @@
           <input type="hidden" name="code" th:value="${product.code}">
           <button class="button secondary" th:text="#{saved.save}">Save to wishlist</button>
         </form>
-        <p><a th:href="@{/alerts/rules(code=${product.code})}" th:text="#{wishlist.rules}">Set rules</a></p>
-        <p><a th:href="@{/products/{code}/history(code=${product.code})}" th:text="#{app.scene.history}">Price history</a></p>
+        <div class="product-actions">
+          <a class="button secondary" th:href="@{/alerts/rules(code=${product.code})}" th:text="#{wishlist.rules}">Set rules</a>
+          <a class="button secondary" th:href="@{/products/{code}/history(code=${product.code})}" th:text="#{app.scene.history}">Price history</a>
+        </div>
         <p class="warning" th:unless="${product.active}" th:text="#{compare.inactive}">Not in the accepted catalogue. Saved identity kept; current price unknown.</p>
         <form
           id="add-item-form"

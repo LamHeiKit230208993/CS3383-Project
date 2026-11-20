@@ -21,6 +21,9 @@ public class ProductTargetRuleEntity {
     @Column(nullable = false)
     private boolean armed;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean paused;
+
     @Column(name = "evaluated_at")
     private Instant evaluatedAt;
 
@@ -34,6 +37,7 @@ public class ProductTargetRuleEntity {
 
     public String getProductCode() { return productCode; }
     public BigDecimal getTarget() { return target; }
+    public boolean isEnabled() { return !paused; }
     public boolean isArmed() { return armed; }
     public Instant getEvaluatedAt() { return evaluatedAt; }
 
@@ -41,6 +45,10 @@ public class ProductTargetRuleEntity {
         if (this.target.compareTo(target) == 0) return;
         this.target = target;
         this.armed = true;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.paused = !enabled;
     }
 
     public boolean evaluate(Instant retrievedAt, boolean hasQualifyingPrice) {
