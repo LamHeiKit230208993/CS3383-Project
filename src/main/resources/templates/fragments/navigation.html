@@ -1,38 +1,38 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="destinations">
+  <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}">
+    <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><span th:text="#{app.scene.discover}">Discover</span>
+  </a>
+  <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}">
+    <svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg><span th:text="#{app.scene.list}">Cart</span>
+  </a>
+  <a th:href="@{/saved}" th:attr="aria-current=${scene == 'saved' or scene == 'history' ? 'page' : null}">
+    <svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg><span th:text="#{app.nav.saved}">Wishlist</span>
+  </a>
+  <a th:href="@{/ask}" th:attr="aria-current=${scene == 'ask' ? 'page' : null}">
+    <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span th:text="#{app.nav.ask}">Ask</span>
+  </a>
+  <a th:href="@{/alerts}" th:attr="aria-current=${scene == 'alerts' or scene == 'rules' ? 'page' : null}">
+    <svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg><span th:text="#{app.nav.alerts}">Alerts</span>
+  </a>
+</th:block>
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="sidebar">
   <aside class="sidebar">
-    <a class="wordmark" th:href="@{/}" aria-label="Market Desk home"><span class="brand-mark">m.</span><span>market desk<small>BY PRICEWATCH</small></span></a>
-    <nav class="main-nav" aria-label="Main navigation">
-      <p class="sidebar-label">SHOPPING</p>
-      <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Discover</a>
-      <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>My list</a>
-      <a th:href="@{/saved}" th:attr="aria-current=${scene == 'saved' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg>Saved</a>
-      <a th:href="@{/budget}" th:attr="aria-current=${scene == 'budget' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>Budget</a>
-      <p class="sidebar-label">ASSISTANCE</p>
-      <a th:href="@{/alerts}" th:attr="aria-current=${scene == 'alerts' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Alerts</a>
-      <a th:href="@{/reminders}" th:attr="aria-current=${scene == 'reminders' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Reminders</a>
-      <a th:href="@{/planned/ask}" th:attr="aria-current=${scene == 'planned' and feature == 'ask' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>Ask<span class="planned-tag">Planned</span></a>
-      <p class="sidebar-label">APP</p>
-      <a class="data-nav-link" th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span>Price data &amp; updates</span></a>
+    <a class="wordmark" th:href="@{/}" th:attr="aria-label=#{app.home}"><span class="brand-mark">m.</span><span>market desk<small>BY PRICEWATCH</small></span></a>
+    <nav class="main-nav" th:attr="aria-label=#{app.nav.main}">
+      <th:block th:replace="~{fragments/navigation :: destinations}"></th:block>
+      <a class="settings-destination" th:href="@{/settings}"
+         th:attr="aria-current=${scene == 'settings' or scene == 'data' or scene == 'preferences' or scene == 'personal' ? 'page' : null}">
+        <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><span th:text="#{app.scene.settings}">Settings</span>
+      </a>
     </nav>
-    <div class="sidebar-bottom">
-      <p><span class="local-dot"></span>One local user<small>No account · saved on this device</small></p>
-    </div>
   </aside>
 </th:block>
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="mobile-navigation">
-  <nav class="mobile-nav" aria-label="Mobile navigation">
-    <a th:href="@{/}" th:attr="aria-current=${scene == 'discover' or scene == 'compare' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Discover</a>
-    <a th:href="@{/list}" th:attr="aria-current=${scene == 'list' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>My list</a>
-    <a th:href="@{/data}" th:attr="aria-current=${scene == 'data' ? 'page' : null}"><svg class="icon" aria-hidden="true"><use href="#i-data"/></svg>Price data</a>
-    <details class="mobile-more">
-      <summary th:classappend="${scene == 'planned' or scene == 'saved' or scene == 'alerts' or scene == 'budget' or scene == 'reminders' ? ' current' : ''}"><span aria-hidden="true">•••</span>More</summary>
-      <div class="more-destinations">
-        <a th:href="@{/saved}">Saved</a>
-        <a th:href="@{/budget}">Budget</a>
-        <a th:href="@{/alerts}">Alerts</a>
-        <a th:href="@{/reminders}">Reminders</a>
-        <a th:href="@{/planned/ask}">Ask <small>Planned</small></a>
-      </div>
-    </details>
+  <nav class="mobile-nav" th:attr="aria-label=#{app.nav.mobile}">
+    <th:block th:replace="~{fragments/navigation :: destinations}"></th:block>
   </nav>
 </th:block>
+<a xmlns:th="http://www.thymeleaf.org" th:fragment="settings-gear" class="mobile-settings"
+   th:href="@{/settings}" th:attr="aria-label=#{app.scene.settings}">
+  <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
+</a>

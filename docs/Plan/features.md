@@ -40,8 +40,8 @@ This table replaces the old difficulty rankings and separate feature legend.
 | F2 | Compare retailer listings | R02; R04 remains conditional. Compare the selected exact product and pack. Show ties and missing listings. |
 | F3 | Target-price and price-drop alerts | R21. Two separate rules: a target needs a current price; a drop needs an earlier price for the same product/retailer. |
 | F4 | Product-type target alerts | Possible extension of R21. Not a separate confirmed scope row. Agree the category and price rule before implementing it. |
-| F5 | Quiet hours, repeat prevention, and snooze | R23. Define event and repeat rules before coding. |
-| F6 | Morning summary | R26. Inside the active app first. Set timing and missed-run behaviour before coding. |
+| F5 | Repeat prevention and snooze | R23. Keep alert occurrence checks and snooze. Quiet hours are retired. |
+| F6 | Morning summary | R26. Retired. Existing summary records remain exportable. |
 | F7 | Saved recurring shopping lists | R27. Product, quantity, and checked state persist across restart. |
 | F8 | Per-item lowest listed prices and list total | R28. Use quantities; identify retailers and incomplete totals. This is not R06's full-store basket comparison. |
 | F9 | Planned weekly/monthly budget and warnings | R30. Label planned costs; actual spending needs separate purchase entries. |
@@ -54,7 +54,7 @@ This table replaces the old difficulty rankings and separate feature legend.
 | F16 | View, export, and delete local personal data | R45. List sharing must not export all personal data. |
 | F17 | App text and product labels in three languages | R46. The JSON supplies product labels; app screens still need translations. |
 | F18 | High-contrast, easy-to-read display | R47. Check text, controls, focus, and meaning without colour. |
-| F19 | Read-only saved-list review offline | R48. Data must be on the viewing device; remote price refresh and AI are off. |
+| F19 | Offline Cart checklist | R48. A standalone HTML copy opens without the app and allows temporary checklist, quantity, retailer, and budget edits. |
 | F20 | Selected-product history collection | Supports R10, R14, R21-R22, R35. Use separate product/pack/retailer records; collect only while the app runs. |
 | F21 | Price history charts | R10. Show available dates and gaps, not an invented 30/90-day series. |
 | F22 | Source and retrieval/source dates | R14 is tracked-only. A general saved-data age label does not imply tracking. |
@@ -79,29 +79,29 @@ J04 completes the first milestone. UI work can start as a small sketch while J01
 
 ## 5. Following baseline jobs
 
-**Current milestone: J05–J08 in issue #17, locally implemented and checked; review/merge pending.** Read the
+**J05–J08 in issue #17 formed the previous milestone.** Read the
 [milestone execution plan](tracking-alerts-budgets-reminders-j05-j08.md) before
 assigning or implementing any of these jobs. It defines workstreams, shared
 contracts, the D01–D07 rules agreed on 6 November 2026, and combined completion checks. The issue
 can use separate linked PRs; grouping jobs does not remove their dependencies.
-J09–J12 remain later work. Conditional scope rows keep their existing conditions.
+The [issue #21 workflow checks](issue-21-workflow-checks.md) cover J09–J12.
+Conditional scope rows keep their existing conditions.
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
-| J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; stopping tracking stops new collection without unsaving the product | J01-J04 |
-| J06 | In-app target/drop alerts, quiet hours, snooze, and summary | One current price can meet a target; a drop uses a stated earlier price; repeat imports do not repeat an event; closed-app periods are not reported as delivered alerts | J05 |
+| J05 | Wishlist and all-retailer tracking for saved packs | Saving tracks each retailer for the exact pack; accepted live refreshes enroll new retailers; removing a product stops collection and retains earlier observations | J01-J04 |
+| J06 | In-app price alerts and snooze | One target covers all retailers for a saved pack. One event groups every qualifying retailer. A later lowest known price above the target rearms it. Existing retailer-specific rules stay editable. | J05 |
 | J07 | List totals, planned budgets, and category totals | Preserve explicit retailer choices; Automatic lowest applies only in that mode; quantities affect totals; missing prices keep the result incomplete; estimates are not actual spending | J04 |
-| J08 | User-set reminders, add-to-list, clear, and snooze | Reminders run only in the active app; actions set the agreed next due date and preserve product/quantity | J04, J06 |
+| J08 | Time reminders with shared alert history | Edit or delete a reminder in item rules. One entry appears per due occurrence while the app is running. Dismissal schedules the next reminder and keeps its history. | J04, J06 |
 | J09 | Text chat using checked search/comparison operations | The answer uses checked product, retailer, and amount; unclear requests ask for a choice; AI failure still leaves the normal comparison usable | J03 |
-| J10 | Separate-copy list sharing | Export and import a chosen list; preserve product/quantity/checked state; invalid input leaves existing lists unchanged | J04 |
-| J11 | Read-only saved-list view without a connection | Save on the viewing device, disconnect, and reopen the list; no fresh-price or remote-chat claim; saved amounts show their age | J04 |
+| J10 | Separate-copy list sharing | Transfer a chosen list as versioned JSON. Preserve products, quantities, checked states, and retailer choices. Invalid input leaves existing lists unchanged. | J04 |
+| J11 | Standalone offline Cart checklist | Download HTML with saved prices and retrieval time. Check items and recalculate costs in the open file with the app stopped and network disconnected. | J10 |
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
 Within this milestone, J05 and J07 can proceed in parallel under the agreed
 D01–D07 rules. J06 follows J05; J08 uses the saved list and J06's
 agreed notification behaviour. Integrate and check the four jobs together before
 closing the issue. J09 does not need history, but is outside this milestone.
-J10's transfer format remains a later decision.
 
 Use the [agreed decision register](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
 for retention, periods, target/drop rules, repeat reset, timing, budgets, and
@@ -109,7 +109,10 @@ reminders. Agents must not each choose different rules. The
 [feasibility review](../feasibility-review-simple.md#5-open-decisions) separates
 these settled milestone rules from questions that remain for later work.
 
-Background device/cloud notifications, offline editing, and price prediction are not part of these jobs.
+Background device/cloud notifications, syncing offline edits to the Cart, and price prediction are future work.
+
+The current branch has implemented J09–J12. See the [shopper workflow checks](issue-21-workflow-checks.md)
+and [dated test results](../Test/history.md) for the verified paths.
 
 ## 6. Implementation contracts
 
@@ -118,8 +121,10 @@ use the [J01–J04 implementation guide](../implementation-baseline-j01-j04.md).
 For current J05–J08 routes, records, operations, and limits, use the
 [extension implementation guide](../implementation-j05-j08.md). The
 [milestone plan](tracking-alerts-budgets-reminders-j05-j08.md#shared-records-and-operations)
-defines its approved rules and acceptance checks. J09 chat contracts remain later work.
-App code must search and calculate before sending checked facts to an LLM.
+defines its approved rules and acceptance checks. The [setup guide](../SETUP.md)
+describes the current chat, sharing, offline, display, personal-data and history workflows.
+Ask uses the configured provider to interpret questions. The app searches and
+calculates the answer from accepted listings.
 
 ## 7. Checks and current state
 
@@ -134,8 +139,10 @@ J04 includes the minimum effective-price subtotal needed to review the list.
 This branch now adds J05–J08 wishlist/tracking, alerts, planned budgets/category
 totals, and reminders. Local validation on 6 November passed 86 Java tests,
 20 browser scenarios and an old-to-new database upgrade check; use the
-[test catalogue](../Test/test-case-catalog.md) for current evidence. AI chat,
-list transfer, offline reopening, and full UI translation remain J09–J12 work.
-Neither a working screen nor the earlier baseline test results close issue #17.
+[test catalogue](../Test/test-case-catalog.md) for the latest local results.
+The Market Desk redesign adds the retailer chart, independent price and time
+rules, combined price-and-time rules, and one Alerts history. Quiet hours and
+scheduled summaries are retired.
+See the [setup guide](../SETUP.md) and [dated test results](../Test/history.md).
 
 Data inspection was completed separately: see the [JSON sample check](data-sample-review.md). No baseline job above is marked complete by that download.

@@ -4,6 +4,254 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## J09–J12 PR evidence — 21 November 2026
+
+- Official PlantUML 1.2026.9 checked both J09–J12 sequences and exported
+  SVG and PNG files. The PNGs were visually reviewed.
+- The preview set combines five supplied desktop captures with three
+  mobile captures from the controlled Chrome workflows.
+
+## Settings sections and back controls — 21 November 2026
+
+- 153 Maven tests, 22 Chrome shopper scenarios, and 13 Chrome milestone
+  scenarios passed. The database upgrade and restart checks passed.
+- All four desktop Settings links reached the intended scroll offset and
+  respected reduced motion. At 375 px, each submenu returned through its
+  arrow. The display switch worked with pointer and keyboard input.
+- Back arrows revealed the destination name on hover and focus. Returning
+  from a comparison preserved the originating Cart or Wishlist.
+
+## Interactive offline Cart and pinned list summary — 21 November 2026
+
+- 152 Maven tests, 21 Chrome shopper scenarios, and 13 Chrome milestone
+  scenarios passed. The file database upgrade and restart checks passed.
+- The standalone HTML recalculated quantities, retailer prices, and budget
+  with the server stopped and Chrome offline. It made no HTTP requests.
+  The desktop Cart summary stayed in view while scrolling and kept its
+  expanded controls reachable. The mobile summary followed the item list.
+
+## Named carts and Ask shopping tools — 21 November 2026
+
+- 152 Maven tests, 20 Chrome shopper scenarios, and 13 Chrome milestone
+  scenarios passed. The shopper suite used a controlled chat-provider fixture.
+- Chrome verified a named Cart, its shared budget comparison, Ask result
+  links, cancellation and confirmation, and a reminder drafted over two turns.
+- Live CityU DeepSeek checks returned a calculator card showing HK$30.00
+  for 15% of HK$200 and added the exact historical sample milk pack to a
+  named test cart. The packaged app used the Windows trust store.
+- The file database upgrade and restart preserved the existing cart, retailer
+  choice, checked state, and tracked observations.
+
+## Per-rule alert cards and saved switches — 21 November 2026
+
+- 142 Maven tests and 32 Chrome scenarios passed. Chrome checked the reminder
+  card's product, interval, and type. Pausing from Current rules persisted
+  in the product editor, and resuming returned the rule to On.
+- Older reminder and price-rule switches survived file database upgrade and
+  restart. Pausing a rule kept its history.
+
+## Alert rule editor and Wishlist actions — 21 November 2026
+
+- 139 Maven tests, 19 Chrome shopper scenarios, and 13 milestone scenarios
+  passed. Both Alert tabs render in all three supported languages.
+- Tests verified the shared editor, persisted switches, deletion with retained
+  history, single-fire and repeat scheduling, exact-trigger history groups,
+  and Wishlist action labels. The older-file upgrade preserved price targets
+  and history while allowing time-only events without price evidence.
+
+## Shared page styling and product navigation — 21 November 2026
+
+- 132 Maven tests and 19 Chrome shopper scenarios passed. Chrome checked
+  card-area navigation, return links to Cart and Wishlist, and the warm
+  background and serif headings at four viewport widths. Cart product names
+  retained their sans-serif font.
+
+## Cart completion and catalogue colors — 21 November 2026
+
+- 132 Maven tests, 19 Chrome shopper scenarios, 12 milestone scenarios, and
+  the Cart restart check passed. Chrome verified the product return link,
+  locked completed controls, and reopening imported lists from List actions.
+- Discover's browser check verified that category colors survive filtering,
+  with neutral category art in high contrast.
+
+## Discover and Cart layout — 20 November 2026
+
+- Maven packaging passed 132 tests with no skips. Chrome passed 19 shopper
+  scenarios and 12 milestone scenarios. The file-backed upgrade preserved
+  retailer choice, quantity, done state, and tracked prices.
+- Chrome checked the desktop sticky budget rail, responsive Cart, keyboard
+  quantity edits, done and undo, and the List actions panel at phone width.
+  JSON sharing and the offline checklist still passed. The preview captures
+  use the checked sample and a saved weekly budget.
+
+## Flat palette, shopping icons, and alert conditions — 20 November 2026
+
+- The UI stage passed 124 Maven tests, 19 Chrome shopper scenarios, 11 Chrome
+  milestone scenarios, and a file-backed Cart restart. The chart checks covered
+  pointer and keyboard inspection, retailer visibility, and recorded gaps.
+- The final Maven build passed 130 tests with no skips. The controlled clock
+  covered a combined occurrence waiting for a qualifying live refresh, grouped
+  retailer evidence, rollback, and a concurrent refresh. The older H2 schema
+  reopened with its price target and event history intact.
+- Chrome passed 19 shopper and 12 milestone scenarios. These include the named
+  icon controls and touch targets, independent price and combined rule editing,
+  personal-data export and reset, and existing independent time reminders. The
+  older JAR to current JAR check preserved the Cart and tracked history.
+
+## Mint and coral glass theme — 20 November 2026
+
+- The final build passed 123 Maven tests and 19 Chrome shopper scenarios,
+  including mobile chat-history selection and transcript spacing. The mint
+  and coral build also passed 11 milestone scenarios and the Cart restart test.
+
+## Market Desk visual refresh — 20 November 2026
+
+- Maven packaging passed 123 tests. Chrome passed 19 shopper and 11
+  milestone scenarios. The Discover check verifies the artwork, mobile
+  keyboard search, and Cart shortcut. The file-backed Cart restart also passed.
+
+## Market Desk redesign · Retailer history and Alerts — 20 November 2026
+
+- The chart passed 14 focused Maven tests and the Chrome shopper workflow.
+  It shows only recorded observations and separates unknown prices and
+  tracking periods. The 30-day and retailer filters update the chart and
+  table together. Chrome checked English and both Chinese variants.
+- The final build passed **123 Maven tests**, **18 Chrome shopper
+  scenarios**, and **11 Chrome milestone scenarios**. The fixture covered
+  grouped price targets and rearming, existing retailer drop evidence, time
+  rule editing, and the combined Alerts screen. Controlled-clock tests check
+  one due reminder occurrence and preserved history after dismissal.
+- The final build also opened a copy of a file-backed H2 database made by
+  the earlier Cart build. It kept Cart quantities and retailer choices, the
+  reminder, the old retailer rule and event, and price observations. The
+  next accepted live fixture enrolled missing retailers.
+
+## Market Desk redesign · Navigation and Cart — 19 November 2026
+
+- Navigation and Settings passed the focused controller checks and Chrome
+  shopper and milestone suites. The suite opens Settings with the keyboard,
+  checks the mobile tabs and reduced motion, and saves a budget in Personal data.
+- Cart passed 33 focused Maven tests, 17 Chrome shopper scenarios and
+  11 Chrome milestone scenarios. The second app imported an editable JSON
+  copy. Chrome then downloaded an HTML checklist from a separate fixture app,
+  stopped that app, disabled the browser's network and checked another item
+  in the file.
+
+## Market Desk redesign · Wishlist — 19 November 2026
+
+- The H2 upgrade and lifecycle suites passed 13 focused tests. The upgrade
+  kept old price history and retailer rules and enrolled new retailers from
+  live imports. The browser checks passed 18 shopper and 11 milestone
+  scenarios, including mobile row actions and batch additions that preserve
+  the quantity and retailer for an existing Cart item.
+
+## DeepSeek catalogue tools — 19 November 2026
+
+- Maven packaging passed **114 Java tests**. The provider fixture verified
+  natural replies, matched tool call IDs, invalid args and the tool limit.
+  Catalogue checks covered ranked results, exact packs, bilingual retailers,
+  unknown prices and retrieval times. Chat export includes checked rows.
+- Chrome passed **17 shopper scenarios** and **11 milestone scenarios**. The
+  Ask workflow checked send and retry, a natural Chinese reply, cheapest-pack
+  search, the exact-pack picker, history, and mobile layout.
+- Live CityU in Chrome produced a Traditional Chinese introduction, found
+  the 236 mL sample milk for HK$7.50 at AEON, and checked the same pack for
+  HK$12.00 at `惠康 WELLCOME`. The first live run exposed a bilingual
+  retailer lookup failure. The rerun passed after the alias fix.
+
+## Required DeepSeek interpretation — 19 November 2026
+
+- Maven packaging passed **107 Java tests**. The focused checks covered missing
+  credentials, unusable provider output, and a retry of the accepted question.
+- Chrome passed **16 shopper scenarios** and **11 milestone scenarios**. The
+  provider fixture received both an introduction request and a retailer
+  follow-up. A simulated outage kept the question for retry, and the product
+  comparison page remained available.
+- The CityU preview interpreted an introduction request, a milk search, and a
+  Wellcome follow-up. Prices came from the historical sample catalogue.
+
+## Ask message delivery and conversational prompts — 18 November 2026
+
+- Maven packaging passed **105 Java tests**. The focused turn checks verified
+  that Ask saves the shopper's message before calling the provider and
+  requests the reply once, even if two requests arrive together.
+- Chrome opened Ask in a fresh session and held the reply request. The sent
+  bubble was already visible and present in a separate server read. The user
+  could type the next draft while waiting. The checks covered send failure,
+  interrupted replies, and retry without a second shopper bubble.
+- The CityU preview verified the two-stage flow with “who are u,” a natural
+  milk question, and a Wellcome follow-up for the same pack. The preview used
+  historical sample prices.
+
+## Ask conversation and layout fixes — 18 November 2026
+
+- Focused Java tests reproduced three failures. An unmatched search cleared
+  the selected pack, incomplete provider output cleared pending choices, and
+  a stale chat ID dropped the submitted question. All 18 focused tests passed
+  after the fixes. Maven packaging passed all **102 Java tests**.
+- Chrome passed **15 shopper scenarios** and **11 milestone scenarios**.
+  The Ask check held the first send to observe pending feedback, restored
+  the draft after a failed send, and retried. It reopened the original chat
+  at 375 by 667 px with at least three messages partly or fully in view and
+  the composer above mobile navigation.
+- The CityU DeepSeek preview answered two separate sample chats in one browser
+  session. Reopening the first chat preserved the exact pack for a retailer
+  follow-up. The test used the historical sample catalogue.
+
+## J10–J12 combined validation — 18 November 2026
+
+- JDK 21 Maven package passed **101 Java tests** with no failures, errors, or
+  skips. Focused checks covered transfer validation, the offline session guard,
+  both Chinese variants, retained history, and personal reset. An injected
+  foreign-key failure rolled back the reset and kept the session intact.
+- Chrome passed **15 shopper scenarios** and **11 milestone scenarios**.
+  The shopper suite used the 236 mL milk pack across Ask, sharing, offline
+  review, language switching, and history. It checked keyboard operation and
+  contrast on desktop and at 375 px, and confirmed a known price stayed on one
+  line at that width. The personal-data flow exported each record type, kept
+  records on cancellation, and cleared them after confirmation while the
+  accepted catalogue remained available.
+- The Chrome persistence check upgraded a temporary H2 file from the
+  J01–J08 build at `219cc5b`. The catalogue, default list, two checked packs,
+  pinned JASONS choice, product-wide tracking, and recorded price survived.
+- The browser checks used a controlled price feed and local Ask fallback.
+  See the earlier J09 record for the live CityU check. The J10–J12 PlantUML
+  sequence passed syntax checking, SVG and PNG rendering, and visual review.
+
+## J10 sharing and J11 offline review — 18 November 2026
+
+The J10 focused Java checks passed. Chrome transferred a versioned file
+between two isolated apps, retained a checked item and a pinned retailer,
+showed Unknown without local prices, and saved independent edits. Invalid
+JSON left the existing lists intact.
+
+The J11 focused Java suite passed 16 checks. Chrome reopened the imported
+list with non-local browser requests blocked. It verified the cached estimates
+and retrieval time, tested server rejection of edits, refresh, and chat, and
+restored editing after exit. All 12 Chrome scenarios passed at this stage.
+
+## J09 chat layout and session history — 17 November 2026
+
+Maven packaging passed all 90 Java tests. The Chrome baseline suite passed
+10 scenarios, including the new Ask workflow. The shopper sent a question,
+followed up at Wellcome, started a second chat, and reopened the first on
+a 375 px viewport. After shortening the mobile chat panel, a Chrome rerun
+verified the Send button sits above the bottom navigation.
+The browser used the historical sample and disabled the provider key.
+Desktop and mobile screenshots are under `target/browser-checks/`.
+
+## J09 conversation check — 17 November 2026
+
+The packaged app was started on loopback with an isolated in-memory catalogue,
+the checked historical sample and the CityU model `CS3383/DeepSeek-V4-Flash`.
+The live flow asked which product “How much is it?” referred to, found AEON
+at HK$7.50 for Kowloon Dairy's 236 mL fresh milk, and answered a follow-up for
+the same pack at Wellcome with HK$12.00. Those prices came from the sample.
+
+Java initially rejected the TLS chain. The Windows trusted certificate store
+resolved the connection while preserving certificate and hostname verification.
+See the [setup guide](../SETUP.md) for the launch options.
+
 ## PR #18 review follow-up — 12 November 2026
 
 - Maven package on JDK 21 with the Byte Buddy startup agent passed 88 tests

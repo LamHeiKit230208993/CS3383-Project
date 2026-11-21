@@ -2,8 +2,9 @@ package com.pricewatch.web;
 
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.notifications.AlertService;
-import com.pricewatch.notifications.NotificationPolicy;
+import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.tracking.TrackingService;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,68 +18,55 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalTime;
-import java.util.Objects;
+import java.util.List;
+
+import static com.pricewatch.web.MilestoneMessages.inputError;
+import static com.pricewatch.web.MilestoneMessages.text;
 
 @Controller
 public class TrackingController {
     private final CatalogService catalog;
     private final TrackingService tracking;
     private final AlertService alerts;
-    private final NotificationPolicy notificationPolicy;
+    private final ShoppingService shopping;
     private final HelloController format;
-    private final Clock clock;
+    private final MessageSource messages;
 
     public TrackingController(CatalogService catalog, TrackingService tracking, AlertService alerts,
-                              NotificationPolicy notificationPolicy, HelloController format, Clock appClock) {
+                              HelloController format,
+                              MessageSource messages, ShoppingService shopping) {
         this.catalog = catalog;
         this.tracking = tracking;
         this.alerts = alerts;
-        this.notificationPolicy = notificationPolicy;
         this.format = format;
-        this.clock = appClock;
+        this.messages = messages;
+        this.shopping = shopping;
     }
 
     @GetMapping("/saved")
     public String saved(@RequestParam(required = false) String code, Model model) {
         model.addAttribute("importStatus", catalog.status());
         model.addAttribute("format", format);
-        model.addAttribute("savedProducts", tracking.savedProducts());
-        var allRetailers = tracking.allRetailersProducts();
-        model.addAttribute("allRetailersProducts", allRetailers);
-        model.addAttribute("allRetailerCodes", allRetailers.stream().map(TrackingService.AllRetailersView::code).toList());
-        model.addAttribute("trackingPeriods", tracking.trackingPeriods());
-        if (code != null && !code.isBlank()) {
+        var products = tracking.savedProducts();
+        model.addAttribute("savedProducts", products);
+        model.addAttribute("openCode", code);
+        if (code != null && !code.isBlank() && products.stream().noneMatch(saved -> saved.product().code().equals(code))) {
             try {
                 model.addAttribute("productToSave", catalog.find(code));
             } catch (IllegalArgumentException exception) {
-                model.addAttribute("productLookupError", exception.getMessage());
+                model.addAttribute("productLookupError", text(messages, "milestone.error.productMissing"));
             }
         }
-        return screen(model, "saved", "Saved products & tracking");
-    }
-
-    @GetMapping("/alerts")
-    public String alerts(Model model) {
-        var now = clock.instant();
-        alerts.processDue(now);
-        model.addAttribute("importStatus", catalog.status());
-        model.addAttribute("format", format);
-        model.addAttribute("alertEvents", alerts.events(now));
-        model.addAttribute("notificationSettings", notificationPolicy.settings());
-        model.addAttribute("trackingPeriods", tracking.trackingPeriods().stream()
-                .filter(period -> period.enabled()).toList());
-        return screen(model, "alerts", "Price alerts");
+        return screen(model, "saved", "Wishlist");
     }
 
     @PostMapping("/saved/save")
     public String save(@RequestParam String code, RedirectAttributes redirect) {
         try {
             tracking.save(code);
-            redirect.addFlashAttribute("notice", "Product saved to your wishlist.");
+            redirect.addFlashAttribute("notice", text(messages, "saved.notice.saved"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/saved";
     }
@@ -86,7 +74,20 @@ public class TrackingController {
     @PostMapping("/saved/remove")
     public String removeSaved(@RequestParam String code, RedirectAttributes redirect) {
         tracking.removeSaved(code);
-        redirect.addFlashAttribute("notice", "Product removed from your wishlist.");
+        redirect.addFlashAttribute("notice", text(messages, "saved.notice.removed"));
+        return "redirect:/saved";
+    }
+
+    @PostMapping("/saved/cart")
+    public String addToCart(@RequestParam(name = "codes", required = false) List<String> codes,
+                            RedirectAttributes redirect) {
+        if (codes == null || codes.isEmpty()) {
+            redirect.addFlashAttribute("error", text(messages, "wishlist.choose"));
+        } else {
+            var result = shopping.addMissingProducts(codes);
+            redirect.addFlashAttribute("notice", text(messages, "wishlist.added",
+                    result.added(), result.existing(), result.unavailable()));
+        }
         return "redirect:/saved";
     }
 
@@ -95,9 +96,9 @@ public class TrackingController {
                                 RedirectAttributes redirect) {
         try {
             tracking.start(code, retailerCode);
-            redirect.addFlashAttribute("notice", "Price tracking is on for " + retailerCode + ".");
+            redirect.addFlashAttribute("notice", text(messages, "saved.notice.started", retailerCode));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/saved";
     }
@@ -106,9 +107,9 @@ public class TrackingController {
     public String startAll(@RequestParam String code, RedirectAttributes redirect) {
         try {
             tracking.startAll(code);
-            redirect.addFlashAttribute("notice", "Tracking all retailers for this product, including future listings.");
+            redirect.addFlashAttribute("notice", text(messages, "saved.notice.startedAll"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/saved";
     }
@@ -117,9 +118,9 @@ public class TrackingController {
     public String stopAll(@RequestParam String code, RedirectAttributes redirect) {
         try {
             tracking.stopAll(code);
-            redirect.addFlashAttribute("notice", "Tracking stopped for all retailers. Saved history remains available.");
+            redirect.addFlashAttribute("notice", text(messages, "saved.notice.stoppedAll"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/saved";
     }
@@ -128,9 +129,9 @@ public class TrackingController {
     public String stopTracking(@RequestParam long trackingId, RedirectAttributes redirect) {
         try {
             tracking.stop(trackingId);
-            redirect.addFlashAttribute("notice", "Tracking stopped. Saved price history remains available.");
+            redirect.addFlashAttribute("notice", text(messages, "saved.notice.stopped"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/saved";
     }
@@ -139,9 +140,9 @@ public class TrackingController {
     public String deleteHistory(@RequestParam long trackingId, RedirectAttributes redirect) {
         try {
             tracking.deleteHistory(trackingId);
-            redirect.addFlashAttribute("notice", "Price history and its alerts were deleted.");
+            redirect.addFlashAttribute("notice", text(messages, "saved.notice.historyDeleted"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/saved";
     }
@@ -149,50 +150,51 @@ public class TrackingController {
     @PostMapping("/alerts/target")
     public String target(@RequestParam long trackingId,
                          @RequestParam(required = false) BigDecimal targetPrice,
+                         @RequestParam(required = false) String code,
                          RedirectAttributes redirect) {
         try {
             tracking.configureTarget(trackingId, targetPrice);
             redirect.addFlashAttribute("notice", targetPrice == null
-                    ? "Target price alert removed." : "Target price alert saved.");
+                    ? text(messages, "alerts.notice.targetRemoved") : text(messages, "alerts.notice.targetSaved"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
-        return "redirect:/alerts";
+        return ruleDestination(code, redirect);
     }
 
     @PostMapping("/alerts/drop")
     public String drop(@RequestParam long trackingId,
                        @RequestParam(defaultValue = "false") boolean enabled,
+                       @RequestParam(required = false) String code,
                        RedirectAttributes redirect) {
         try {
             tracking.configureDrop(trackingId, enabled);
             redirect.addFlashAttribute("notice", enabled
-                    ? "Price-drop alert enabled." : "Price-drop alert disabled.");
+                    ? text(messages, "alerts.notice.dropEnabled") : text(messages, "alerts.notice.dropDisabled"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
-        return "redirect:/alerts";
+        return ruleDestination(code, redirect);
     }
 
     @PostMapping("/alerts/settings")
-    public String settings(@RequestParam LocalTime quietStart, @RequestParam LocalTime quietEnd,
-                           @RequestParam LocalTime summaryTime, RedirectAttributes redirect) {
-        try {
-            notificationPolicy.update(quietStart, quietEnd, summaryTime);
-            redirect.addFlashAttribute("notice", "Alert timing settings saved.");
-        } catch (RuntimeException exception) {
-            redirect.addFlashAttribute("error", "Check the alert timing values and try again.");
-        }
+    public String retiredSettings() {
         return "redirect:/alerts";
+    }
+
+    private static String ruleDestination(String code, RedirectAttributes redirect) {
+        if (code == null) return "redirect:/alerts";
+        redirect.addAttribute("code", code);
+        return "redirect:/alerts/rules";
     }
 
     @PostMapping("/alerts/events/{eventId}/read")
     public String read(@PathVariable long eventId, RedirectAttributes redirect) {
         try {
             alerts.markRead(eventId);
-            redirect.addFlashAttribute("notice", "Alert marked as read.");
+            redirect.addFlashAttribute("notice", text(messages, "alerts.notice.read"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/alerts";
     }
@@ -201,9 +203,9 @@ public class TrackingController {
     public String snooze(@PathVariable long eventId, RedirectAttributes redirect) {
         try {
             alerts.snooze(eventId);
-            redirect.addFlashAttribute("notice", "Alert snoozed for 24 hours.");
+            redirect.addFlashAttribute("notice", text(messages, "alerts.notice.snoozed"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", inputError(messages, exception));
         }
         return "redirect:/alerts";
     }
@@ -213,8 +215,8 @@ public class TrackingController {
     public String badInput(Model model) {
         model.addAttribute("importStatus", catalog.status());
         model.addAttribute("format", format);
-        model.addAttribute("error", "Check the price, time, or tracking selection and try again.");
-        return screen(model, "error", "Check your input");
+        model.addAttribute("error", text(messages, "alerts.error.input"));
+        return screen(model, "error", text(messages, "error.input.title"));
     }
 
     private static String screen(Model model, String scene, String title) {

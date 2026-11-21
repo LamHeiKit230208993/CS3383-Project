@@ -2,12 +2,15 @@
 
 Source: [persistence-check.cjs](../../../src/test/browser/persistence-check.cjs).
 
+On the current Cart, the browser waits for the checkmark save before
+restarting. On older baseline builds, it uses the legacy Save changes form.
+
 ## Purpose and setup
 
-Verify an existing J01–J04 catalogue and shopping list survive reopening the
-same H2 file with the J05–J08 application. Use a saved baseline JAR, the newly
-packaged current JAR, JDK 21 and Playwright/Chrome. Set `BASELINE_JAR` to the
-old build, then run `npm run test:persistence`.
+Verify a catalogue and shopping list survive reopening an existing H2 file
+with the current app. Use a saved baseline JAR, the newly packaged current JAR,
+JDK 21 and Playwright/Chrome. Set `BASELINE_JAR` to the old build, then run
+`npm run test:persistence`. For J01–J08 to J12, also set `UPGRADE_TRACKING=1`.
 
 ## Steps and expected result
 
@@ -17,6 +20,12 @@ old build, then run `npm run test:persistence`.
    normal additive schema updates.
 3. Confirm the historical source status, one list item, JASONS selection, two
    packs, checked state and exact HK$25.00 line estimate remain.
+
+In tracking mode, the legacy app first loads the controlled loopback feed
+through live refresh. Save the milk to the wishlist and enable all-retailer
+tracking. After reopening the file, check that the source is still saved,
+all-retailer tracking is still active, and the history table includes the
+recorded HK$12.50 at JASONS.
 
 ## Limits
 

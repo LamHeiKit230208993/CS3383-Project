@@ -16,33 +16,47 @@ replenishment-reminder pages with a real browser and a local synthetic feed.
 
 ## Steps and expected results
 
-1. Import the synthetic live feed. Save one product to the wishlist and verify
-   that its first saved state does not start tracking. Start tracking it for a
-   retailer as a separate action.
-2. Set a target and a drop rule. Set quiet-hour start and end to `00:00`, which
-   disables the quiet window. Change the feed price and refresh it. The alert
-   page shows both the target and consecutive-price-drop events from the new
-   observation.
-3. Create a quantity and interval reminder for the second product. Add its
-   quantity to My list, then clear and snooze it. Adding does not clear the
-   reminder; clear recalculates its next interval; snooze changes the current
-   due time by 24 hours.
-4. Add the first product to My list and save a monthly budget. The displayed
-   known estimate and category totals reflect the current list prices.
+1. Import the synthetic live feed, save one exact pack to Wishlist, open the
+   row, and verify tracking is already visible in its history.
+2. Seed a legacy product-wide target and a retailer-specific drop rule through
+   their existing routes. Refresh with two qualifying prices.
+   Alerts shows one grouped target and the existing drop evidence.
+3. Seed an existing time reminder. Verify the Current rules card shows the
+   product, interval, and type. Pause it there and verify the product editor
+   shows the same Off state. Turn it back on, then edit and delete it in the
+   item editor. Also toggle an earlier retailer rule from Current rules.
+   The due occurrence, snooze, dismissal and retained history have separate
+   [controlled-clock checks](TC-REMINDER-001.md).
+4. Add both products to Cart and save a monthly budget in Personal data.
+   The displayed estimate reflects current Cart prices.
    Refresh a second lower tracked price with both items already in the list.
    The selected retailer stays pinned, the list and budget totals change, and
-   the still-qualifying target does not repeat.
-5. Send invalid reminder, target-price, and budget parameters. They return a
+   the still-qualifying target does not repeat. Raise the prices above the
+   target, cross the target again, and repeat the final refresh. Check there
+   are exactly two grouped events.
+5. Seed a second legacy price rule and a combined price-and-time rule for
+   the same pack. Edit the interval, verify the exported settings and the
+   first rule's existing history, then use the keyboard to open and delete the
+   combined rule at mobile width. A controlled server test checks what happens
+   when the combined occurrence is due.
+6. Open Set rules from Wishlist. Add a one-time price condition and a weekly
+   calendar condition in the same dialog. Check the saved time and recurrence.
+   Open the same editor from Current rules, switch the calendar rule off and
+   back on, then delete it. Trigger the one-time price alert with the fixture
+   feed and refresh again. Verify exactly one event and a completed, disabled
+   rule. Open the editor again from that History entry.
+7. Send invalid reminder, target-price, and budget parameters. They return a
    validation redirect or a client error; none returns HTTP 500.
-6. Advance the browser clock on a clean active page. It reloads after one minute.
-   Edit a reminder form and move focus away. Advance the clock and verify that
-   there are no navigations and that the entered value stays unchanged.
-7. Check `/saved`, `/alerts`, `/budget`, and `/reminders` at 375px and 1440px.
+8. Advance the browser clock on a clean Alerts page. It reloads after one minute.
+   Open the editor, enter a draft price, and move focus away from the form.
+   Advance the clock and verify that the page and draft survive.
+9. Check Wishlist, both Alerts views, Personal data's Budget card, and item rules at
+   375px and 1440px, including the links from the old routes.
    Each route has one main heading and no horizontal overflow; short alert prices
    stay on one line. The script saves
    desktop/mobile screenshots and `app.log` to `target/browser-milestone/`.
-8. Open all four pages with JavaScript disabled and submit a budget change.
-   Server-rendered pages and native form validation/redirects still work.
+10. Open the milestone pages without JavaScript and submit a budget change.
+    The Wishlist rules link opens the server-rendered editor.
 
 ## Automated source
 

@@ -29,7 +29,7 @@ results remain in the catalogue as history.
 
 Refinement checks add ranked Matches/Related tabs and an exact source-category
 filter, including URL state. Retailer forms must submit the explicit or automatic
-choice and render the selected price on My list. They must retain the saved
+choice and render the selected Cart option and price. They must retain the saved
 choice after refresh makes its price unavailable, show an incomplete subtotal,
 and label original offers as not calculated. These describe expected current
 behaviour; final run results belong in the dated catalogue record.

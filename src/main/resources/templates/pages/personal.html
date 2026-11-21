@@ -1,0 +1,141 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" class="settings-detail">
+  <th:block th:if="${confirmingReset}">
+    <header class="page-heading settings-detail-heading">
+      <th:block th:replace="~{fragments/back-link :: link(${resetFromSettings} ? @{/settings#personal-data} : @{/personal-data},#{personal.title})}"></th:block>
+      <h1 th:text="#{personal.resetTitle}">Reset personal data</h1>
+    </header>
+    <div class="notice error" role="alert" th:if="${personalError}" th:text="#{${personalError}}"></div>
+  </th:block>
+  <th:block th:unless="${confirmingReset}">
+    <div class="settings-detail-back">
+      <th:block th:replace="~{fragments/back-link :: link(@{/settings},#{app.scene.settings})}"></th:block>
+    </div>
+    <th:block th:replace="~{pages/personal :: settings-panel}"></th:block>
+  </th:block>
+  <section class="panel preferences-panel" th:if="${confirmingReset}" aria-labelledby="personal-confirm">
+    <h2 id="personal-confirm" th:text="#{personal.confirmTitle}">Permanently delete saved records?</h2>
+    <p th:text="#{personal.resetDetail}">This clears your lists, wishlist, tracking and history, alerts, reminders, budgets, preferences and chats in this session.</p>
+    <p th:text="#{personal.resetKeeps}">The price catalogue and its import details remain available. Downloaded and shared copies remain on the devices that received them.</p>
+    <form th:action="@{/personal-data/reset}" method="post">
+      <input th:if="${resetFromSettings}" type="hidden" name="fromSettings" value="true">
+      <label class="check-label">
+        <input type="checkbox" name="confirm" value="true" required>
+        <span th:text="#{personal.confirmChoice}">I understand that this deletes my local personal data.</span>
+      </label>
+      <div class="inline-actions">
+        <a class="button secondary" th:href="${resetFromSettings} ? @{/settings#personal-data} : @{/personal-data}"
+           th:text="#{personal.cancel}">Cancel</a>
+        <button class="button danger" type="submit" th:text="#{personal.confirm}">Confirm reset</button>
+      </div>
+    </form>
+  </section>
+</section>
+
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="settings-panel" class="panel settings-card settings-personal"
+         id="personal-data" tabindex="-1" aria-labelledby="personal-title">
+  <header class="settings-card-heading">
+    <span class="settings-card-icon personal-icon"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></span>
+    <div>
+      <h1 id="personal-title" th:if="${scene == 'personal'}" th:text="#{personal.title}">Personal data</h1>
+      <h2 id="personal-title" th:unless="${scene == 'personal'}" th:text="#{personal.title}">Personal data</h2>
+      <p class="helper" th:text="#{personal.intro}">View the records saved on this device.</p>
+    </div>
+  </header>
+
+  <div class="notice" role="status" th:if="${personalFeedback}" th:text="#{${personalFeedback}}"></div>
+  <dl class="settings-records" th:attr="aria-label=#{personal.records}">
+    <div>
+      <dt th:text="#{personal.lists}">Shopping lists</dt>
+      <dd th:text="#{personal.listCount(${overview.lists},${overview.listEntries})}"></dd>
+    </div>
+    <div>
+      <dt th:text="#{personal.wishlist}">Wishlist</dt><dd th:text="${overview.wishlist}"></dd>
+    </div>
+    <div>
+      <dt th:text="#{personal.tracking}">Tracking</dt>
+      <dd th:text="#{personal.trackingCount(${overview.tracking},${overview.observations})}"></dd>
+    </div>
+    <div>
+      <dt th:text="#{personal.alerts}">Alerts</dt><dd th:text="${overview.alerts}"></dd>
+    </div>
+    <div>
+      <dt th:text="#{personal.reminders}">Reminders</dt><dd th:text="${overview.reminders}"></dd>
+    </div>
+    <div>
+      <dt th:text="#{personal.chats}">Chats in this session</dt><dd th:text="${chatCount}"></dd>
+    </div>
+  </dl>
+  <div class="settings-card-actions">
+    <a class="button secondary" aria-describedby="settings-export-help" th:href="@{/personal-data/export}">
+      <svg class="icon" aria-hidden="true"><use href="#i-download-list"/></svg><span th:text="#{personal.export}">Export personal data</span>
+    </a>
+    <a class="button secondary" th:href="@{/alerts}" th:text="#{app.scene.alerts}">Alerts</a>
+  </div>
+  <p class="helper" id="settings-export-help" th:text="#{personal.exportHelp}"></p>
+  <div class="settings-danger">
+    <div>
+      <strong th:text="#{personal.resetTitle}">Reset personal data</strong>
+      <p class="helper" th:text="#{personal.resetSummary}"></p>
+    </div>
+    <a class="button secondary" th:href="${scene == 'settings'} ? @{/personal-data/reset(fromSettings=true)} : @{/personal-data/reset}"
+       th:text="#{personal.reviewReset}">Review reset</a>
+  </div>
+
+  <section id="budget" tabindex="-1" class="settings-budget" aria-labelledby="budget-title">
+    <header class="settings-card-heading">
+      <span class="settings-card-icon"><svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg></span>
+      <div>
+        <h2 id="budget-title" th:text="#{budget.title}">Budget</h2>
+        <p class="helper" th:text="#{budget.limitHelp}"></p>
+      </div>
+    </header>
+    <div class="notice" role="status" th:if="${budgetNotice}" th:text="${budgetNotice}"></div>
+    <div class="notice error" role="alert" th:if="${budgetError}" th:text="${budgetError}"></div>
+    <div class="settings-budget-grid">
+      <div>
+        <form class="settings-budget-form" th:action="@{/personal-data/budget}" method="post">
+          <input th:if="${scene == 'settings'}" type="hidden" name="fromSettings" value="true">
+          <div>
+            <label for="budget-period" th:text="#{budget.period}">Plan period</label>
+            <select id="budget-period" name="period" required>
+              <option value="WEEKLY" th:selected="${budgetFormPeriod == 'WEEKLY'}" th:text="#{budget.period.WEEKLY}">Weekly</option>
+              <option value="MONTHLY" th:selected="${budgetFormPeriod == 'MONTHLY'}" th:text="#{budget.period.MONTHLY}">Monthly</option>
+            </select>
+          </div>
+          <div>
+            <label for="budget-limit" th:text="#{budget.amount}">Planned limit (HKD)</label>
+            <input id="budget-limit" name="limit" type="number" min="0" max="999999999999999.9999" step="0.0001"
+                   inputmode="decimal" autocomplete="off" required th:value="${budgetFormLimit}">
+          </div>
+          <button class="button primary" type="submit" th:text="#{budget.submit}">Save budget</button>
+        </form>
+        <dl class="settings-budget-estimate">
+          <dt th:text="${budget.unknownItemCount > 0} ? #{budget.subtotal} : #{budget.estimatedCost}"></dt>
+          <dd th:text="${format.money(budget.knownSubtotal)}"></dd>
+        </dl>
+        <p class="warning" th:if="${budget.state.name() == 'OVER_LIMIT'}" th:text="#{budget.over}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'OVER_LIMIT' and budget.unknownItemCount > 0}"
+           th:text="#{budget.overUnknown(${budget.unknownItemCount})}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'UNKNOWN_TOTAL'}" th:text="#{budget.unknownTotal}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'WITHIN_LIMIT'}" th:text="#{budget.within}"></p>
+        <p class="helper" th:if="${budget.state.name() == 'NOT_SET'}" th:text="#{budget.notSet}"></p>
+        <p class="warning" th:if="${budget.unknownItemCount > 0 and budget.state.name() == 'NOT_SET'}"
+           th:text="#{budget.unknownItems(${budget.unknownItemCount})}"></p>
+      </div>
+      <div class="settings-budget-meter" th:if="${budget.limitAmount != null}">
+        <div class="settings-budget-ring" aria-hidden="true"
+             th:classappend="${budget.state.name() == 'OVER_LIMIT'} ? 'is-over' : ''"
+             th:style="|--used: ${budget.progressPercent()}%|">
+          <div>
+            <strong th:text="|${budget.progressPercent()}%|"></strong>
+            <span th:text="#{shop.budgetProgress}">Budget used</span>
+          </div>
+        </div>
+        <span class="sr-only" th:text="|#{shop.budgetProgress} · ${budget.progressPercent()}%|"></span>
+        <p class="helper" th:text="|${format.money(budget.knownSubtotal)} / ${format.money(budget.limitAmount)}|"></p>
+        <p class="helper" th:if="${budget.state.name() == 'WITHIN_LIMIT'}" th:text="#{shop.budgetLeft(${format.money(budget.balance())})}"></p>
+        <p class="warning" th:if="${budget.state.name() == 'OVER_LIMIT'}" th:text="#{shop.budgetOver(${format.money(budget.balance().negate())})}"></p>
+      </div>
+    </div>
+  </section>
+</section>

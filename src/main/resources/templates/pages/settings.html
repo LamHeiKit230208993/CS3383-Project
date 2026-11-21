@@ -1,0 +1,43 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" class="settings-hub" aria-labelledby="settings-heading">
+  <header class="page-heading">
+    <h1 id="settings-heading" th:text="#{app.scene.settings}">Settings</h1>
+  </header>
+  <div class="settings-layout">
+    <nav class="settings-section-nav" th:attr="aria-label=#{app.scene.settings}">
+      <a href="#personal-data" aria-current="location">
+        <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><span th:text="#{personal.title}">Personal data</span>
+      </a>
+      <a href="#budget">
+        <svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg><span th:text="#{budget.title}">Budget</span>
+      </a>
+      <a href="#display">
+        <svg class="icon" aria-hidden="true"><use href="#i-display"/></svg><span th:text="#{app.scene.preferences}">Display settings</span>
+      </a>
+      <a href="#price-data">
+        <svg class="icon" aria-hidden="true"><use href="#i-data"/></svg><span th:text="#{app.scene.data}">Price data</span>
+      </a>
+    </nav>
+    <div class="settings-content">
+      <th:block th:replace="~{pages/personal :: settings-panel}"></th:block>
+      <th:block th:replace="~{pages/preferences :: settings-panel}"></th:block>
+      <div class="settings-last"><th:block th:replace="~{pages/data :: settings-panel}"></th:block></div>
+    </div>
+  </div>
+  <nav class="settings-mobile-menu action-rows" th:attr="aria-label=#{app.scene.settings}">
+    <a class="action-row" th:href="@{/personal-data}">
+      <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
+      <span><strong th:text="#{personal.title}">Personal data</strong><small th:text="#{settings.personalHelp}"></small></span>
+      <span aria-hidden="true">›</span>
+    </a>
+    <a class="action-row" th:href="@{/preferences}">
+      <svg class="icon" aria-hidden="true"><use href="#i-display"/></svg>
+      <span><strong th:text="#{app.scene.preferences}">Display settings</strong><small th:text="#{settings.displayHelp}"></small></span>
+      <span aria-hidden="true">›</span>
+    </a>
+    <a class="action-row" th:href="@{/data}">
+      <svg class="icon" aria-hidden="true"><use href="#i-data"/></svg>
+      <span><strong th:text="#{app.scene.data}">Price data</strong><small th:text="#{settings.dataHelp}"></small></span>
+      <span aria-hidden="true">›</span>
+    </a>
+  </nav>
+</section>

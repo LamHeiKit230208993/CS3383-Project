@@ -5,21 +5,23 @@ totals, incomplete prices, and native form validation. A budget is a plan for th
 current list. It is not a spending ledger, period accumulator, or rollover.
 
 Sources: [`BudgetServiceTest`](../../../src/test/java/com/pricewatch/budget/BudgetServiceTest.java),
-[`BudgetControllerTest`](../../../src/test/java/com/pricewatch/budget/BudgetControllerTest.java),
 [`BudgetPageTest`](../../../src/test/java/com/pricewatch/budget/BudgetPageTest.java), and
 [`BudgetSettingsPersistenceTest`](../../../src/test/java/com/pricewatch/budget/BudgetSettingsPersistenceTest.java).
 
-1. Open `/budget` with no catalogue or list items. Expect a weekly period
-   selected by default, no limit saved, and a clear empty state.
+1. Open **Settings → Personal data** with no catalogue or Cart items. Expect a
+   weekly period selected by default and no limit saved. Old `/budget` links
+   redirect to the Budget card. Legacy form submissions still save there.
 2. Save a valid weekly or monthly nonnegative HKD limit. Expect a redirect and a
    confirmation. Reopen the page and expect the period and exact decimal limit
    to remain saved.
+   From unified Settings, success or a validation error returns to the Budget
+   anchor. A rejected edit preserves the stored limit.
 3. Compare the current list's known subtotal with the limit. The subtotal must
    use the effective line totals from My list, including checked items. An
    explicitly selected JASONS milk listing at HK$12.50 must remain HK$12.50 per
    pack when AEON lists HK$7.50; multiplying quantity 2 gives HK$25.00. The
    budget calculation must not choose a cheaper retailer.
-4. Group known line totals by the English level 2 category. Missing or blank
+4. In the budget service, group known line totals by the English level 2 category. Missing or blank
    categories use `Uncategorised`. Category amounts must add up to the known
    subtotal; unknown-price items add no invented amount.
 5. If any price is unknown and the known subtotal is at or below the limit,
@@ -36,6 +38,10 @@ Sources: [`BudgetServiceTest`](../../../src/test/java/com/pricewatch/budget/Budg
    Open a second context against the same file. Expect the same period and exact
    decimal limit in its single settings row. The test uses a temporary database,
    not the user's production data file.
+8. Apply a saved limit to the totals supplied by Discover or Cart. For HK$78.00
+   of a HK$200.00 limit, expect 39% and HK$122.00 available. Confirm incomplete
+   prices do not produce a within-budget state. Check a zero limit with a known
+   subtotal and an empty total to cover both division-by-zero cases.
 
 The weekly/monthly choice labels the planned limit only. The app does not infer
 past spending, roll unused amounts forward, include offers, or add delivery and

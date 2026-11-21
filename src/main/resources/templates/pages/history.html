@@ -1,0 +1,102 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="history-title">
+  <th:block th:replace="~{fragments/back-link :: link(@{/products/{code}(code=${product.code})}, #{app.scene.compare})}"></th:block>
+  <header class="page-heading">
+    <h1 id="history-title" th:text="#{app.scene.history}"></h1>
+    <p class="intro"><strong th:text="${product.name.forLocale(#locale)}"></strong> · <span th:text="${product.code}"></span></p>
+  </header>
+  <form class="history-filters" th:if="${historyAvailable}"
+        th:action="@{/products/{code}/history(code=${product.code})}" method="get">
+    <label for="history-days"><span th:text="#{history.period}">Period</span>
+      <select id="history-days" name="days">
+        <option value="30" th:selected="${selectedDays == 30}" th:text="#{history.days(30)}">30 days</option>
+        <option value="90" th:selected="${selectedDays == 90}" th:text="#{history.days(90)}">90 days</option>
+      </select>
+    </label>
+    <label for="history-retailer"><span th:text="#{history.retailer}">Retailer</span>
+      <select id="history-retailer" name="retailer">
+        <option value="" th:text="#{history.allRetailers}">All retailers</option>
+        <option th:each="retailer : ${retailers}" th:value="${retailer}" th:text="${retailer}"
+                th:selected="${retailer == selectedRetailer}"></option>
+      </select>
+    </label>
+    <button class="button secondary" type="submit" th:text="#{history.apply}">Apply filters</button>
+  </form>
+
+  <figure th:if="${chart != null}" class="panel price-chart" aria-labelledby="history-chart-title" data-price-chart>
+    <figcaption>
+      <h2 id="history-chart-title" th:text="#{history.chart}">Listed prices by retailer</h2>
+      <p class="helper" th:text="#{history.chartHelp}"></p>
+    </figcaption>
+    <div class="chart-area">
+      <div class="chart-price-scale">
+        <span th:text="${format.money(chart.maximum)}"></span>
+        <span th:if="${chart.minimum.compareTo(chart.maximum) != 0}" th:text="${format.money(chart.minimum)}"></span>
+      </div>
+      <svg viewBox="0 0 640 216" preserveAspectRatio="none" role="img" aria-labelledby="history-chart-title" data-history-plot
+           aria-describedby="history-chart-table-title">
+        <path class="chart-grid" d="M12 12h616M12 60h616M12 108h616M12 156h616M12 204h616M12 12v192M628 12v192"/>
+        <line class="chart-guide" y1="12" y2="204" data-history-guide hidden/>
+        <g th:each="series : ${chart.series}" th:attr="data-palette=${series.palette},data-history-retailer=${series.retailer}">
+          <g th:each="segment : ${series.segments}">
+            <polyline class="chart-segment" th:if="${segment.points.size() > 1}"
+                      th:attr="points=${segment.coordinates()},stroke-dasharray=${series.dash}"/>
+            <circle th:each="point : ${segment.points}" class="chart-point"
+                    th:attr="cx=${point.x},cy=${point.y},data-observed-at=${point.observedAt}" r="3.5"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="chart-dates">
+      <time th:datetime="${chart.first}" th:text="${format.time(chart.first)}"></time>
+      <time th:if="${chart.first != chart.last}" th:datetime="${chart.last}" th:text="${format.time(chart.last)}"></time>
+    </div>
+    <ul class="chart-legend" role="list">
+      <li th:each="series : ${chart.series}" th:attr="data-palette=${series.palette}">
+        <button class="chart-series-toggle" type="button" disabled aria-pressed="true" th:attr="data-history-series=${series.retailer}">
+          <svg viewBox="0 0 28 12" aria-hidden="true">
+            <path class="chart-segment" d="M0 6h28" th:attr="stroke-dasharray=${series.dash}"/>
+          </svg>
+          <span th:text="${series.retailer}"></span>
+        </button>
+      </li>
+    </ul>
+    <div class="chart-explorer" data-history-controls hidden>
+      <label for="history-observation">
+        <span th:text="#{history.observation}">Inspect a recording</span>
+        <select id="history-observation" data-history-observation></select>
+      </label>
+      <div class="chart-readout" data-history-readout th:attr="data-empty=#{history.noSeries}" role="status">
+        <time data-history-time></time>
+        <dl data-history-prices></dl>
+      </div>
+    </div>
+  </figure>
+
+  <section class="panel price-chart-table" th:if="${observations.isEmpty()}">
+    <p th:text="${historyAvailable} ? #{history.filteredEmpty} : #{history.empty}"></p>
+  </section>
+  <section class="panel price-chart-table" th:unless="${observations.isEmpty()}" aria-labelledby="history-chart-table-title">
+      <h2 id="history-chart-table-title" th:text="#{history.records}">Recorded prices</h2>
+      <p class="helper" th:if="${chart == null}" th:text="#{history.unknownOnly}"></p>
+      <p class="helper" th:text="#{history.help}"></p>
+      <table class="price-history">
+        <thead>
+          <tr>
+            <th scope="col" th:text="#{history.retailer}"></th>
+            <th scope="col" th:text="#{history.retrieved}"></th>
+            <th scope="col" th:text="#{history.price}"></th>
+            <th scope="col" th:text="#{history.source}"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="entry : ${observations}" th:attr="data-history-x=${chart == null ? null : chart.dateX(entry.retrievedAt)}">
+            <th scope="row" th:text="${entry.retailerCode}"></th>
+            <td><time th:datetime="${entry.retrievedAt}" th:text="${format.time(entry.retrievedAt)}"></time></td>
+            <td th:if="${entry.price != null}" th:text="${format.money(entry.price)}"></td>
+            <td th:unless="${entry.price != null}" th:text="#{common.unknown}"></td>
+            <td th:text="${entry.sourceUrl}"></td>
+          </tr>
+        </tbody>
+      </table>
+  </section>
+</section>

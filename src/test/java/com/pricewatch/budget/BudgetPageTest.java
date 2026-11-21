@@ -12,7 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -28,12 +32,61 @@ class BudgetPageTest {
     @Autowired private BudgetService budgets;
 
     @Test
-    void emptyCatalogueAndListRenderWithoutABudgetSet() throws Exception {
-        mvc.perform(get("/budget"))
+    void personalDataRendersBudgetFormWithDefaultPeriodAndNoLimit() throws Exception {
+        mvc.perform(get("/personal-data"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("No prices loaded")))
-                .andExpect(content().string(containsString("Set a limit to compare")))
-                .andExpect(content().string(containsString("No priced list items to group yet.")));
+                .andExpect(content().string(containsString("/personal-data/budget")))
+                .andExpect(content().string(containsString("Save a planned limit to compare it with your list estimate.")))
+                .andExpect(model().attribute("budgetFormPeriod", "WEEKLY"))
+                .andExpect(model().attribute("budgetFormLimit", ""));
+    }
+
+    @Test
+    void legacyBudgetLinkAndFormLeadToPersonalData() throws Exception {
+        mvc.perform(get("/budget"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/personal-data#budget"));
+        mvc.perform(post("/budget").param("period", "MONTHLY").param("limit", "100.00"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/personal-data#budget"))
+                .andExpect(flash().attribute("budgetNotice", "Monthly budget saved on this device."));
+        mvc.perform(get("/personal-data"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("budgetFormPeriod", "MONTHLY"))
+                .andExpect(content().string(containsString("value=\"100.0000\"")));
+    }
+
+    @Test
+    void invalidSaveReturnsPersonalDataWithErrorAndDoesNotChangeSavedLimit() throws Exception {
+        budgets.save("WEEKLY", "7.50");
+        mvc.perform(post("/personal-data/budget").param("period", "MONTHLY").param("limit", "-1"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("scene", "personal"))
+                .andExpect(content().string(containsString("Enter a nonnegative limit")))
+                .andExpect(model().attribute("budgetFormPeriod", "MONTHLY"))
+                .andExpect(model().attribute("budgetFormLimit", "-1"));
+        mvc.perform(get("/personal-data"))
+                .andExpect(model().attribute("budgetFormPeriod", "WEEKLY"))
+                .andExpect(content().string(containsString("value=\"7.5000\"")));
+    }
+
+    @Test
+    void settingsRendersCombinedSectionsAndReturnsToBudgetAfterSave() throws Exception {
+        mvc.perform(get("/settings"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"personal-data\"")))
+                .andExpect(content().string(containsString("id=\"budget\"")))
+                .andExpect(content().string(containsString("id=\"display\"")))
+                .andExpect(content().string(containsString("id=\"price-data\"")));
+        mvc.perform(post("/personal-data/budget").param("fromSettings", "true")
+                        .param("period", "MONTHLY").param("limit", "125.00"))
+                .andExpect(redirectedUrl("/settings#budget"));
+        mvc.perform(post("/personal-data/budget").param("fromSettings", "true")
+                        .param("period", "MONTHLY").param("limit", "-1"))
+                .andExpect(redirectedUrl("/settings#budget"))
+                .andExpect(flash().attribute("budgetFormLimit", "-1"));
+        mvc.perform(get("/settings"))
+                .andExpect(model().attribute("budgetFormLimit", "125.0000"));
     }
 
     @Test
@@ -42,7 +95,7 @@ class BudgetPageTest {
         shopping.add("P000000124", 1);
         budgets.save("WEEKLY", "0.00");
 
-        mvc.perform(get("/budget"))
+        mvc.perform(get("/personal-data"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("The known subtotal is already above your limit.")))
                 .andExpect(content().string(not(containsString("The full total may be higher."))))
@@ -55,7 +108,7 @@ class BudgetPageTest {
         shopping.add("P000000124", 1);
         budgets.save("WEEKLY", "7.50");
 
-        mvc.perform(get("/budget"))
+        mvc.perform(get("/personal-data"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("The current list estimate is within your planned limit.")))
                 .andExpect(content().string(not(containsString("The known subtotal is already above your limit."))));

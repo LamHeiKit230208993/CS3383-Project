@@ -7,6 +7,7 @@ import com.pricewatch.catalog.ListingView;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.shopping.ItemView;
 import com.pricewatch.shopping.ShoppingService;
+import com.pricewatch.shopping.Summary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class BudgetServiceTest {
@@ -80,6 +82,27 @@ class BudgetServiceTest {
                 new BigDecimal("7.5000"), false)));
 
         assertEquals(BudgetState.WITHIN_LIMIT, budgets.view().state());
+    }
+
+    @Test
+    void measuresTheProvidedCartWithoutReadingTheDefaultCart() {
+        when(settings.findById(1L)).thenReturn(Optional.of(
+                new BudgetSettingsEntity(BudgetPeriod.WEEKLY, new BigDecimal("200.00"))));
+        var known = new Summary(new BigDecimal("78.00"), 0, 1);
+        BudgetView view = budgets.forSummary(known);
+        assertEquals(BudgetState.WITHIN_LIMIT, view.state());
+        assertEquals(39, view.progressPercent());
+        assertEquals(new BigDecimal("122.00"), view.balance());
+        assertEquals(BudgetState.UNKNOWN_TOTAL, budgets.forSummary(new Summary(known.knownSubtotal(), 1, 2)).state());
+
+        when(settings.findById(1L)).thenReturn(Optional.of(
+                new BudgetSettingsEntity(BudgetPeriod.MONTHLY, BigDecimal.ZERO)));
+        BudgetView over = budgets.forSummary(known);
+        assertEquals(BudgetState.OVER_LIMIT, over.state());
+        assertEquals(100, over.progressPercent());
+        assertEquals(new BigDecimal("-78.00"), over.balance());
+        assertEquals(0, budgets.forSummary(new Summary(BigDecimal.ZERO, 0, 0)).progressPercent());
+        verifyNoInteractions(shopping);
     }
 
     @Test

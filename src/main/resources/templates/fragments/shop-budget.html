@@ -1,0 +1,17 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="progress(budget)" class="shop-budget"
+     th:classappend="${budget.state.name() == 'OVER_LIMIT' ? 'is-over' : ''}">
+  <div class="shop-budget-heading">
+    <strong th:text="${budget.limitAmount == null} ? #{budget.title} : #{shop.budgetPeriod(${#messages.msg('budget.period.' + budget.period.name())})}">Budget</strong>
+    <span th:if="${budget.limitAmount != null}" th:text="${format.money(budget.limitAmount)}"></span>
+  </div>
+  <progress th:if="${budget.limitAmount != null}" max="100" th:value="${budget.progressPercent()}"
+            th:attr="aria-label=#{shop.budgetProgress}"></progress>
+  <div class="shop-budget-footer">
+    <span th:if="${budget.state.name() == 'WITHIN_LIMIT'}" th:text="#{shop.budgetLeft(${format.money(budget.balance())})}"></span>
+    <span th:if="${budget.state.name() == 'OVER_LIMIT'}" th:text="#{shop.budgetOver(${format.money(budget.balance().negate())})}"></span>
+    <span th:if="${budget.state.name() == 'UNKNOWN_TOTAL'}" th:text="#{shop.budgetIncomplete}"></span>
+    <span th:if="${budget.state.name() == 'NOT_SET'}" th:text="#{shop.budgetNoLimit}"></span>
+    <a th:href="@{/personal-data#budget}"
+       th:text="${budget.limitAmount == null} ? #{shop.budgetSet} : #{shop.budgetAdjust}">Set budget</a>
+  </div>
+</div>

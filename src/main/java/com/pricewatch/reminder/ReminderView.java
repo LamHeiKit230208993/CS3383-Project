@@ -14,5 +14,6 @@ public record ReminderView(
         boolean productActive,
         Instant nextDueAt,
         Instant effectiveDueAt,
-        boolean due) {
+        boolean due,
+        boolean enabled) {
 }
