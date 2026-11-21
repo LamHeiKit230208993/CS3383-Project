@@ -85,6 +85,7 @@
             <th scope="col" th:text="#{history.retailer}"></th>
             <th scope="col" th:text="#{history.retrieved}"></th>
             <th scope="col" th:text="#{history.price}"></th>
+            <th scope="col" th:text="#{history.source}"></th>
           </tr>
         </thead>
         <tbody>
@@ -93,6 +94,7 @@
             <td><time th:datetime="${entry.retrievedAt}" th:text="${format.time(entry.retrievedAt)}"></time></td>
             <td th:if="${entry.price != null}" th:text="${format.money(entry.price)}"></td>
             <td th:unless="${entry.price != null}" th:text="#{common.unknown}"></td>
+            <td th:text="${entry.sourceUrl}"></td>
           </tr>
         </tbody>
       </table>

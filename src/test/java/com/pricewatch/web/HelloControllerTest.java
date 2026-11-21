@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.shopping.ShoppingService;
+import com.pricewatch.tracking.DemoHistoryService;
+import com.pricewatch.tracking.TrackingService;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,8 @@ class HelloControllerTest {
     @Autowired MockMvc mvc;
     @Autowired CatalogService catalog;
     @Autowired ShoppingService shopping;
+    @Autowired TrackingService tracking;
+    @Autowired DemoHistoryService demoHistory;
     @MockitoBean DeepSeekChatClient provider;
 
     private final ObjectMapper json = new ObjectMapper();
@@ -291,6 +295,32 @@ class HelloControllerTest {
         mvc.perform(get("/products/UNKNOWN")).andExpect(status().isNotFound());
         mvc.perform(get("/planned/UNKNOWN")).andExpect(status().isNotFound());
     }
+    @Test void demoHistorySeedsTrackingAndRequiresConfirmation() throws Exception {
+        mvc.perform(get("/settings")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Load demo data")));
+
+        mvc.perform(post("/data/demo")).andExpect(redirectedUrl("/saved"))
+                .andExpect(flash().attributeExists("notice"));
+        assertEquals("DEMO", catalog.status().origin());
+        assertEquals(3, catalog.status().productCount());
+        assertEquals(5, tracking.trackingPeriods().size());
+        assertEquals(40, tracking.priceHistory("DEMO-MILK").size()
+                + tracking.priceHistory("DEMO-BREAD").size()
+                + tracking.priceHistory("DEMO-COFFEE").size());
+        assertTrue(tracking.priceHistory("DEMO-COFFEE").stream()
+                .anyMatch(row -> row.price() == null));
+
+        catalog.importSample();
+        mvc.perform(post("/data/demo")).andExpect(redirectedUrl("/data"))
+                .andExpect(flash().attributeExists("error"));
+        assertEquals("SAMPLE", catalog.status().origin());
+
+        mvc.perform(post("/data/demo").param("confirmSample", "true"))
+                .andExpect(redirectedUrl("/saved"))
+                .andExpect(flash().attributeExists("notice"));
+        assertEquals("DEMO", catalog.status().origin());
+    }
+
     @Test void replacingAnAcceptedCatalogueRequiresServerSideConfirmation() throws Exception {
         var previous = catalog.importSample();
         mvc.perform(post("/data/sample")).andExpect(redirectedUrl("/data"))

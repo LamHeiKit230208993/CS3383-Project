@@ -81,6 +81,6 @@ class PriceHistoryChartTest {
 
     private PriceHistoryEntry entry(String retailer, int daysAgo, String price, long period) {
         return new PriceHistoryEntry(retailer, NOW.minus(daysAgo, ChronoUnit.DAYS),
-                price == null ? null : new BigDecimal(price), period);
+                price == null ? null : new BigDecimal(price), period, "fixture");
     }
 }

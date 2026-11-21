@@ -11,6 +11,7 @@ checked prices, pack choices and follow-ups, chat history, and send and reply re
 [TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks Settings navigation, saved languages, contrast, and keyboard use.
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
+[TC-DATA-005](cases/TC-DATA-005.md) checks synthetic demo tracking history, confirmation, unknown rows, and visible demo sources.
 
 This index describes maintained checks. Detailed steps and limits belong in
 `cases/`; dated results belong in [test history](history.md).

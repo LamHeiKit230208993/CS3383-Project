@@ -217,6 +217,42 @@ inherits it. The key stays server-side. The default model ID is
 `CS3383/DeepSeek-V4-Flash`. Override it with `PRICEWATCH_CHAT_MODEL` if CityU
 advertises a different ID. `PRICEWATCH_CHAT_BASE_URL` overrides the base URL.
 
+For a terminal-only setup, set the key in the current PowerShell session:
+
+```powershell
+$env:DEEPSEEK_API_KEY_SKU = "replace-with-your-api-key"
+.\mvnw.cmd spring-boot:run
+```
+
+This setup lasts until the terminal is closed. It is the recommended option
+for shared or temporary machines because the key is not saved by the app.
+
+To save the key for future terminal sessions, set it for the current Windows
+user instead:
+
+```powershell
+setx DEEPSEEK_API_KEY_SKU "replace-with-your-api-key"
+```
+
+Close every open terminal and VS Code window, reopen a terminal, verify that
+the variable is available, and start the server:
+
+```powershell
+echo $env:DEEPSEEK_API_KEY_SKU
+.\mvnw.cmd spring-boot:run
+```
+
+Optional persistent model and endpoint overrides:
+
+```powershell
+setx PRICEWATCH_CHAT_MODEL "CS3383/DeepSeek-V4-Flash"
+setx PRICEWATCH_CHAT_BASE_URL "https://llm.cs.cityu.edu.hk/v1"
+```
+
+Do not commit the key to Git, put it in `application.properties`, or paste it
+into source or documentation files. Restart the terminal or VS Code after
+using `setx`.
+
 Open **Ask** and enter a product name or code, or a question such as
 “Where is Kowloon Dairy’s 236 mL fresh milk cheapest?” with the sample loaded.
 Then ask “What about Wellcome?” to check the same pack at that retailer.
