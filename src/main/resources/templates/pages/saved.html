@@ -2,151 +2,162 @@
   <section aria-labelledby="saved-title">
     <div class="page-heading heading-with-action">
       <div>
-        <p class="eyebrow">YOUR SHOPPING SPACE</p>
-        <h1 id="saved-title">Keep an eye on the things you buy.</h1>
-        <p class="intro">Saved products are a wishlist. Tracking is a separate choice for one retailer.</p>
+        <p class="eyebrow" th:text="${#messages.msg('saved.eyebrow')}">YOUR SHOPPING SPACE</p>
+        <h1 id="saved-title" th:text="${#messages.msg('saved.title')}">Keep an eye on the things you buy.</h1>
+        <p class="intro" th:text="${#messages.msg('saved.intro')}">Saved products are a wishlist. Tracking is a separate choice for one retailer.</p>
       </div>
-      <a class="button secondary" th:href="@{/}">Find a product</a>
+      <a class="button secondary" th:href="@{/}" th:text="${#messages.msg('saved.findProduct')}">Find a product</a>
     </div>
 
     <section class="panel" th:if="${productToSave != null}" aria-labelledby="save-product-title">
       <div class="section-heading">
         <div>
-          <h2 id="save-product-title" th:text="${productToSave.name.en}">Product name</h2>
-          <p class="helper" th:text="${productToSave.brand.en + ' · ' + productToSave.code}"></p>
+          <h2 id="save-product-title" th:text="${labels.of(productToSave.name)}">Product name</h2>
+          <p class="helper" th:text="${labels.of(productToSave.brand) + ' · ' + productToSave.code}"></p>
         </div>
       </div>
       <div class="inline-actions">
         <form th:action="@{/saved/save}" method="post">
           <input type="hidden" name="code" th:value="${productToSave.code}">
-          <button class="button secondary" type="submit">Save to wishlist</button>
+          <button class="button secondary" type="submit" th:text="${#messages.msg('saved.saveWishlist')}">Save to wishlist</button>
         </form>
         <form th:if="${productToSave.active and !allRetailerCodes.contains(productToSave.code)}"
               th:action="@{/tracking/start-all}" method="post">
           <input type="hidden" name="code" th:value="${productToSave.code}">
-          <button class="button primary" type="submit">Track all retailers</button>
-        </form>
-        <form th:each="listing : ${productToSave.listings}"
-              th:if="${productToSave.active and !allRetailerCodes.contains(productToSave.code)}"
-              th:action="@{/tracking/start}" method="post">
-          <input type="hidden" name="code" th:value="${productToSave.code}">
-          <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
-          <button class="button primary" type="submit"
-                  th:text="${'Track ' + listing.retailerCode}">Track retailer</button>
+          <button class="button primary" type="submit" th:text="${#messages.msg('saved.trackAll')}">Track all retailers</button>
         </form>
       </div>
-      <p class="helper" th:if="${productToSave.listings.isEmpty()}">No current retailer listings are available to track.</p>
+      <details th:if="${productToSave.active and !allRetailerCodes.contains(productToSave.code)}">
+        <summary th:text="${#messages.msg('saved.trackOneRetailer')}">Prefer to track a single retailer?</summary>
+        <div class="inline-actions">
+          <form th:each="listing : ${productToSave.listings}"
+                th:action="@{/tracking/start}" method="post">
+            <input type="hidden" name="code" th:value="${productToSave.code}">
+            <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
+            <button class="button secondary" type="submit"
+                    th:text="${#messages.msg('saved.trackRetailer', listing.retailerCode)}">Track retailer</button>
+          </form>
+        </div>
+      </details>
+      <p class="helper" th:if="${productToSave.listings.isEmpty()}" th:text="${#messages.msg('saved.noListings')}">No current retailer listings are available to track.</p>
     </section>
     <p class="warning" th:if="${productLookupError != null}" th:text="${productLookupError}"></p>
 
-    <div class="milestone-grid">
+    <div class="milestone-grid saved-grid">
       <section class="panel" aria-labelledby="wishlist-title">
         <div class="section-heading">
           <div>
-            <h2 id="wishlist-title">Wishlist</h2>
-            <p class="helper">Products you saved for later.</p>
+            <h2 id="wishlist-title" th:text="${#messages.msg('saved.wishlist')}">Wishlist</h2>
+            <p class="helper" th:text="${#messages.msg('saved.wishlistNote')}">Products you saved for later.</p>
           </div>
-          <span th:text="${savedProducts.size() + ' saved'}">0 saved</span>
+          <span th:text="${#messages.msg('saved.savedCount', savedProducts.size())}">0 saved</span>
         </div>
         <div class="empty-state" th:if="${savedProducts.isEmpty()}">
-          <h3>Your wishlist is empty.</h3>
-          <p>Save a product from its comparison page. Saving does not start price tracking.</p>
-          <a class="button secondary" th:href="@{/}">Browse products</a>
+          <h3 th:text="${#messages.msg('saved.emptyTitle')}">Your wishlist is empty.</h3>
+          <p th:text="${#messages.msg('saved.emptyNote')}">Save a product from its comparison page. Saving does not start price tracking.</p>
+          <a class="button secondary" th:href="@{/}" th:text="${#messages.msg('saved.browse')}">Browse products</a>
         </div>
         <article class="list-item" th:each="saved : ${savedProducts}">
           <div class="list-item-heading">
             <div>
               <h3><a th:href="@{/products/{code}(code=${saved.product.code})}"
-                     th:text="${saved.product.name.en}">Product</a></h3>
-              <p class="helper" th:text="${saved.product.brand.en + ' · ' + saved.product.code}"></p>
+                     th:text="${labels.of(saved.product.name)}">Product</a></h3>
+              <p class="helper" th:text="${labels.of(saved.product.brand) + ' · ' + saved.product.code}"></p>
             </div>
             <form th:action="@{/saved/remove}" method="post">
               <input type="hidden" name="code" th:value="${saved.product.code}">
-              <button class="button secondary" type="submit">Remove</button>
+              <button class="button secondary" type="submit" th:text="${#messages.msg('saved.remove')}">Remove</button>
             </form>
           </div>
-          <p class="helper" th:if="${!saved.product.active}">This product is not in the current catalogue.</p>
+          <p class="helper" th:if="${!saved.product.active}" th:text="${#messages.msg('saved.inactive')}">This product is not in the current catalogue.</p>
           <div class="inline-actions" th:if="${saved.product.active and !allRetailerCodes.contains(saved.product.code)}">
             <form th:action="@{/tracking/start-all}" method="post">
               <input type="hidden" name="code" th:value="${saved.product.code}">
-              <button class="button primary" type="submit">Track all retailers</button>
-            </form>
-            <form th:each="listing : ${saved.product.listings}" th:action="@{/tracking/start}" method="post">
-              <input type="hidden" name="code" th:value="${saved.product.code}">
-              <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
-              <button class="button secondary" type="submit"
-                      th:text="${'Track ' + listing.retailerCode}">Track retailer</button>
+              <button class="button primary" type="submit" th:text="${#messages.msg('saved.trackAll')}">Track all retailers</button>
             </form>
           </div>
+          <details th:if="${saved.product.active and !allRetailerCodes.contains(saved.product.code)}">
+            <summary th:text="${#messages.msg('saved.trackOneRetailer')}">Prefer to track a single retailer?</summary>
+            <div class="inline-actions">
+              <form th:each="listing : ${saved.product.listings}" th:action="@{/tracking/start}" method="post">
+                <input type="hidden" name="code" th:value="${saved.product.code}">
+                <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
+                <button class="button secondary" type="submit"
+                        th:text="${#messages.msg('saved.trackRetailer', listing.retailerCode)}">Track retailer</button>
+              </form>
+            </div>
+          </details>
         </article>
       </section>
 
       <section class="panel" aria-labelledby="tracking-title">
         <div class="section-heading">
           <div>
-            <h2 id="tracking-title">Price tracking</h2>
-            <p class="helper">Each retailer has its own history and alert rules.</p>
+            <h2 id="tracking-title" th:text="${#messages.msg('saved.tracking')}">Price tracking</h2>
+            <p class="helper" th:text="${#messages.msg('saved.trackingNote')}">Each retailer has its own history and alert rules.</p>
           </div>
-          <span th:text="${trackingPeriods.?[enabled].size() + ' active'}">0 active</span>
+          <span th:text="${#messages.msg('saved.activeCount', trackingPeriods.?[enabled].size())}">0 active</span>
         </div>
-        <article class="list-item" th:each="product : ${allRetailersProducts}">
-          <h3 th:text="${product.name}">Product</h3>
-          <p class="helper">Tracking all retailers. New retailers join after a live refresh.</p>
-          <form th:action="@{/tracking/stop-all}" method="post">
-            <input type="hidden" name="code" th:value="${product.code}">
-            <button class="button secondary" type="submit">Stop all retailers</button>
-          </form>
-        </article>
-        <div class="empty-state" th:if="${trackingPeriods.isEmpty() and allRetailersProducts.isEmpty()}">
-          <h3>No tracking yet.</h3>
-          <p>Track all retailers or choose one from a product comparison page.</p>
+        <div class="empty-state" th:if="${trackingGroups.isEmpty() and allRetailersProducts.isEmpty()}">
+          <h3 th:text="${#messages.msg('saved.noTrackingTitle')}">No tracking yet.</h3>
+          <p th:text="${#messages.msg('saved.noTrackingNote')}">Track all retailers or choose one from a product comparison page.</p>
         </div>
-        <article class="list-item" th:each="period : ${trackingPeriods}">
+        <article class="list-item tracking-product" th:each="group : ${trackingGroups}">
           <div class="list-item-heading">
             <div>
-              <h3 th:text="${period.productName}">Product</h3>
-              <p class="helper" th:text="${period.retailerCode + ' · ' + period.productCode}">Retailer</p>
+              <h3 th:text="${group[0].productName}">Product</h3>
+              <p class="helper" th:text="${group[0].productCode}"></p>
             </div>
-            <span class="status-pill" th:text="${period.enabled ? 'Tracking' : 'Stopped'}"
-                  th:classappend="${period.enabled ? ' is-active' : ''}">Tracking</span>
+            <span class="status-pill"
+                  th:text="${group.?[enabled].size() + ' / ' + group.size()}"
+                  th:classappend="${group.?[enabled].size() > 0 ? ' is-active' : ''}">2 / 2</span>
           </div>
-          <p class="helper" th:text="${'Started ' + format.time(period.startedAt)}"></p>
-          <p class="helper" th:if="${!period.enabled and period.stoppedAt != null}"
-             th:text="${'Stopped ' + format.time(period.stoppedAt)}"></p>
-          <div class="empty-state compact" th:if="${period.observations.isEmpty()}">
-            <p>No live price observation is available yet. Historical sample data is not used for live tracking.</p>
-          </div>
-          <div class="history-table-wrap" role="region" tabindex="0"
-               th:attr="aria-label=${'Price history for ' + period.productName + ' at ' + period.retailerCode}"
-               th:if="${!period.observations.isEmpty()}">
-            <p class="helper">Source price date is not supplied by this feed. Times below show when the app retrieved the data.</p>
-            <table class="history-table">
-              <caption class="sr-only" th:text="${'Price history for ' + period.productName + ' at ' + period.retailerCode}"></caption>
-              <thead><tr><th scope="col">Retrieved</th><th scope="col">Listed price</th></tr></thead>
-              <tbody>
-                <tr th:each="observation : ${period.observations}">
-                  <td th:text="${format.time(observation.observedAt)}">Date</td>
-                  <td th:text="${observation.price == null ? 'Unknown' : format.money(observation.price)}">Price</td>
-                </tr>
-              </tbody>
-            </table>
+          <p class="helper" th:if="${allRetailerCodes.contains(group[0].productCode)}"
+             th:text="${#messages.msg('saved.allRetailersNote')}">Tracking all retailers. New retailers join after a live refresh.</p>
+          <div class="retailer-summary" th:each="period : ${group}">
+            <div class="retailer-summary-head">
+              <strong th:text="${period.retailerCode}">Retailer</strong>
+              <span class="helper" th:text="${period.enabled ? #messages.msg('saved.trackingPill') : #messages.msg('saved.stoppedPill')}"
+                    th:classappend="${period.enabled ? ' is-active' : ''}">Tracking</span>
+            </div>
+            <p class="helper" th:if="${period.observations.isEmpty()}"
+               th:text="${#messages.msg('saved.noObservation')}">No live price observation is available yet. Historical sample data is not used for live tracking.</p>
+            <th:block th:unless="${period.observations.isEmpty()}">
+              <table class="history-table compact" th:attr="aria-label=${#messages.msg('saved.historyAria', period.productName, period.retailerCode)}">
+                <caption class="sr-only" th:text="${#messages.msg('saved.historyAria', period.productName, period.retailerCode)}"></caption>
+                <thead><tr><th scope="col" th:text="${#messages.msg('saved.colRetrieved')}">Retrieved</th><th scope="col" th:text="${#messages.msg('saved.colListed')}">Listed price</th></tr></thead>
+                <tbody>
+                  <tr th:each="observation, obsState : ${period.observations}" th:if="${obsState.index < 3}">
+                    <td th:text="${format.time(observation.observedAt)}">Date</td>
+                    <td th:text="${observation.price == null ? #messages.msg('saved.unknown') : format.money(observation.price)}">Price</td>
+                  </tr>
+                </tbody>
+              </table>
+            </th:block>
+            <div class="inline-actions">
+              <form th:if="${period.enabled and !allRetailerCodes.contains(period.productCode)}" th:action="@{/tracking/stop}" method="post">
+                <input type="hidden" name="trackingId" th:value="${period.id}">
+                <button class="button secondary" type="submit" th:text="${#messages.msg('saved.stopTracking')}">Stop tracking</button>
+              </form>
+              <details>
+                <summary th:text="${#messages.msg('saved.deleteHistory')}">Delete history…</summary>
+                <form th:action="@{/tracking/history/delete}" method="post">
+                  <input type="hidden" name="trackingId" th:value="${period.id}">
+                  <p class="helper" th:text="${#messages.msg('saved.deleteHistoryNote')}">This permanently deletes the recorded prices and related alerts for this tracking period. Your wishlist entry stays saved.</p>
+                  <button class="button danger" type="submit" th:text="${#messages.msg('saved.confirmDeleteHistory')}">Confirm delete history</button>
+                </form>
+              </details>
+            </div>
           </div>
           <div class="inline-actions">
-            <form th:if="${period.enabled and !allRetailerCodes.contains(period.productCode)}" th:action="@{/tracking/stop}" method="post">
-              <input type="hidden" name="trackingId" th:value="${period.id}">
-              <button class="button secondary" type="submit">Stop tracking</button>
+            <form th:if="${allRetailerCodes.contains(group[0].productCode)}" th:action="@{/tracking/stop-all}" method="post">
+              <input type="hidden" name="code" th:value="${group[0].productCode}">
+              <button class="button secondary" type="submit" th:text="${#messages.msg('saved.stopAll')}">Stop all retailers</button>
             </form>
-            <details>
-              <summary>Delete history…</summary>
-              <form th:action="@{/tracking/history/delete}" method="post">
-                <input type="hidden" name="trackingId" th:value="${period.id}">
-                <p class="helper">This permanently deletes the recorded prices and related alerts for this tracking period. Your wishlist entry stays saved.</p>
-                <button class="button danger" type="submit">Confirm delete history</button>
-              </form>
-            </details>
+            <a class="button secondary" th:href="@{/history}" th:text="${#messages.msg('saved.openHistory')}">See the full dated history</a>
           </div>
         </article>
-        <p class="source-note">Only accepted live imports add observations. Missing retailer prices are shown as unknown. History is kept for up to 90 days.</p>
+        <p class="source-note" th:text="${#messages.msg('saved.sourceNote')}">Only accepted live imports add observations. Missing retailer prices are shown as unknown. History is kept for up to 90 days.</p>
       </section>
     </div>
   </section>

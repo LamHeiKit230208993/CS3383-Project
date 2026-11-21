@@ -1,0 +1,57 @@
+@startuml
+title J09-J12 application classes
+
+skinparam shadowing false
+hide empty members
+
+package "chat (J09)" {
+  class ChatController
+  class ChatService
+  class ChatAgent
+  class DeepSeekAiClient
+}
+
+package "shopping (J10, J11)" {
+  class ListTransferService
+  class OfflineListExporter
+}
+
+package "web (J12)" {
+  class LocaleController {
+    +language(code, back)
+    +contrast(mode, back)
+    +requestLocale(request)
+    +label(text, locale)
+  }
+  class LocaleAdvice {
+    +preferences(model, request)
+  }
+  class ProductLabels
+  class PersonalDataController {
+    +myData()
+    +export()
+    +delete(confirm)
+    +history()
+  }
+  class PersonalDataService {
+    +overview()
+    +export()
+    +deleteLocalData()
+  }
+  class HistoryService {
+    +products()
+    -rowise(observations)
+  }
+}
+
+LocaleAdvice --> LocaleController
+LocaleAdvice --> ProductLabels
+PersonalDataController --> PersonalDataService
+PersonalDataController --> HistoryService
+PersonalDataService --> ShoppingService
+PersonalDataService --> TrackingService
+HistoryService --> TrackingService
+ChatController --> ChatService
+ChatService --> ChatAgent
+ChatAgent --> DeepSeekAiClient
+@enduml

@@ -143,17 +143,68 @@ class HelloControllerTest {
     }
 
     @Test void laterFeaturesAreClearlyUnavailable() throws Exception {
-        for (String feature : new String[]{"ask"}) {
-            mvc.perform(get("/planned/" + feature)).andExpect(status().isOk())
-                    .andExpect(content().string(containsString("PLANNED · NOT AVAILABLE YET")))
-                    .andExpect(content().string(not(containsString("chat-form"))));
-        }
         mvc.perform(get("/data")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("No automatic refresh runs at startup")));
     }
     @Test void oldPlannedLinksLeadToWorkingMilestonePages() throws Exception {
         mvc.perform(get("/planned/saved")).andExpect(redirectedUrl("/saved"));
         mvc.perform(get("/planned/updates")).andExpect(redirectedUrl("/alerts"));
+    }
+
+    @Test void offlineListDownloadsSelfContainedHtml() throws Exception {
+        catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
+        String html = mvc.perform(get("/list/offline"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("market-desk-list.html")))
+                .andExpect(content().contentTypeCompatibleWith(org.springframework.http.MediaType.TEXT_HTML))
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(html.contains("P000000124"));
+        assertTrue(html.contains("WORKS OFFLINE"));
+    }
+    @Test void exportDownloadsJsonAndImportPreviewsThenMerges() throws Exception {
+        catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
+        shopping.update("P000000124", 2, true, "JASONS");
+        String exported = mvc.perform(get("/list/export"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("attachment")))
+                .andExpect(content().contentTypeCompatibleWith(org.springframework.http.MediaType.APPLICATION_JSON))
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(exported.contains("market-desk-list/1"));
+        assertTrue(exported.contains("P000000124"));
+
+        shopping.remove("P000000124");
+        byte[] file = exported.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        var upload = new org.springframework.mock.web.MockMultipartFile("file", "list.json",
+                "application/json", file);
+        var session = new org.springframework.mock.web.MockHttpSession();
+        mvc.perform(multipart("/list/import").file(upload).session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("preview"))
+                .andExpect(content().string(containsString("Review before importing")))
+                .andExpect(content().string(containsString("What this file contains")))
+                .andExpect(content().string(containsString("100 %Fresh Milk")))
+                .andExpect(content().string(containsString("2 packs")));
+        assertTrue(shopping.items().isEmpty());
+
+        mvc.perform(multipart("/list/import").param("confirm", "true").session(session))
+                .andExpect(redirectedUrl("/list")).andExpect(flash().attributeExists("notice"));
+        assertEquals(1, shopping.items().size());
+        assertEquals(2, shopping.items().getFirst().quantity());
+        assertTrue(shopping.items().getFirst().checked());
+        assertEquals("JASONS", shopping.items().getFirst().selectedRetailerCode());
+    }
+
+    @Test void malformedImportFileShowsAnErrorWithoutChangingList() throws Exception {
+        catalog.importSample();
+        shopping.add("P000000229", 1);
+        var upload = new org.springframework.mock.web.MockMultipartFile("file", "bad.json", "application/json",
+                "not a list".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        mvc.perform(multipart("/list/import").file(upload))
+                .andExpect(status().isOk()).andExpect(model().attributeExists("error"));
+        assertEquals(1, shopping.items().size());
+        assertEquals("P000000229", shopping.items().getFirst().product().code());
     }
     @Test void sourceTextIsEscapedAndSearchPaginationIsBounded() throws Exception {
         catalog.importSample();

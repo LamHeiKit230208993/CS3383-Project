@@ -1,6 +1,7 @@
 package com.pricewatch.web;
 
 import com.pricewatch.catalog.CatalogService;
+import com.pricewatch.chat.ChatService;
 import com.pricewatch.shopping.ItemView;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
@@ -21,12 +22,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class HelloControllerModelTest {
     private final CatalogService catalog = mock(CatalogService.class);
     private final ShoppingService shopping = mock(ShoppingService.class);
+    private final ChatService chat = mock(ChatService.class);
+    private final com.pricewatch.shopping.ListTransferService transfer =
+            mock(com.pricewatch.shopping.ListTransferService.class);
+    private final com.pricewatch.shopping.OfflineListExporter offlineExporter =
+            mock(com.pricewatch.shopping.OfflineListExporter.class);
+    private final org.springframework.context.support.ResourceBundleMessageSource messageSource =
+            new org.springframework.context.support.ResourceBundleMessageSource();
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         View emptyView = (model, request, response) -> {};
-        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping))
+        messageSource.setBasename("messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        mvc = MockMvcBuilders.standaloneSetup(new HelloController(catalog, shopping, chat, transfer,
+                        offlineExporter, new UiMessages(messageSource),
+                        mock(com.pricewatch.tracking.DemoHistoryService.class)))
                 .setViewResolvers((name, locale) -> emptyView)
                 .build();
     }

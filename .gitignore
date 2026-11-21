@@ -2,6 +2,9 @@
 opencode.json
 .opencode/
 
+# Local secrets
+.env
+
 # Build output
 target/
 *.class

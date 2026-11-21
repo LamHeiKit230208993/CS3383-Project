@@ -106,8 +106,8 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Alerts, Budget, and Reminders now have working forms in the J05–J08
-implementation. Local integration checks passed on 6 November 2026; Ask remains planned.
+Saved, Alerts, Budget, Reminders, and the J09 Ask chat now have working forms.
+Local integration checks passed on 6 November 2026; J09 adds the checked price chat.
 See the [baseline guide](implementation-baseline-j01-j04.md) and
 [extension guide](implementation-j05-j08.md) for behaviour and limits.
 
@@ -133,6 +133,46 @@ quiet hours. Quiet hours delay notification eligibility, not manual list actions
 Events and reminders stay inside the app. Nothing is delivered while the app is
 closed, and startup does not fetch prices.
 
+### Ask (J09 checked price chat)
+
+The **Ask** page answers price questions in natural language with a short tool-calling
+agent loop. The model is given two read-only tools, `search_products(query)` and
+`product_prices(code)`, and decides which to call. The app runs each lookup
+deterministically against the accepted catalogue and feeds the results back; the model
+may call a few times (up to four steps) to reason across products, then writes the
+answer. Prices, retailers, and stock always come from the database rows the tools
+return, never from the model, so no price is invented. If nothing matches, or the
+question needs data the tools cannot provide, the assistant says so and asks the
+shopper to pick a product rather than guessing.
+The AI provider is **DeepSeek V4 Flash provided by CityU**, configured **server-side
+only**. Put the settings in a local `.env` file in the project root (it is
+git-ignored and loaded automatically at startup):
+
+```
+PRICEWATCH_AI_BASE_URL=https://llm.cs.cityu.edu.hk/v1
+PRICEWATCH_AI_API_KEY=your-key-here
+PRICEWATCH_AI_MODEL=CS3383/DeepSeek-V4-Flash
+```
+
+Copy `.env.example` to `.env` and fill in your key, then just run:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Real environment variables set in the shell still take precedence over `.env`, so CI
+or one-off runs can override without editing the file.
+
+The base URL is the CityU OpenAI-compatible endpoint; the client appends
+`/chat/completions`. The key is supplied the same way as in your editor's
+`opencode.json`, but the app reads it only from these server-side environment
+variables — it does not open `opencode.json`. The values are read through
+`pricewatch.ai.base-url`, `pricewatch.ai.api-key`, and `pricewatch.ai.model` in
+`application.properties`. Never hardcode or commit the key. If the AI is not
+configured or unreachable, Ask still answers from checked records and the normal
+search and comparison flow keep working.
+
+
 The running web app checks summaries every minute. Alerts and Reminders pages
 also refresh every minute when visible, unless a form has edits or focus, or a
 disclosure is open. Reopen or reload the page to refresh manually. Without
@@ -143,6 +183,43 @@ For isolated checks, disable the scheduled summary job with
 checks, or the browser's safe page refresh.
 
 To stop the app, press `Ctrl+C` in the terminal.
+
+### Languages, contrast, and personal data (J12)
+
+- **Settings tab.** The sidebar **Settings** entry (`/my-data`) is the one place
+  for the language switch, the display contrast switch, the local user-data
+  counts, the export, and the delete. The controls are no longer in the sidebar.
+- **Languages.** The Settings page has English / 繁體中文 / 简体中文 buttons. Each
+  calls `GET /lang?code=en|zh_TW|zh_CN&back=<path>`, which sets the `LANG`
+  cookie and returns to the same page. Text lives in
+  `src/main/resources/messages.properties`,
+  `messages_zh_TW.properties`, and `messages_zh_CN.properties`; product names
+  come from the imported JSON (`zh-Hant`/`zh-Hans`) with an English fallback.
+  The same bundle covers controller feedback and page titles, so the switch
+  also applies to flash notices and validation errors. The Chinese wording
+  still needs a native-speaker review.
+- **Contrast.** On the same Settings page, the **High contrast** button calls
+  `GET /contrast?mode=high|off&back=<path>`, sets the `CONTRAST` cookie, and
+  switches the page to `data-contrast="high"`.
+- **Personal data.** `/my-data` shows the local user's stored rows and settings
+  state. `/my-data/export` downloads `market-desk-my-data.json`. The delete form
+  requires typing `DELETE` and then removes the list, wishlist, tracking and
+  observations, alerts, reminders, and settings; the imported catalogue is kept
+  because it is source data, not the user's.
+- **Demo history data.** The Price data page has a **Load demo history data**
+  panel that replaces the catalogue with three demo products (`DEMO-MILK`,
+  `DEMO-BREAD`, `DEMO-COFFEE`), starts product-wide tracking, and writes
+  dated observations over the last three weeks with deliberate gaps, price
+  moves, one unknown price, and one target. Use it to exercise the History,
+  Alerts, Reminders, and Tracking screens. The prices are synthetic and are
+  labelled `demo://synthetic-price` in the History source column; loading
+  replaces the catalogue, so reload the sample or live prices afterwards.
+- **Tracking summary.** `/saved` shows one card per tracked product, with the
+  latest three prices for each retailer and a link to the full dated history on
+  `/history`.
+- **History.** `/history` lists only stored price observations per retailer with
+  a visible **No records** row between recorded days, and an empty state before
+  any observation. Times are when the app retrieved the data.
 
 ### Local database
 
@@ -164,13 +241,89 @@ isolated databases and do not need your normal data file.
 The default server binds to `127.0.0.1`. It is a local app, not a shared cloud
 service. Saved data on this computer does not by itself make a phone work offline.
 
+### Open the app from a phone on the same Wi-Fi
+
+By default the app listens only on `127.0.0.1`, so a phone cannot reach it. The
+phone workflow turns on two things: the server listens on the network
+(`--server.address=0.0.0.0`), and the guard accepts your computer's Wi-Fi address
+(`PRICEWATCH_ALLOWED_HOSTS`). Do these steps once per Wi-Fi network.
+
+**1. Find this computer's Wi-Fi address.** It looks like `192.168.x.x`.
+
+```powershell
+ipconfig
+```
+
+Read the IPv4 address of the active Wi-Fi adapter. Use it below in place of
+`192.168.1.20`. On macOS/Linux use `ipconfig getifaddr en0` or `ip addr`.
+
+**2. Start the app so the phone can connect.** Open PowerShell in the project
+folder. Set the allowed host, then start the app bound to all interfaces. Build
+the runnable JAR first if needed (a JAR under about 1 MB is not the packaged app;
+stop any running copy, then rebuild):
+
+```powershell
+.\mvnw.cmd clean package
+```
+
+Then, in the same PowerShell window:
+
+```powershell
+$env:PRICEWATCH_ALLOWED_HOSTS = "192.168.1.20"
+java -jar target\pricewatch-0.0.1-SNAPSHOT.jar --server.address=0.0.0.0
+```
+
+To run from source instead, pass the same flag through the wrapper:
+
+```powershell
+$env:PRICEWATCH_ALLOWED_HOSTS = "192.168.1.20"
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.arguments=--server.address=0.0.0.0'
+```
+
+macOS/Linux use `export PRICEWATCH_ALLOWED_HOSTS=192.168.1.20` instead of the
+`$env:` line, and `./mvnw` instead of `.\mvnw.cmd`.
+
+For more than one address, separate them with commas, for example
+`192.168.1.20,192.168.1.20:8080`. A single bare address is enough for both.
+
+**3. Open the app on the phone.** Keep the phone on the same Wi-Fi and enter this
+in its browser, using your own address:
+
+```
+http://192.168.1.20:8080
+```
+
+**4. If the phone cannot connect, allow the app through the firewall.** On
+Windows, accept the prompt for Java when it first listens, or add an inbound rule
+for the port:
+
+```powershell
+New-NetFirewallRule -DisplayName "PriceWatch 8080" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow
+```
+
+Remove it later with
+`Remove-NetFirewallRule -DisplayName "PriceWatch 8080"`.
+
+**To switch it off**, stop the app (`Ctrl+C`) and clear the variable:
+
+```powershell
+Remove-Item Env:\PRICEWATCH_ALLOWED_HOSTS
+```
+
+With the app stopped, the phone address no longer works. Without the variable (or
+with it empty), requests using a LAN address are refused and only `localhost`
+works, even if the app is bound to `0.0.0.0`.
+
+Only list addresses you trust: anyone on that Wi-Fi can open the running app
+while it is bound to `0.0.0.0`. Do not do this on public or untrusted networks.
+
 ---
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
-| `JAVA_HOME not found in your environment` | Set `JAVA_HOME` (see §2) and reopen your terminal. |
+| `JAVA_HOME not found in your environment` | Set `JAVA_HOME` (see Ã‚§2) and reopen your terminal. |
 | `java -version` shows an old version | Your terminal still has a stale PATH — reopen it, or ensure JDK 21 bin is first in the persistent PATH. |
 | Port 8080 already in use | Change the port in `src/main/resources/application.properties` (`server.port=8081`) or stop the process using 8080. |
 

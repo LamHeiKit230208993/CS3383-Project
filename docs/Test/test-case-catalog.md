@@ -40,3 +40,17 @@ Case descriptions state expected behaviour; they do not prove a later build pass
 
 The retired prototype cases and their original source links are preserved in
 [history](history.md#tc-web-002--retired-prototype-scenes-and-assets).
+
+## J09–J12 milestone checks
+
+| ID | Area | Expected result | Source |
+|---|---|---|---|
+| [TC-CHAT-001](cases/TC-CHAT-001.md) | J09 checked price chat | Answers use checked product/retailer/amount; ambiguous requests ask for a choice; unavailable AI keeps search/comparison usable; no invented price | `ChatControllerTest`, `ChatAgentTest` |
+| [TC-SHARE-001](cases/TC-SHARE-001.md) | J10 separate-copy list sharing | JSON export round-trips products/quantity/checked/retailer; preview changes nothing; malformed or conflicting import rejects the whole file; unpriced retailers kept | `ListTransferServiceTest`, `HelloControllerTest` |
+| [TC-OFFLINE-001](cases/TC-OFFLINE-001.md) | J11 offline saved list | Downloaded self-contained HTML has no external resources, shows saved time and incomplete totals, opens offline, and supports local-only tick-off | `OfflineListExporterTest`, `HelloControllerTest` |
+| [TC-PHONE-001](cases/TC-PHONE-001.md) | Phone on same Wi-Fi | Loopback-only by default; a listed LAN host is served; other hosts stay blocked; cross-site writes still rejected | `LocalRequestGuardTest`, `HelloControllerTest` |
+| [TC-UI-001](cases/TC-UI-001.md) | J12 three UI languages | English, Traditional, and Simplified text render from the `LANG` cookie; product labels follow the source JSON with English fallback; search works in each language; page titles, flash notices, and service errors are translated too | `LocaleUiTest`, `LocalizedFeedbackTest`, `HelloControllerTest` |
+| [TC-UI-002](cases/TC-UI-002.md) | J12 contrast and easy-to-read | Contrast switch sets `data-contrast="high"`; readable palette, visible focus, and meaning that does not rely on colour | `LocaleUiTest`, `market-desk.css` |
+| [TC-DATA-005](cases/TC-DATA-005.md) | J12 demo history data | One action on the Price data page loads three demo products with dated prices, visible gaps, an unknown price, and one target, and starts product-wide tracking; synthetic rows are labelled `demo://synthetic-price` and the action needs confirmation when a catalogue exists | `DemoHistoryTest` |
+| [TC-DATA-004](cases/TC-DATA-004.md) | J12 local personal data | The Settings page (`/my-data`) holds the language and contrast switches plus the user-data view, JSON export, and a confirmed delete of the local user's records while the source catalogue is kept | `PersonalDataAndHistoryTest` |
+| [TC-HISTORY-001](cases/TC-HISTORY-001.md) | J12 dated history | `/history` shows only real dated records, a visible gap for missing days, and an empty state before any observation | `PersonalDataAndHistoryTest` |

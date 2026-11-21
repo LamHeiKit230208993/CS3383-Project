@@ -1,0 +1,65 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+  <section aria-labelledby="history-title">
+    <div class="page-heading heading-with-action">
+      <div>
+        <p class="eyebrow" th:text="${#messages.msg('history.eyebrow')}">ONLY REAL RECORDS</p>
+        <h1 id="history-title" th:text="${#messages.msg('history.title')}">Price history.</h1>
+        <p class="intro" th:text="${#messages.msg('history.intro')}">Only stored recorded prices are shown. Incomplete data is shown as it is, never filled with invented daily values.</p>
+      </div>
+      <a class="button secondary" th:href="@{/saved}" th:text="${#messages.msg('history.viewSaved')}">Manage tracking</a>
+    </div>
+
+    <div class="empty-state panel" th:if="${!hasHistory}">
+      <svg class="icon large" aria-hidden="true"><use href="#i-chart"/></svg>
+      <h3 th:text="${#messages.msg('history.emptyTitle')}">No priced records yet.</h3>
+      <p th:text="${#messages.msg('history.emptyNote')}">Track a product and refresh live prices; this page then shows real dated records.</p>
+      <a class="button secondary" th:href="@{/}" th:text="${#messages.msg('history.browse')}">Find a product</a>
+    </div>
+
+    <section class="panel" th:each="product : ${historyProducts}" th:attr="aria-label=${product.name}">
+      <div class="section-heading">
+        <div>
+          <h2 th:id="@{'history-product-title-' + product.code}" th:text="${product.name}">Product</h2>
+          <p class="helper" th:text="${product.code}">Product code</p>
+        </div>
+        <span th:text="${#messages.msg('history.productCount', product.retailers.size())}"></span>
+      </div>
+      <article class="list-item" th:each="retailer : ${product.retailers}">
+        <div class="list-item-heading">
+          <h3 th:text="${#messages.msg('history.retailerRow', retailer.retailerCode, retailer.observationCount())}">Retailer</h3>
+        </div>
+        <p class="helper" th:if="${retailer.isEmpty()}" th:text="${#messages.msg('history.noObservations')}">No live price observation is recorded for this retailer yet.</p>
+        <div class="history-table-wrap" role="region" tabindex="0"
+             th:if="${!retailer.isEmpty()}"
+             th:attr="aria-label=${#messages.msg('saved.historyAria', product.name, retailer.retailerCode)}">
+          <p class="helper" th:text="${#messages.msg('history.note')}">Dates are when this app retrieved the data, because the source does not supply a source price date. There is no weekly or monthly change summary here.</p>
+          <table class="history-table">
+            <caption class="sr-only" th:text="${#messages.msg('history.datedTitle')}">Recorded prices</caption>
+            <thead>
+              <tr>
+                <th scope="col" th:text="${#messages.msg('history.colDate')}">Retrieved</th>
+                <th scope="col" th:text="${#messages.msg('history.colPrice')}">Listed price</th>
+                <th scope="col" th:text="${#messages.msg('history.colSource')}">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <th:block th:each="row : ${retailer.rows}">
+                <tr class="history-gap" th:if="${row.isGap}">
+                  <th scope="row" colspan="3">
+                    <span class="small-tag" th:text="${#messages.msg('history.gap')}">No records</span>
+                    <span th:text="${#messages.msg('history.gapNote', format.date(row.gapFrom), format.date(row.gapTo))}"></span>
+                  </th>
+                </tr>
+                <tr th:unless="${row.isGap}">
+                  <td th:text="${format.time(row.observedAt)}">Date</td>
+                  <td th:text="${row.price == null ? #messages.msg('saved.unknown') : format.money(row.price)}">Price</td>
+                  <td class="source-url" th:text="${row.sourceUrl}">Source</td>
+                </tr>
+              </th:block>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </section>
+</th:block>

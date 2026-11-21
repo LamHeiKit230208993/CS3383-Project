@@ -4,6 +4,157 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## UTF-8 build fix and product-wide tracking default — 21 November 2026
+
+- Build: added `project.build.sourceEncoding=UTF-8` to `pom.xml`. Without it,
+  Maven compiled test sources with the platform ANSI code page (Cp1252 here),
+  so the CJK literals in `LocaleUiTest` were corrupted and its two Chinese
+  assertions failed. After a clean build, `mvnw test` passed **137 tests** with
+  zero failures, errors, or skips, including both `LocaleUiTest` cases.
+- Tracking follows the product (issue #21 follow-up): `Saved` now promotes
+  **Track all retailers** as the primary action and moves single-retailer
+  choices into a secondary disclosure. New `/alerts/target-all` and
+  `/alerts/drop-all` endpoints apply one target/drop rule to every enabled
+  retailer of a product, and the Alerts page shows one rule card per product.
+  Per-retailer history periods are unchanged for correct comparisons.
+  Covered by `TrackingServiceTest#productLevelAlertRuleAppliesToEveryEnabledRetailer`.
+
+
+## J12 languages, contrast, personal data, history — 18 November 2026 (completed pass)
+
+- Maven test run on JDK 21 passed **128 tests** with zero failures, errors or
+  skips, adding `LocaleUiTest` (7) and `PersonalDataAndHistoryTest` (6).
+- Languages (R46): new `messages.properties`, `messages_zh_TW.properties`, and
+  `messages_zh_CN.properties`. Templates now read text through
+  `#{...}`/`${#messages.msg(...)}` so the active `LANG` cookie (en, zh_TW,
+  zh_CN) selects the bundle. Product labels come from the JSON
+  `zh-Hant`/`zh-Hans` text with an English fallback. English wording is
+  unchanged, so all earlier string checks still pass.
+- Contrast (R47): `/contrast` sets `CONTRAST=high`, the body gains
+  `data-contrast="high"`, and `market-desk.css` switches to a high-contrast
+  palette with larger text, a 4px focus ring, and a `forced-colors` block.
+  Meaning already lives in text (status pills, `✓ Selected`, `Lowest listed`).
+- Personal data (R45): `/my-data` shows row counts and settings state;
+  `/my-data/export` downloads `market-desk-my-data.json`; `/my-data/delete`
+  requires typing `DELETE`, then removes list, wishlist, tracking,
+  observations, alerts, reminders, and settings while keeping the source
+  catalogue and its import metadata.
+- History (R10/R14): `/history` lists only stored observations per retailer
+  with retrieval time, price, and source, inserts a visible **No records** row
+  between recorded days that are more than one day apart, and shows an empty
+  state before any observation. No weekly/monthly summary is invented.
+- Browser smoke check on the packaged jar (port 8081, in-memory database,
+  sample loaded): `/my-data` renders the counts, `/my-data/export` returns
+  `application/json`, the LANG cookie selected the Chinese text, and a
+  `CONTRAST=high` request produced `data-contrast="high"` on the body.
+- Limits: the Chinese copy needs a native-speaker review before release;
+  contrast ratios were checked visually, not measured automatically.
+
+### Completing the language work (later the same day)
+
+- A review of the running app showed that many messages were still English:
+  the flash notices and error text built in Java, the page titles, and the
+  service validation messages (`IllegalArgumentException`) shown to the user.
+  The budget, alerts, saved, list, compare, data, and import screens also had
+  English text because those sections had never been translated.
+- Fixes: `UiMessages` resolves controller feedback and titles from the bundle
+  for the `LANG` cookie; `UiTextException` carries a message key from the
+  service layer so validation errors are also translated; every visible
+  template string uses `#messages.msg`. All 487 keys now exist in English,
+  Traditional Chinese, and Simplified Chinese with identical placeholders.
+- Tests: **132 tests** pass, adding `LocalizedFeedbackTest` (4) for titles,
+  flash notices, service errors, and the English fallback.
+- Browser check on the packaged jar (port 8081): the budget, saved, alerts,
+  ask, and history pages rendered in Traditional Chinese, including the
+  feedback and validation text.
+- English UI: the alternate Chinese product name that appeared under the
+  English name on the product cards and the comparison page is now hidden in
+  the English setting; a Chinese UI still shows the name in its own script.
+  Covered by the new `LocaleUiTest` case (133 tests pass).
+- Desktop layout pass: two defects fixed. `/data` never received `importStatus`, so
+  the sample and demo forms rendered without their confirmation checkbox and the
+  POST was rejected; the page now passes the status and always shows the box. On
+  `/saved` a product-wide track rendered one card per retailer with the full
+  history table, making the page about 4000px tall and repeating the same product;
+  it is now one card per product with a 3-row summary per retailer and a link to
+  the full `/history` page (about 1600px with three products, two retailers each).
+  Geometry checks at 1440, 1280, and 1024 found no horizontal overflow on any
+  page; `137 tests` pass.
+- Demo history data: the Price data page can seed three demo products with dated
+  observations (gaps, price moves, one unknown price, one target) and start
+  product-wide tracking, so the History, Alerts, and Tracking screens can be
+  tested without waiting for real daily imports. Synthetic rows are labelled
+  `demo://synthetic-price`. `DemoHistoryTest` (4) covers the seed, the gaps,
+  the unknown price, the tracking, and the confirmation rule; `137 tests` pass.
+  Browser check: the demo action rendered 8 dated rows with a gap for
+  `DEMO-MILK`, a target alert appeared on Alerts, and the demo products
+  appeared on Saved with tracking on.
+- Settings tab: the language switch, the contrast switch, and the personal-data
+  controls now live together on one page (`/my-data`, named **Settings** in the
+  navigation); the sidebar no longer carries the language or contrast controls.
+  `LocaleUiTest` checks the contrast toggle on `/my-data`, and `133 tests` pass.
+- Limit: the Chinese wording is machine-assisted and still needs a
+  native-speaker review before release.
+
+## Phone on same Wi-Fi — 18 November 2026
+
+- Maven test run on JDK 21 passed **115 tests** with zero failures, errors or skips,
+  adding `LocalRequestGuardTest` (4).
+- `LocalRequestGuard` now accepts hostnames from `pricewatch.allowed-hosts` in
+  addition to loopback. `server.address` defaults to `127.0.0.1` and reads
+  `SERVER_ADDRESS`; the app is still loopback-only unless started with
+  `--server.address=0.0.0.0` and a listed host.
+- Manual check against the packaged app: bound to `0.0.0.0` with
+  `PRICEWATCH_ALLOWED_HOSTS=192.168.1.20`, host `192.168.1.20` was served (200);
+  host `10.0.0.9` got 403. The phone address is documented in the setup guide,
+  not shown on the Price data page.
+- Limits: a real phone joining the Wi-Fi and the OS firewall prompt were not
+  exercised this run; these are documented in SETUP.md for the user to allow.
+
+
+## J11 read-only offline saved list — 18 November 2026
+
+- Maven test run on JDK 21 passed **111 tests** with zero failures, errors or skips,
+  including 2 new J11 cases (`OfflineListExporterTest`) and 1 offline-download
+  scenario in `HelloControllerTest`. The `HelloController` constructor gained the
+  `OfflineListExporter` dependency, so `HelloControllerModelTest` and
+  `BudgetControllerTest` were updated to pass a mock.
+- J11 is delivered as a downloaded self-contained HTML (`GET /list/offline`), since
+  the app is a web app that cannot render without its server. The file inlines CSS
+  and a small tick-off script, has no external `<link>` or `src=`, shows the saved
+  HKT time and an inaccurate-total warning, and keeps totals fixed as saved.
+- Limits: the browser download dialog and opening the file with the network off
+  were not exercised through a real browser this run; the HTML contents
+  (self-contained, escaping, saved values) are covered by service and MockMvc
+  tests. J12 remains later work.
+
+## J10 separate-copy list sharing — 15 November 2026
+
+- Maven test run on JDK 21 passed **108 tests** with zero failures, errors or skips,
+  including 6 new J10 cases (`ListTransferServiceTest`) and 2 import/export scenarios
+  in `HelloControllerTest`. The intentional `ERROR` log lines are expected
+  constraint-violation tests from earlier milestone cases.
+- The transfer format was decided this date: a downloaded JSON file
+  (`market-desk-list/1`), reviewed in a preview, then merged into My list; imported
+  products missing from the catalogue are rejected, while items whose saved retailer
+  has no current price are kept as unpriced. Only the chosen My list is exported.
+- Limits: the browser download dialog and multipart upload were not exercised
+  through a real browser this run; they are covered by MockMvc multipart tests.
+  J11–J12 remain unstarted.
+
+## J09 checked price chat — 15 November 2026
+
+- Maven test run on JDK 21 passed **94 tests** with zero failures, errors or skips,
+  including 6 new J09 tests (`ChatControllerTest`, `ChatServiceAmbiguityTest`). The
+  existing suite was adjusted for the new `HelloController` chat dependency.
+- Browser check against the running app (in-memory database, sample loaded): the Ask
+  page renders the chat form, the sidebar shows **Ask** with no "Planned" tag, and the
+  question *"What is the lowest price for fresh milk?"* returned the checked answer
+  "The lowest listed price for 100 %Fresh Milk 236mL is HK$7.5000 at AEON." with the
+  AI-unavailable fallback notice because no key was configured.
+- Limits: the live DeepSeek call is not exercised; AI is stubbed in tests. Screenshot
+  not visually reviewed (environment lacks image display). J10–J12 remain unstarted.
+
 ## PR #18 review follow-up — 12 November 2026
 
 - Maven package on JDK 21 with the Byte Buddy startup agent passed 88 tests

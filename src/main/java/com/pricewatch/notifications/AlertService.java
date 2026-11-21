@@ -120,14 +120,14 @@ public class AlertService {
     @Transactional
     public void markRead(long eventId) {
         AlertEventEntity event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Alert was not found."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.alertNotFound", "Alert was not found."));
         if (event.getReadAt() == null) event.markRead(clock.instant());
     }
 
     @Transactional
     public void snooze(long eventId) {
         AlertEventEntity event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Alert was not found."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.alertNotFound", "Alert was not found."));
         event.snoozeUntil(clock.instant().plusSeconds(SNOOZE_HOURS * 60 * 60));
     }
 

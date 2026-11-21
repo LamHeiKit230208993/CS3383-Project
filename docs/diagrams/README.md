@@ -22,3 +22,16 @@ application view, typed private fields show repository dependencies, while
 dashed arrows show calls between controllers and services. This keeps shared
 repository relationships readable. See the [view notes](j05-j08/README.md)
 for omissions, time semantics and the rendering command.
+## J09–J12 set
+
+The [J09–J12 views](j09-j12/README.md) add the checked-price chat, separate-copy
+list sharing, offline saved copy, three UI languages, high-contrast display,
+personal-data controls, and the dated history view. They were regenerated with
+the official PlantUML 1.2026.9 renderer and reviewed on 18 November 2026.
+
+| View | Editable source | Export |
+|---|---|---|
+| Shopper goals | [use-case.puml](j09-j12/use-case.puml) | [SVG](j09-j12/use-case.svg) / [PNG](j09-j12/use-case.png) |
+| Records and personal-data boundary | [class.puml](j09-j12/class.puml) | [SVG](j09-j12/class.svg) / [PNG](j09-j12/class.png) |
+| Application classes | [application-class.puml](j09-j12/application-class.puml) | [SVG](j09-j12/application-class.svg) / [PNG](j09-j12/application-class.png) |
+| Integrated flow | [sequence.puml](j09-j12/sequence.puml) | [SVG](j09-j12/sequence.svg) / [PNG](j09-j12/sequence.png) |

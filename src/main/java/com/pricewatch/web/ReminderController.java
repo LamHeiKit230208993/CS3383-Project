@@ -17,11 +17,14 @@ public class ReminderController {
     private final ReminderService reminders;
     private final CatalogService catalog;
     private final HelloController formatter;
+    private final UiMessages messages;
 
-    public ReminderController(ReminderService reminders, CatalogService catalog, HelloController formatter) {
+    public ReminderController(ReminderService reminders, CatalogService catalog, HelloController formatter,
+                              UiMessages messages) {
         this.reminders = reminders;
         this.catalog = catalog;
         this.formatter = formatter;
+        this.messages = messages;
     }
 
     @ModelAttribute
@@ -31,26 +34,28 @@ public class ReminderController {
     }
 
     @GetMapping("/reminders")
-    String view(@RequestParam(defaultValue = "") String code, Model model) {
+    String view(@RequestParam(defaultValue = "") String code, Model model,
+                jakarta.servlet.http.HttpServletRequest request) {
         ProductView candidate = null;
         if (!code.isBlank()) {
             try {
                 candidate = reminders.candidate(code);
             } catch (IllegalArgumentException exception) {
-                model.addAttribute("error", exception.getMessage());
+                model.addAttribute("error", messages.error(request, exception));
             }
         }
-        return show(model, candidate);
+        return show(model, request, candidate);
     }
 
     @PostMapping("/reminders/create")
     String create(@RequestParam String code, @RequestParam int quantity, @RequestParam int intervalDays,
-                  @RequestParam(defaultValue = "") String retailerCode, RedirectAttributes redirect) {
+                  @RequestParam(defaultValue = "") String retailerCode, RedirectAttributes redirect,
+                  jakarta.servlet.http.HttpServletRequest request) {
         try {
             reminders.create(code, quantity, intervalDays, retailerCode);
-            redirect.addFlashAttribute("notice", "Reminder saved on this device.");
+            redirect.addFlashAttribute("notice", messages.get(request, "ui.notice.reminderSaved"));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
             redirect.addAttribute("code", code);
             return "redirect:/reminders";
         }
@@ -58,43 +63,46 @@ public class ReminderController {
     }
 
     @PostMapping("/reminders/{id}/clear")
-    String clear(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder cleared. The next due date uses the interval from now.", redirect,
-                () -> reminders.clear(id));
+    String clear(@PathVariable long id, RedirectAttributes redirect,
+                      jakarta.servlet.http.HttpServletRequest request) {
+        return act(id, "ui.notice.reminderCleared", redirect, request, () -> reminders.clear(id));
     }
 
     @PostMapping("/reminders/{id}/snooze")
-    String snooze(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder snoozed for 24 hours. Its interval is unchanged.", redirect,
-                () -> reminders.snooze(id));
+    String snooze(@PathVariable long id, RedirectAttributes redirect,
+                      jakarta.servlet.http.HttpServletRequest request) {
+        return act(id, "ui.notice.reminderSnoozed", redirect, request, () -> reminders.snooze(id));
     }
 
     @PostMapping("/reminders/{id}/add")
-    String addToList(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Added the reminder quantity to My list. The reminder is still active.", redirect,
-                () -> reminders.addToList(id));
+    String addToList(@PathVariable long id, RedirectAttributes redirect,
+                      jakarta.servlet.http.HttpServletRequest request) {
+        return act(id, "ui.notice.reminderAdded", redirect, request, () -> reminders.addToList(id));
     }
 
     @PostMapping("/reminders/{id}/delete")
-    String delete(@PathVariable long id, RedirectAttributes redirect) {
-        return act(id, "Reminder deleted.", redirect, () -> reminders.delete(id));
+    String delete(@PathVariable long id, RedirectAttributes redirect,
+                      jakarta.servlet.http.HttpServletRequest request) {
+        return act(id, "ui.notice.reminderDeleted", redirect, request, () -> reminders.delete(id));
     }
 
-    private String act(long id, String success, RedirectAttributes redirect, Runnable action) {
+    private String act(long id, String successKey, RedirectAttributes redirect,
+                       jakarta.servlet.http.HttpServletRequest request, Runnable action) {
         try {
             action.run();
-            redirect.addFlashAttribute("notice", success);
+            redirect.addFlashAttribute("notice", messages.get(request, successKey));
         } catch (IllegalArgumentException exception) {
-            redirect.addFlashAttribute("error", exception.getMessage());
+            redirect.addFlashAttribute("error", messages.error(request, exception));
         }
         return "redirect:/reminders";
     }
 
-    private String show(Model model, ProductView candidate) {
+    private String show(Model model, jakarta.servlet.http.HttpServletRequest request,
+                        ProductView candidate) {
         model.addAttribute("overview", reminders.overview());
         model.addAttribute("candidate", candidate);
         model.addAttribute("scene", "reminders");
-        model.addAttribute("title", "Reminders");
+        model.addAttribute("title", messages.get(request, "ui.title.reminders"));
         return "market-desk";
     }
 }

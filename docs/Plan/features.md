@@ -85,6 +85,34 @@ assigning or implementing any of these jobs. It defines workstreams, shared
 contracts, the D01–D07 rules agreed on 6 November 2026, and combined completion checks. The issue
 can use separate linked PRs; grouping jobs does not remove their dependencies.
 J09–J12 remain later work. Conditional scope rows keep their existing conditions.
+J09 (checked price chat) is implemented on this branch with a short tool-calling agent
+loop: the model uses `search_products` and `product_prices` tools that the app runs
+deterministically against the accepted catalogue, then phrases the answer from returned
+facts only, so no price is invented. It falls back to checked records when the AI is
+unavailable.
+
+J10 (separate-copy list sharing) is implemented on this branch: `GET /list/export`
+downloads a `market-desk-list/1` JSON file that `POST /list/import` reviews and
+merges into My list as a separate copy; a rejected file changes nothing.
+
+J11 (offline saved list) is implemented on this branch as a downloaded
+self-contained HTML copy (`GET /list/offline`); the app is a web app, so the copy
+inlines its CSS and script, shows the saved time, and has no external resources.
+
+J12 (languages, contrast, personal data, history) is implemented on this branch:
+the UI text, page titles, flash notices, and service validation errors ship in
+English, Traditional Chinese, and Simplified Chinese and follow the `LANG`
+cookie; `/contrast` turns on a high-contrast palette; `/my-data`
+views, exports, and deletes the local user's records while keeping the source
+catalogue; `/history` shows only stored dated observations with visible gap rows
+and an empty state. The Chinese wording still needs a native-speaker review, and
+the conditional R14 week/month change is not shown. R12/R16/R19/R35/R44 keep
+their conditional or future status.
+
+Tracking follows the product: Saved promotes **Track all retailers** as the
+default action (a single-retailer track is an optional secondary choice), and
+the Alerts page sets one target/drop rule per product that applies to every
+enrolled retailer, while per-retailer history records are kept for comparisons.
 
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
@@ -101,7 +129,19 @@ Within this milestone, J05 and J07 can proceed in parallel under the agreed
 D01–D07 rules. J06 follows J05; J08 uses the saved list and J06's
 agreed notification behaviour. Integrate and check the four jobs together before
 closing the issue. J09 does not need history, but is outside this milestone.
-J10's transfer format remains a later decision.
+
+J10's transfer format was decided on 15 November 2026: a downloaded JSON file
+worked through a preview, then merged into My list; imported products missing
+from the accepted catalogue are kept as unpriced items. See the implementation
+guide for the file shape and merge rules.
+
+J11's offline view is delivered as a downloaded, self-contained HTML file rather
+than a re-opened app page, because the app is a web app that needs its server.
+My list's "Save a copy that works offline" downloads one `market-desk-list.html`
+with inline CSS and a small script: it opens after the app is closed and the
+device is offline, shows the saved time and amounts that may be out of date,
+makes no fresh-price or chat claim, and lets the user tick items off locally
+(ticks are not saved). No server-side snapshot is kept.
 
 Use the [agreed decision register](tracking-alerts-budgets-reminders-j05-j08.md#decisions-before-dependent-work)
 for retention, periods, target/drop rules, repeat reset, timing, budgets, and

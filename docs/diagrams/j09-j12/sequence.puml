@@ -1,0 +1,51 @@
+@startuml
+title J12 integrated flow - languages, contrast, personal data, history
+
+actor "Local shopper" as Shopper
+participant "Browser" as Browser
+participant "LocaleController" as Lang
+participant "LocaleAdvice" as Advice
+participant "PersonalDataController" as Data
+participant "PersonalDataService" as DataSvc
+participant "HistoryService" as History
+participant "Repositories\n(list, saved, tracking,\nobservations, alerts,\nreminders, budget)" as Repo
+
+== Language and contrast ==
+Shopper -> Browser : click 繁體中文
+Browser -> Lang : GET /lang?code=zh_TW&back=/history
+Lang -> Browser : Set-Cookie LANG=zh_TW; 302 /history
+Browser -> Advice : GET /history (Cookie LANG=zh_TW)
+Advice -> Advice : locale = zh-TW
+Advice --> Browser : html lang="zh-Hant", labels.of(name)
+
+Shopper -> Browser : click High contrast
+Browser -> Lang : GET /contrast?mode=high&back=/history
+Lang -> Browser : Set-Cookie CONTRAST=high; 302 /history
+Browser -> Browser : body[data-contrast="high"]
+
+== Personal data ==
+Shopper -> Browser : open /my-data
+Browser -> Data : GET /my-data
+Data -> DataSvc : overview()
+DataSvc -> Repo : count() per area
+Data --> Browser : row counts + settings state
+
+Shopper -> Browser : Export my data
+Browser -> Data : GET /my-data/export
+Data -> DataSvc : export()
+DataSvc -> Repo : read user records only
+Data --> Browser : market-desk-my-data.json\n(catalogue excluded)
+
+Shopper -> Browser : type DELETE, submit
+Browser -> Data : POST /my-data/delete
+Data -> DataSvc : deleteLocalData()
+DataSvc -> Repo : delete user rows\n(catalogue + import metadata kept)
+Data --> Browser : 302 /my-data
+
+== History ==
+Shopper -> Browser : open /history
+Browser -> History : GET /history
+History -> Repo : trackingPeriods() + observations
+History -> History : rowise(): insert gap rows\nbetween recorded days
+History --> Browser : dated rows, gaps, or empty state
+@enduml

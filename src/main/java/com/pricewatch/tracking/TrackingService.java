@@ -98,14 +98,16 @@ public class TrackingService {
 
     private TrackingView startInTransaction(String productCode, String retailerCode) {
         if (retailerCode == null || retailerCode.isBlank()) {
-            throw new IllegalArgumentException("Choose a retailer to track.");
+            throw new com.pricewatch.UiTextException("ui.error.chooseRetailerToTrack",
+                "Choose a retailer to track.");
         }
         ProductEntity product = lockProduct(productCode);
         requireActive(product);
         boolean retailerExists = product.getListings().stream()
                 .anyMatch(listing -> retailerCode.equals(listing.getRetailerCode()));
         if (!retailerExists) {
-            throw new IllegalArgumentException("Choose a retailer currently listed for this product.");
+            throw new com.pricewatch.UiTextException("ui.error.retailerNotListedForTracking",
+                "Choose a retailer currently listed for this product.");
         }
 
         return toView(startRetailer(product, retailerCode));
@@ -157,19 +159,20 @@ public class TrackingService {
     @Transactional
     public void stop(long trackingId) {
         String code = trackingRepository.findProductCode(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.trackingMissing", "Tracking period was not found."));
         if (lockProduct(code).isTrackAllRetailers()) {
-            throw new IllegalArgumentException("Use Stop all retailers to end product-wide tracking.");
+            throw new com.pricewatch.UiTextException("ui.error.useStopAll",
+                "Use Stop all retailers to end product-wide tracking.");
         }
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.trackingMissing", "Tracking period was not found."));
         if (tracking.isEnabled()) tracking.stop(clock.instant());
     }
 
     @Transactional
     public void deleteHistory(long trackingId) {
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.trackingMissing", "Tracking period was not found."));
         observationRepository.deleteByTracking_Id(trackingId);
         alertEventRepository.deleteByTracking_IdAndTypeIn(trackingId, PRICE_ALERT_TYPES);
         tracking.setTargetArmed(true);
@@ -195,6 +198,22 @@ public class TrackingService {
     public void configureDrop(long trackingId, boolean enabled) {
         TrackingEntity tracking = activeTracking(trackingId);
         tracking.setDropEnabled(enabled);
+    }
+
+    /** Applies one alert target to every enabled retailer of the product. */
+    @Transactional
+    public void configureProductTarget(String productCode, BigDecimal targetPrice) {
+        for (TrackingEntity period : trackingRepository.findEnabledForProductForUpdate(productCode)) {
+            configureTarget(period.getId(), targetPrice);
+        }
+    }
+
+    /** Applies one drop rule to every enabled retailer of the product. */
+    @Transactional
+    public void configureProductDrop(String productCode, boolean enabled) {
+        for (TrackingEntity period : trackingRepository.findEnabledForProductForUpdate(productCode)) {
+            configureDrop(period.getId(), enabled);
+        }
     }
 
     @Transactional
@@ -237,7 +256,7 @@ public class TrackingService {
 
     private ProductEntity currentProduct(String productCode) {
         if (productCode == null || productCode.isBlank()) {
-            throw new IllegalArgumentException("A product is required.");
+            throw new com.pricewatch.UiTextException("ui.error.productRequired", "A product is required.");
         }
         ProductEntity product = productRepository.findWithListingsByCode(productCode)
                 .orElseThrow(() -> new IllegalArgumentException("That product is not in the accepted catalogue."));
@@ -253,9 +272,10 @@ public class TrackingService {
 
     private TrackingEntity activeTracking(long trackingId) {
         TrackingEntity tracking = trackingRepository.findLockedById(trackingId)
-                .orElseThrow(() -> new IllegalArgumentException("Tracking period was not found."));
+                .orElseThrow(() -> new com.pricewatch.UiTextException("ui.error.trackingMissing", "Tracking period was not found."));
         if (!tracking.isEnabled()) {
-            throw new IllegalArgumentException("Start a new tracking period before changing its alerts.");
+            throw new com.pricewatch.UiTextException("ui.error.startTrackingFirst",
+                "Start a new tracking period before changing its alerts.");
         }
         return tracking;
     }
@@ -326,10 +346,12 @@ public class TrackingService {
         try {
             normalized = price.setScale(4, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException exception) {
-            throw new IllegalArgumentException("Use a price from 0 to 999999999999999.9999.");
+            throw new com.pricewatch.UiTextException("ui.error.priceRange",
+                "Use a price from 0 to 999999999999999.9999.");
         }
         if (normalized.signum() < 0 || normalized.precision() > 19) {
-            throw new IllegalArgumentException("Use a price from 0 to 999999999999999.9999.");
+            throw new com.pricewatch.UiTextException("ui.error.priceRange",
+                "Use a price from 0 to 999999999999999.9999.");
         }
         return normalized;
     }

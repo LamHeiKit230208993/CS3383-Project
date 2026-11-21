@@ -131,6 +131,28 @@ class TrackingServiceTest {
     }
 
     @Test
+    void productLevelAlertRuleAppliesToEveryEnabledRetailer() throws Exception {
+        String a = "{\"supermarketCode\":\"STORE-A\",\"price\":\"10.00\"}";
+        String b = "{\"supermarketCode\":\"STORE-B\",\"price\":\"4.00\"}";
+        catalog.accept(json(product("ALERT-ALL", "[" + a + "," + b + "]")), "LIVE", "fixture-live");
+        tracking.startAll("ALERT-ALL");
+        assertEquals(2, tracking.trackingPeriods().size());
+
+        tracking.configureProductTarget("ALERT-ALL", new BigDecimal("8.00"));
+        assertTrue(tracking.trackingPeriods().stream()
+                        .allMatch(period -> new BigDecimal("8.00").compareTo(period.targetPrice()) == 0),
+                "Every retailer of the product shares the target.");
+
+        tracking.configureProductDrop("ALERT-ALL", true);
+        assertTrue(tracking.trackingPeriods().stream().allMatch(TrackingView::dropEnabled),
+                "Every retailer of the product shares the drop rule.");
+
+        mvc.perform(get("/alerts")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/alerts/target-all")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/alerts/drop-all")));
+    }
+
+    @Test
     void savedWishlistIsSeparateAndOnlyLiveImportsAddChangedObservations() {
         catalog.accept(json(product("TRACK-1", "[{\"supermarketCode\":\"STORE-A\",\"price\":\"5.00\"},"
                 + "{\"supermarketCode\":\"STORE-B\",\"price\":\"9.00\"}]")), "SAMPLE", "fixture");

@@ -22,6 +22,7 @@ public enum BudgetPeriod {
                 // Report invalid form input with the same message as an empty value.
             }
         }
-        throw new IllegalArgumentException("Choose a weekly or monthly budget period.");
+        throw new com.pricewatch.UiTextException("ui.error.budgetPeriod",
+                "Choose a weekly or monthly budget period.");
     }
 }
