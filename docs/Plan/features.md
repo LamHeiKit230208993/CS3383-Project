@@ -109,6 +109,11 @@ and an empty state. The Chinese wording still needs a native-speaker review, and
 the conditional R14 week/month change is not shown. R12/R16/R19/R35/R44 keep
 their conditional or future status.
 
+Tracking follows the product: Saved promotes **Track all retailers** as the
+default action (a single-retailer track is an optional secondary choice), and
+the Alerts page sets one target/drop rule per product that applies to every
+enrolled retailer, while per-retailer history records are kept for comparisons.
+
 | Job | Work | Completion check | Depends on |
 |---|---|---|---|
 | J05 | Wishlist and explicit product tracking, including selected-product history | Saving alone does not start tracking; tracking stores older retailer prices for that exact product; stopping tracking stops new collection without unsaving the product | J01-J04 |

@@ -79,8 +79,16 @@ public class TrackingController {
         model.addAttribute("format", format);
         model.addAttribute("alertEvents", alerts.events(now));
         model.addAttribute("notificationSettings", notificationPolicy.settings());
-        model.addAttribute("trackingPeriods", tracking.trackingPeriods().stream()
-                .filter(period -> period.enabled()).toList());
+        var enabledPeriods = tracking.trackingPeriods().stream()
+                .filter(period -> period.enabled()).toList();
+        model.addAttribute("trackingPeriods", enabledPeriods);
+        // One alert-rule card per product: a product-wide track covers every
+        // retailer it enrolled, so the shopper sets the rule once per product.
+        var alertGroups = new java.util.LinkedHashMap<String, java.util.List<com.pricewatch.tracking.TrackingView>>();
+        for (var period : enabledPeriods) {
+            alertGroups.computeIfAbsent(period.productCode(), key -> new java.util.ArrayList<>()).add(period);
+        }
+        model.addAttribute("alertGroups", alertGroups.values());
         return screen(model, request, "alerts", "ui.title.alerts");
     }
 
@@ -178,6 +186,33 @@ public class TrackingController {
                        RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
         try {
             tracking.configureDrop(trackingId, enabled);
+            redirect.addFlashAttribute("notice", messages.get(request,
+                    enabled ? "ui.notice.dropEnabled" : "ui.notice.dropDisabled"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", messages.error(request, exception));
+        }
+        return "redirect:/alerts";
+    }
+
+    @PostMapping("/alerts/target-all")
+    public String targetAll(@RequestParam String code,
+                            @RequestParam(required = false) BigDecimal targetPrice,
+                            RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            tracking.configureProductTarget(code, targetPrice);
+            redirect.addFlashAttribute("notice", messages.get(request,
+                    targetPrice == null ? "ui.notice.targetRemoved" : "ui.notice.targetSaved"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", messages.error(request, exception));
+        }
+        return "redirect:/alerts";
+    }
+
+    @PostMapping("/alerts/drop-all")
+    public String dropAll(@RequestParam String code, @RequestParam(defaultValue = "false") boolean enabled,
+                          RedirectAttributes redirect, jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            tracking.configureProductDrop(code, enabled);
             redirect.addFlashAttribute("notice", messages.get(request,
                     enabled ? "ui.notice.dropEnabled" : "ui.notice.dropDisabled"));
         } catch (IllegalArgumentException exception) {

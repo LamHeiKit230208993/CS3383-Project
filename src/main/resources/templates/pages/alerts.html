@@ -82,34 +82,35 @@
           <p class="helper" th:text="${#messages.msg('alerts.rulesNote')}">A target alerts when a new known price is at or below your amount. A drop needs two adjacent known observations.</p>
         </div>
       </div>
-      <div class="empty-state" th:if="${trackingPeriods.isEmpty()}">
+      <div class="empty-state" th:if="${alertGroups.isEmpty()}">
         <h3 th:text="${#messages.msg('alerts.chooseTrack')}">Choose a product and retailer to track.</h3>
         <p th:text="${#messages.msg('alerts.wishlistNotTracking')}">Saving a product to your wishlist does not start price tracking.</p>
         <a class="button secondary" th:href="@{/}" th:text="${#messages.msg('alerts.browse')}">Browse products</a>
       </div>
-      <article class="list-item" th:each="period : ${trackingPeriods}">
+      <article class="list-item" th:each="group : ${alertGroups}" th:with="lead=${group[0]}">
         <div class="list-item-heading">
           <div>
-            <h3 th:text="${period.productName}">Product</h3>
-            <p class="helper" th:text="${period.retailerCode + ' · ' + period.productCode}">Retailer</p>
+            <h3 th:text="${lead.productName}">Product</h3>
+            <p class="helper" th:text="${lead.productCode + ' A� ' + group.size() + ' ' + #messages.msg('alerts.retailerCountLabel')}">Product code</p>
           </div>
           <a class="button secondary" th:href="@{/history}"><span th:text="${#messages.msg('alerts.viewHistory')}">View history</span></a>
         </div>
+        <p class="helper" th:text="${#messages.msg('alerts.productRuleNote')}">This rule applies to every retailer listed for this product.</p>
         <div class="milestone-grid">
-          <form class="stack-form" th:action="@{/alerts/target}" method="post">
-            <input type="hidden" name="trackingId" th:value="${period.id}">
-            <label th:for="${'target-' + period.id}"><span th:text="${#messages.msg('alerts.targetLabel')}">Target price (HK$)</span>
+          <form class="stack-form" th:action="@{/alerts/target-all}" method="post">
+            <input type="hidden" name="code" th:value="${lead.productCode}">
+            <label th:for="${'target-' + lead.productCode}"><span th:text="${#messages.msg('alerts.targetLabel')}">Target price (HK$)</span>
               <input type="number" min="0" max="999999999999999.9999" step="0.0001"
-                     name="targetPrice" th:id="${'target-' + period.id}"
-                     th:value="${period.targetPrice}" th:attr="placeholder=${#messages.msg('alerts.targetPlaceholder')}" placeholder="Leave blank to remove"
+                     name="targetPrice" th:id="${'target-' + lead.productCode}"
+                     th:value="${lead.targetPrice}" th:attr="placeholder=${#messages.msg('alerts.targetPlaceholder')}" placeholder="Leave blank to remove"
                      inputmode="decimal" autocomplete="off">
             </label>
             <button class="button secondary" type="submit" th:text="${#messages.msg('alerts.saveTarget')}">Save target</button>
           </form>
-          <form class="stack-form" th:action="@{/alerts/drop}" method="post">
-            <input type="hidden" name="trackingId" th:value="${period.id}">
+          <form class="stack-form" th:action="@{/alerts/drop-all}" method="post">
+            <input type="hidden" name="code" th:value="${lead.productCode}">
             <label class="check-label">
-              <input type="checkbox" name="enabled" value="true" th:checked="${period.dropEnabled}">
+              <input type="checkbox" name="enabled" value="true" th:checked="${lead.dropEnabled}">
               <span th:text="${#messages.msg('alerts.dropLabel')}">Alert after a lower consecutive price</span>
             </label>
             <button class="button secondary" type="submit" th:text="${#messages.msg('alerts.saveDrop')}">Save drop rule</button>

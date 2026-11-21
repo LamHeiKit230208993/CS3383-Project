@@ -47,6 +47,10 @@ replacement and a stopped tracking period.
 14. Close and reopen the file-backed app. Confirm wishlist, tracking, history,
     target/drop events, read/snooze state and settings remain. Re-import the same
     LIVE price and confirm no additional observation or alert appears.
+15. Track a product whose catalogue lists two retailers with **Track all
+    retailers**, then set a target and enable drops once on the Alerts page.
+    Confirm both retailer periods receive the same target and drop rule, and the
+    Alerts page shows one rule card per product rather than one per retailer.
 
 ## Expected result
 

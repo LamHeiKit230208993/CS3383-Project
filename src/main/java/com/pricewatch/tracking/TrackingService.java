@@ -200,6 +200,22 @@ public class TrackingService {
         tracking.setDropEnabled(enabled);
     }
 
+    /** Applies one alert target to every enabled retailer of the product. */
+    @Transactional
+    public void configureProductTarget(String productCode, BigDecimal targetPrice) {
+        for (TrackingEntity period : trackingRepository.findEnabledForProductForUpdate(productCode)) {
+            configureTarget(period.getId(), targetPrice);
+        }
+    }
+
+    /** Applies one drop rule to every enabled retailer of the product. */
+    @Transactional
+    public void configureProductDrop(String productCode, boolean enabled) {
+        for (TrackingEntity period : trackingRepository.findEnabledForProductForUpdate(productCode)) {
+            configureDrop(period.getId(), enabled);
+        }
+    }
+
     @Transactional
     public List<TrackingView> trackingPeriods() {
         pruneExpired(clock.instant());

@@ -26,15 +26,19 @@
           <input type="hidden" name="code" th:value="${productToSave.code}">
           <button class="button primary" type="submit" th:text="${#messages.msg('saved.trackAll')}">Track all retailers</button>
         </form>
-        <form th:each="listing : ${productToSave.listings}"
-              th:if="${productToSave.active and !allRetailerCodes.contains(productToSave.code)}"
-              th:action="@{/tracking/start}" method="post">
-          <input type="hidden" name="code" th:value="${productToSave.code}">
-          <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
-          <button class="button primary" type="submit"
-                  th:text="${#messages.msg('saved.trackRetailer', listing.retailerCode)}">Track retailer</button>
-        </form>
       </div>
+      <details th:if="${productToSave.active and !allRetailerCodes.contains(productToSave.code)}">
+        <summary th:text="${#messages.msg('saved.trackOneRetailer')}">Prefer to track a single retailer?</summary>
+        <div class="inline-actions">
+          <form th:each="listing : ${productToSave.listings}"
+                th:action="@{/tracking/start}" method="post">
+            <input type="hidden" name="code" th:value="${productToSave.code}">
+            <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
+            <button class="button secondary" type="submit"
+                    th:text="${#messages.msg('saved.trackRetailer', listing.retailerCode)}">Track retailer</button>
+          </form>
+        </div>
+      </details>
       <p class="helper" th:if="${productToSave.listings.isEmpty()}" th:text="${#messages.msg('saved.noListings')}">No current retailer listings are available to track.</p>
     </section>
     <p class="warning" th:if="${productLookupError != null}" th:text="${productLookupError}"></p>
@@ -71,13 +75,18 @@
               <input type="hidden" name="code" th:value="${saved.product.code}">
               <button class="button primary" type="submit" th:text="${#messages.msg('saved.trackAll')}">Track all retailers</button>
             </form>
-            <form th:each="listing : ${saved.product.listings}" th:action="@{/tracking/start}" method="post">
-              <input type="hidden" name="code" th:value="${saved.product.code}">
-              <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
-              <button class="button secondary" type="submit"
-                      th:text="${#messages.msg('saved.trackRetailer', listing.retailerCode)}">Track retailer</button>
-            </form>
           </div>
+          <details th:if="${saved.product.active and !allRetailerCodes.contains(saved.product.code)}">
+            <summary th:text="${#messages.msg('saved.trackOneRetailer')}">Prefer to track a single retailer?</summary>
+            <div class="inline-actions">
+              <form th:each="listing : ${saved.product.listings}" th:action="@{/tracking/start}" method="post">
+                <input type="hidden" name="code" th:value="${saved.product.code}">
+                <input type="hidden" name="retailerCode" th:value="${listing.retailerCode}">
+                <button class="button secondary" type="submit"
+                        th:text="${#messages.msg('saved.trackRetailer', listing.retailerCode)}">Track retailer</button>
+              </form>
+            </div>
+          </details>
         </article>
       </section>
 

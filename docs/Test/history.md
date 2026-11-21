@@ -4,6 +4,22 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## UTF-8 build fix and product-wide tracking default — 21 November 2026
+
+- Build: added `project.build.sourceEncoding=UTF-8` to `pom.xml`. Without it,
+  Maven compiled test sources with the platform ANSI code page (Cp1252 here),
+  so the CJK literals in `LocaleUiTest` were corrupted and its two Chinese
+  assertions failed. After a clean build, `mvnw test` passed **137 tests** with
+  zero failures, errors, or skips, including both `LocaleUiTest` cases.
+- Tracking follows the product (issue #21 follow-up): `Saved` now promotes
+  **Track all retailers** as the primary action and moves single-retailer
+  choices into a secondary disclosure. New `/alerts/target-all` and
+  `/alerts/drop-all` endpoints apply one target/drop rule to every enabled
+  retailer of a product, and the Alerts page shows one rule card per product.
+  Per-retailer history periods are unchanged for correct comparisons.
+  Covered by `TrackingServiceTest#productLevelAlertRuleAppliesToEveryEnabledRetailer`.
+
+
 ## J12 languages, contrast, personal data, history — 18 November 2026 (completed pass)
 
 - Maven test run on JDK 21 passed **128 tests** with zero failures, errors or
