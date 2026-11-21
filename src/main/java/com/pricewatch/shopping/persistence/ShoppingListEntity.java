@@ -35,4 +35,5 @@ public class ShoppingListEntity {
 
     public Long getId() { return id; }
     public String getName() { return name; }
+    public void rename(String name) { this.name = name; }
 }

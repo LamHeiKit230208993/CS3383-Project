@@ -28,6 +28,33 @@ class ShoppingListTransferTest {
     @Autowired private ObjectMapper mapper;
 
     @Test
+    void namedListLifecycleKeepsMainCartAndPinnedRetailerIndependent() {
+        catalog.importSample();
+        shopping.add("P000000124", 1);
+        long mainCartId = shopping.lists().getFirst().id();
+        long weekendId = shopping.createList("  Weekend groceries  ");
+        assertTrue(shopping.items(weekendId).isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> shopping.createList("weekend groceries"));
+        assertThrows(IllegalArgumentException.class, () -> shopping.createList("Cart"));
+        assertThrows(IllegalArgumentException.class, () -> shopping.renameList(mainCartId, "Different"));
+        assertThrows(IllegalArgumentException.class, () -> shopping.deleteList(mainCartId));
+
+        shopping.add(weekendId, "P000000124", 2, "JASONS");
+        shopping.add(weekendId, "P000000124", 1, null);
+        shopping.renameList(weekendId, "Family groceries");
+        assertEquals("Family groceries", shopping.exportList(weekendId).name());
+        assertEquals(3, shopping.items(weekendId).getFirst().quantity());
+        assertEquals("JASONS", shopping.items(weekendId).getFirst().selectedRetailerCode());
+        assertEquals(1, shopping.items().getFirst().quantity());
+        assertNull(shopping.items().getFirst().selectedRetailerCode());
+
+        shopping.deleteList(weekendId);
+        assertThrows(IllegalArgumentException.class, () -> shopping.items(weekendId));
+        assertEquals(1, shopping.items().size());
+        assertEquals(1, shopping.lists().size());
+    }
+
+    @Test
     void exportedListIsAnIndependentEditableCopy() throws Exception {
         catalog.importSample();
         shopping.add("P000000124", 2, "JASONS");

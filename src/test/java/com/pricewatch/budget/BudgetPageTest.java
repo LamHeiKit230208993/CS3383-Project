@@ -71,6 +71,25 @@ class BudgetPageTest {
     }
 
     @Test
+    void settingsRendersCombinedSectionsAndReturnsToBudgetAfterSave() throws Exception {
+        mvc.perform(get("/settings"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"personal-data\"")))
+                .andExpect(content().string(containsString("id=\"budget\"")))
+                .andExpect(content().string(containsString("id=\"display\"")))
+                .andExpect(content().string(containsString("id=\"price-data\"")));
+        mvc.perform(post("/personal-data/budget").param("fromSettings", "true")
+                        .param("period", "MONTHLY").param("limit", "125.00"))
+                .andExpect(redirectedUrl("/settings#budget"));
+        mvc.perform(post("/personal-data/budget").param("fromSettings", "true")
+                        .param("period", "MONTHLY").param("limit", "-1"))
+                .andExpect(redirectedUrl("/settings#budget"))
+                .andExpect(flash().attribute("budgetFormLimit", "-1"));
+        mvc.perform(get("/settings"))
+                .andExpect(model().attribute("budgetFormLimit", "125.0000"));
+    }
+
+    @Test
     void overLimitWithCompletePricesDoesNotClaimPricesAreMissing() throws Exception {
         catalog.importSample();
         shopping.add("P000000124", 1);

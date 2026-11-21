@@ -29,6 +29,31 @@ const records = [...sample,
   fixture("TEST-MILK", "Fresh milk 1L", "Milk", "22.00"),
   fixture("TEST-TINY", "Decimal precision test", "Test data", "0.0001"),
   fixture("TEST-LARGE", "Large decimal test", "Test data", "999999999999999.9999")];
+const askList = "Ask weekend groceries";
+const askMilk = "P000000124";
+const shoppingTurns = new Map([
+  ["Create Ask weekend groceries", ["propose_cart", { operation: "create_list", new_name: askList }, "prepared"]],
+  ["Show my lists", ["list_carts", {}]],
+  ["Add two P000000124 packs to Ask weekend groceries", ["propose_cart", {
+    operation: "add", list_name: askList, product_code: askMilk, quantity: 2
+  }, "prepared"]],
+  ["Show Ask weekend groceries", ["get_cart", { list_name: askList }]],
+  ["Remove P000000124 from Ask weekend groceries", ["propose_cart", {
+    operation: "remove", list_name: askList, product_code: askMilk
+  }, "awaiting_confirmation"]],
+  ["Delete Ask weekend groceries", ["propose_cart", {
+    operation: "delete_list", list_name: askList
+  }, "awaiting_confirmation"]],
+  ["Show my Wishlist", ["get_wishlist", {}]],
+  ["What is 15% of HK$200?", ["calculate", { expression: "15% of (20+180)", currency: true }]],
+  ["Set a calendar reminder for P000000124", ["propose_alert", {
+    operation: "create", product_code: askMilk, condition: "calendar"
+  }, "draft", "What Hong Kong date and time should it start, and should it repeat?"]],
+  ["Weekly starting on 23 November 2030 at 10:00 Hong Kong time", ["propose_alert", {
+    operation: "create", start_at: "2030-11-23T10:00", repeat: "WEEKLY"
+  }, "awaiting_confirmation"]],
+  ["Show my reminder rules", ["get_alerts", { view: "rules", product_code: askMilk }]]
+]);
 let missingRetailer = false;
 let additionalRetailer = false;
 const children = [];
@@ -109,8 +134,10 @@ function serveChatFixture(request, response) {
       const payload = JSON.parse(body);
       assert.equal(payload.model, "fixture-deepseek");
       assert.equal(request.headers.authorization, "Bearer browser-fixture");
-      assert.deepEqual(payload.tools.map(tool => tool.function.name).sort(),
-        ["get_product_prices", "offer_product_choices", "search_products"]);
+      const availableTools = new Set(payload.tools.map(tool => tool.function.name));
+      for (const name of ["get_product_prices", "offer_product_choices", "search_products"]) {
+        assert.ok(availableTools.has(name), `Expected Ask to offer ${name}`);
+      }
       const question = payload.messages.findLast(message => message.role === "user").content;
       const toolReplies = payload.messages.filter(message => message.role === "tool");
       if (!toolReplies.length) providerRequests.push(question);
@@ -123,15 +150,24 @@ function serveChatFixture(request, response) {
       if (result) assert.equal(result.tool_call_id, priorCall.id);
       const facts = result ? JSON.parse(result.content) : {};
       assert.equal(facts.error, undefined);
-      const call = (name, args) => ({
-        role: "assistant",
-        content: null,
-        tool_calls: [{ id: `fixture-${toolReplies.length}`, type: "function",
-          function: { name, arguments: JSON.stringify(args) } }]
-      });
+      const call = (name, args) => {
+        assert.ok(availableTools.has(name), `Expected Ask to offer ${name}`);
+        return {
+          role: "assistant",
+          content: null,
+          tool_calls: [{ id: `fixture-${toolReplies.length}`, type: "function",
+            function: { name, arguments: JSON.stringify(args) } }]
+        };
+      };
       const say = content => ({ role: "assistant", content });
       let message;
-      if (question === "Can you speak Traditional Chinese?") {
+      if (shoppingTurns.has(question)) {
+        const [tool, args, status, reply] = shoppingTurns.get(question);
+        if (result && status) assert.equal(facts.status, status);
+        if (result && status === "draft") assert.deepEqual(facts.missing,
+          ["date and time in Hong Kong", "repeat schedule or one-time"]);
+        message = result ? say(reply || "See the shopping details below.") : call(tool, args);
+      } else if (question === "Can you speak Traditional Chinese?") {
         assert.equal(toolReplies.length, 0);
         message = say("可以，我可以用繁體中文和你聊天。");
       } else if (question === "who are u") {
@@ -409,6 +445,88 @@ async function main() {
     }
   });
 
+  await check("Ask manages a named cart, confirms changes, and returns to its shopping cards", async () => {
+    await go("/ask");
+    const input = page.getByRole("textbox", { name: "Your price question" });
+    const status = page.locator("[data-ask-status]");
+    const card = kind => page.locator(`.chat-tool-card[data-card-kind="${kind}"]`).last();
+    const pending = page.locator(".chat-action").filter({ has: page.locator(".chat-action-form") });
+    const send = async question => {
+      await input.fill(question);
+      await input.press("Enter");
+      await status.filter({ hasText: "Reply received." }).waitFor({ state: "attached" });
+    };
+
+    await send(`Create ${askList}`);
+    await card("receipt").waitFor();
+    await send("Show my lists");
+    const listLink = card("lists").getByRole("link", { name: askList });
+    const listId = new URL(await listLink.getAttribute("href"), base).searchParams.get("listId");
+    assert.match(listId || "", /^\d+$/);
+    await send(`Add two ${askMilk} packs to ${askList}`);
+    await send(`Show ${askList}`);
+    const cart = card("cart");
+    assert.match(await text(cart), /HK\$15\.00/);
+    assert.match(await text(cart), /Packs: 2/);
+    const cartContents = id => page.request.get(base + "/list/export" + (id ? `?listId=${id}` : ""))
+      .then(response => response.json()).then(exported => exported.items);
+    assert.equal((await cartContents(listId)).find(item => item.productCode === askMilk).quantity, 2);
+    assert.equal((await cartContents(null)).some(item => item.productCode === askMilk), false);
+
+    await send("Show my Wishlist");
+    await card("wishlist").getByRole("link", { name: "Open Wishlist" }).waitFor();
+    await send("What is 15% of HK$200?");
+    assert.match(await text(card("calculation")), /HK\$30\.00/);
+    await page.setViewportSize({ width: 375, height: 667 });
+    const chatId = new URL(page.url()).searchParams.get("chatId");
+    const cardAnchor = await cart.evaluate(element => element.closest(".chat-message").id);
+    await cart.locator(".chat-tool-rows a").first().click();
+    await page.waitForURL(url => url.pathname === `/products/${askMilk}`);
+    await page.locator(".back-link").and(page.getByRole("link", { name: "Ask", exact: true })).click();
+    await page.waitForURL(url => url.searchParams.get("chatId") === chatId && url.hash === `#${cardAnchor}`);
+    await cart.waitFor();
+    const cardBounds = await cart.boundingBox();
+    const transcriptBounds = await page.locator("[data-ask-thread]").boundingBox();
+    assert.ok(cardBounds.y >= transcriptBounds.y && cardBounds.y < transcriptBounds.y + transcriptBounds.height);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(artifacts, "ask-cart-return-mobile.png"), fullPage: true });
+
+    const removalRequest = `Remove ${askMilk} from ${askList}`;
+    await send(removalRequest);
+    assert.equal((await cartContents(listId)).length, 1);
+    await pending.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByText("Change cancelled.").waitFor();
+    assert.equal((await cartContents(listId)).length, 1);
+    await send(removalRequest);
+    await pending.getByRole("button", { name: "Confirm", exact: true }).click();
+    await pending.waitFor({ state: "hidden" });
+    assert.equal((await cartContents(listId)).length, 0);
+
+    await send(`Set a calendar reminder for ${askMilk}`);
+    await page.getByText("What Hong Kong date and time should it start, and should it repeat?").waitFor();
+    assert.equal(await pending.count(), 0);
+    await send("Weekly starting on 23 November 2030 at 10:00 Hong Kong time");
+    await pending.getByRole("button", { name: "Confirm", exact: true }).click();
+    await pending.waitFor({ state: "hidden" });
+    await send("Show my reminder rules");
+    assert.match(await text(card("alerts")), /weekly/i);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await card("alerts").getByRole("link", { name: "Current rules" }).click();
+    const rule = page.locator("article.alarm-rule").filter({ hasText: /weekly/i });
+    await rule.waitFor();
+    const ruleId = await rule.getAttribute("data-rule-id");
+    await page.locator(".back-link").and(page.getByRole("link", { name: "Ask", exact: true })).click();
+    await page.waitForURL(url => url.searchParams.get("chatId") === chatId && !!url.hash);
+    await send(`Delete ${askList}`);
+    await pending.getByRole("button", { name: "Confirm", exact: true }).click();
+    await pending.waitFor({ state: "hidden" });
+    assert.equal((await page.request.get(`${base}/list/export?listId=${listId}`)).status(), 404);
+    const removedRule = await page.request.post(base + "/alerts/watch-rules/delete", {
+      form: { code: askMilk, id: ruleId }, maxRedirects: 0
+    });
+    assert.equal(removedRule.status(), 302);
+  });
+
   await check("store name and lowest-price badge select the retailer", async () => {
     for (const width of [375, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
@@ -455,7 +573,21 @@ async function main() {
     const card = await item.boundingBox();
     await page.mouse.click(card.x + 8, card.y + card.height / 2);
     await page.waitForURL(url => url.pathname === "/products/P000000124" && url.searchParams.has("fromCart"));
-    await page.getByRole("link", { name: /Back to Cart/ }).click();
+    const cartBack = page.locator(".back-link").and(page.getByRole("link", { name: "Cart", exact: true }));
+    const backLabel = cartBack.locator(".back-link-label");
+    await page.mouse.move(0, 0);
+    await backLabel.waitFor({ state: "hidden" });
+    const backBounds = await cartBack.boundingBox();
+    assert.ok(backBounds.width >= 44 && backBounds.height >= 44);
+    await cartBack.hover();
+    await backLabel.waitFor({ state: "visible" });
+    assert.equal(await text(backLabel), "Cart");
+    await page.mouse.move(0, 0);
+    await backLabel.waitFor({ state: "hidden" });
+    await tabTo(page, cartBack);
+    await backLabel.waitFor({ state: "visible" });
+    await page.keyboard.press("Enter");
+    await page.waitForURL(base + "/list");
     assert.equal(new URL(page.url()).pathname, "/list");
     const retailer = item.locator("[name=retailerCode]");
     assert.equal(await item.locator('[data-category-icon="dairy"]').count(), 1);
@@ -561,6 +693,45 @@ async function main() {
     }
   });
 
+  await check("Cart summary follows desktop scrolling and stays in the mobile flow", async () => {
+    const created = await page.request.post(base + "/list/new", {
+      form: { name: "Scroll test" }, maxRedirects: 0
+    });
+    assert.equal(created.status(), 302);
+    const route = new URL(created.headers().location, base);
+    const listId = route.searchParams.get("listId");
+    try {
+      for (const product of records) {
+        const added = await page.request.post(base + "/list/items", {
+          form: { listId, code: product.code, quantity: "1" }, maxRedirects: 0
+        });
+        assert.equal(added.status(), 302);
+      }
+      await page.setViewportSize({ width: 1280, height: 650 });
+      await go(route.pathname + route.search);
+      assert.equal(await page.locator(".cart-line").count(), records.length);
+      const summary = page.locator(".cart-summary");
+      const summaryPosition = () => summary.evaluate(element => getComputedStyle(element).position);
+      assert.equal(await summaryPosition(), "sticky");
+      await page.evaluate(() => window.scrollTo(0, 350));
+      assert.equal(await page.evaluate(() => window.scrollY), 350);
+      assert.ok(Math.abs((await summary.boundingBox()).y - 18) <= 1);
+      await summary.locator(".cart-files > summary").click();
+      await summary.locator(".cart-import > summary").click();
+      await summary.getByRole("button", { name: "Import JSON" }).focus();
+      const card = await summary.boundingBox();
+      const button = await summary.getByRole("button", { name: "Import JSON" }).boundingBox();
+      assert.ok(button.y >= card.y && button.y + button.height <= card.y + card.height);
+      await page.setViewportSize({ width: 375, height: 900 });
+      assert.equal(await summaryPosition(), "static");
+      const list = await page.locator(".cart-sheet").boundingBox();
+      assert.ok((await summary.boundingBox()).y >= list.y + list.height);
+    } finally {
+      await page.request.post(base + "/list/delete", { form: { listId, confirmed: "true" } });
+      await page.setViewportSize({ width: 1440, height: 1000 });
+    }
+  });
+
   await check("Ask ranks matching packs and lets the shopper choose an exact pack", async () => {
     await go("/ask");
     const input = page.locator("#price-question");
@@ -569,7 +740,9 @@ async function main() {
     const checked = page.locator(".chat-prices");
     const milk = checked.getByRole("link", { name: /236mL/ });
     await milk.waitFor();
-    assert.equal(await milk.getAttribute("href"), "/products/P000000124");
+    const productLink = new URL(await milk.getAttribute("href"), base);
+    assert.equal(productLink.pathname, "/products/P000000124");
+    assert.equal(productLink.searchParams.get("askChatId"), new URL(page.url()).searchParams.get("chatId"));
     assert.match(await text(checked), /AEON\s+HK\$7\.50/);
     await page.getByRole("link", { name: /New chat/ }).click();
     await input.fill("milk options");
@@ -683,6 +856,49 @@ async function main() {
     await page.screenshot({ path: path.join(artifacts, "list.png"), fullPage: true, animations: "disabled" });
   });
 
+  await check("Settings scrolls to desktop sections and opens mobile submenus with back arrows", async () => {
+    await go("/settings");
+    const nav = page.locator(".settings-section-nav");
+    assert.equal(await nav.locator("a").first().getAttribute("href"), "#personal-data");
+    assert.equal(await page.locator("#personal-data #budget").count(), 1);
+    assert.equal(await page.locator("html").evaluate(root => getComputedStyle(root).scrollBehavior), "smooth");
+    await page.screenshot({ path: path.join(artifacts, "settings-desktop.png") });
+    for (const id of ["budget", "display", "price-data", "personal-data"]) {
+      await nav.locator(`a[href="#${id}"]`).click();
+      await page.waitForURL(url => url.hash === `#${id}`);
+      await page.waitForFunction(id => Math.abs(document.getElementById(id).getBoundingClientRect().top - 22) <= 2, id);
+      const current = await nav.locator("[aria-current]").getAttribute("href");
+      assert.equal(current, `#${id}`);
+    }
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    assert.equal(await page.locator("html").evaluate(root => getComputedStyle(root).scrollBehavior), "auto");
+    try {
+      await page.setViewportSize({ width: 375, height: 900 });
+      await go("/settings");
+      assert.equal(await nav.isVisible(), false);
+      for (const [route, target] of [["/personal-data", "#budget"], ["/preferences", "#display"], ["/data", "#price-data"]]) {
+        await page.locator(`.settings-mobile-menu a[href="${route}"]`).click();
+        await page.waitForURL(base + route);
+        assert.equal(await page.locator(target).isVisible(), true);
+        const back = page.locator(".settings-detail").getByRole("link", { name: "Settings", exact: true });
+        assert.equal(await back.locator(".back-link-label").evaluate(label => getComputedStyle(label).opacity), "0");
+        if (route === "/preferences") {
+          const toggle = page.getByRole("checkbox", { name: "High contrast" });
+          const old = await toggle.isChecked();
+          await tabTo(page, toggle);
+          await page.keyboard.press("Space");
+          assert.equal(await toggle.isChecked(), !old);
+          await page.screenshot({ path: path.join(artifacts, "settings-display-mobile.png") });
+        }
+        await back.click();
+        await page.waitForURL(base + "/settings");
+      }
+    } finally {
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await page.setViewportSize({ width: 1440, height: 1000 });
+    }
+  });
+
   await check("J10 exports one list and imports an editable copy on a second local app", async () => {
     await go("/list");
     const precisionItem = page.locator(".list-item").filter({ hasText: "TEST-LARGE" });
@@ -745,7 +961,7 @@ async function main() {
       await receivingContext.close();
     }
   });
-  await check("J11 opens the downloaded checklist without the server or internet", async () => {
+  await check("J11 edits a downloaded cart and budget without the server or internet", async () => {
     const offlineBase = await startApp(`http://127.0.0.1:${source.address().port}/prices.json`);
     const offlineServer = children.at(-1);
     const offlineContext = await browser.newContext({ viewport: { width: 375, height: 900 }, reducedMotion: "reduce" });
@@ -753,6 +969,10 @@ async function main() {
       const offlinePage = await offlineContext.newPage();
       await offlinePage.goto(offlineBase + "/data");
       await offlinePage.getByRole("button", { name: "Refresh live prices" }).click();
+      const budgetSaved = await offlinePage.request.post(offlineBase + "/budget", {
+        form: { period: "WEEKLY", limit: "100" }, maxRedirects: 0
+      });
+      assert.equal(budgetSaved.status(), 302);
       await offlinePage.goto(offlineBase + "/list");
       await offlinePage.locator(".cart-files > summary").click();
       await offlinePage.locator(".cart-import > summary").click();
@@ -786,13 +1006,40 @@ async function main() {
       const main = await offlinePage.locator("main").innerText();
       for (const amount of amounts) assert.ok(main.includes(amount));
       assert.match(main, /AEON/);
+      const budget = offlinePage.getByRole("textbox", { name: "Weekly budget" });
+      assert.equal(await budget.inputValue(), "100");
+      assert.equal(await offlinePage.locator("#completed").innerText(), "1 / 2");
+      assert.equal(await offlinePage.locator(".sidebar").count(), 0);
+      const milkRow = offlinePage.locator(".checklist-item").filter({ hasText: "P000000124" });
+      assert.equal(await milkRow.getByRole("spinbutton").isDisabled(), true);
       const unchecked = offlinePage.locator("input[type=checkbox]:not(:checked)");
       await unchecked.focus();
       await offlinePage.keyboard.press("Space");
       assert.equal(await offlinePage.locator("input:checked").count(), 2);
-      assert.equal(await offlinePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      assert.equal(await offlinePage.locator("#completed").innerText(), "2 / 2");
+      await milkRow.getByRole("checkbox").uncheck();
+      await milkRow.getByRole("combobox").selectOption({ label: "WELLCOME" });
+      await milkRow.getByRole("spinbutton").fill("3");
+      assert.equal(await milkRow.locator("[data-line-total]").innerText(), "HK$36.00");
+      assert.match(await milkRow.locator("[data-unit-price]").innerText(), /HK\$12\.00/);
+      await milkRow.getByRole("spinbutton").fill("0");
+      assert.equal(await milkRow.locator("[data-line-total]").innerText(), "Unknown");
+      assert.equal(await offlinePage.locator("#total-label").innerText(), "Known subtotal");
+      await milkRow.getByRole("spinbutton").fill("3");
+      await budget.fill("1");
+      assert.match(await offlinePage.locator("#budget-status").innerText(), /^HK\$.* over budget$/);
+      assert.equal(await offlinePage.locator("#budget-progress").getAttribute("value"), "100");
+      await budget.fill("");
+      assert.equal(await offlinePage.locator("#budget-status").innerText(), "No limit set");
+      await budget.fill("100");
+      for (const width of [320, 375, 1280]) {
+        await offlinePage.setViewportSize({ width, height: 850 });
+        assert.equal(await offlinePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+        if (width !== 320) {
+          await offlinePage.screenshot({ path: path.join(artifacts, `j11-offline-cart-${width}.png`), fullPage: true });
+        }
+      }
       assert.deepEqual(remoteRequests, []);
-      await offlinePage.screenshot({ path: path.join(artifacts, "j11-offline-list.png"), fullPage: true });
     } finally {
       await offlineContext.close();
     }
@@ -967,7 +1214,7 @@ async function main() {
     }
     await tabTo(page, extraMilk.getByRole("link", { name: "Set rules", exact: true }));
     await extraMilk.locator(".wishlist-product-link").click();
-    await page.getByRole("link", { name: /Back to Wishlist/ }).click();
+    await page.locator(".back-link").and(page.getByRole("link", { name: "Wishlist", exact: true })).click();
     await page.waitForURL(base + "/saved");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: path.join(artifacts, "wishlist-mobile.png"), animations: "disabled" });

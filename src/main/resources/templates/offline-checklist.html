@@ -5,69 +5,292 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy"
+        th:content="|default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${scriptNonce}'; base-uri 'none'; form-action 'none'|">
   <title th:text="${checklistName}">Cart</title>
   <style>
-    :root { color-scheme: light; --ink: #18253a; --muted: #41536e; --line: #c5d0df; --accent: #2854ce; }
-    .high-contrast { --ink: #050505; --muted: #252525; --line: #525252; --accent: #183d9e; }
+    :root {
+      color-scheme: light;
+      --canvas: #f1efe7; --paper: #fffdf9; --inset: #f4f2ea; --border: #d7d6ca;
+      --ink: #172a26; --muted: #4e6059; --mint: #e4f1e9; --accent: #12604c;
+      --coral: #fae6de; --over: #8c3b2d; --done: #efefeb; --pad: clamp(1rem, 3vw, 1.65rem);
+    }
+    .high-contrast {
+      --canvas: #fff; --paper: #fff; --inset: #fff; --border: #454545;
+      --ink: #080808; --muted: #222; --mint: #fff; --accent: #005b45;
+      --coral: #fff; --over: #861f10; --done: #f2f2f2;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; padding: clamp(1.25rem, 5vw, 3rem); background: #fff; color: var(--ink);
-      font: 1rem / 1.5 system-ui, sans-serif; }
-    main { max-width: 42rem; margin: 0 auto; }
-    h1 { margin: 0; font-size: clamp(1.8rem, 6vw, 2.6rem); overflow-wrap: anywhere; }
-    header p { margin: .4rem 0; color: var(--muted); }
-    ul { list-style: none; margin: 1.5rem 0 0; padding: 0; border-top: 1px solid var(--line); }
-    .checklist-item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto;
-      align-items: start; gap: .7rem; padding: .8rem 0; border-bottom: 1px solid var(--line); }
-    .checklist-item label { display: flex; width: fit-content; min-height: 2.75rem; align-items: center;
-      gap: .75rem; cursor: pointer; font-weight: 650; overflow-wrap: anywhere; }
-    input { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; accent-color: var(--accent); }
-    input:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
-    input:checked + .item-name { text-decoration: line-through; }
-    .item-meta { display: flex; flex-wrap: wrap; gap: .25rem .8rem; margin: 0 0 0 2rem;
-      color: var(--muted); font-size: .875rem; overflow-wrap: anywhere; }
-    .item-total { padding-top: .6rem; max-width: 10rem; overflow-wrap: anywhere; text-align: right; }
-    .estimate { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem .7rem;
-      margin: 1rem 0 0; overflow-wrap: anywhere; }
-    .incomplete { color: var(--muted); }
-    @media (max-width: 370px) { .item-total { max-width: 7rem; } }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font: 1rem/1.5 system-ui, sans-serif; }
+    main { width: min(100% - 2rem, 64rem); margin: clamp(1.25rem, 5vw, 3.5rem) auto; }
+    h1, h2, h3, p { margin: 0; overflow-wrap: anywhere; }
+    h1, h2 { font: 400 1.65rem/1.12 Georgia, serif; letter-spacing: -.025em; }
+    h1 { font-size: clamp(2.45rem, 6vw, 3.7rem); }
+    .heading, .sheet-title, .budget-heading {
+      display: flex; align-items: center; justify-content: space-between; gap: .6rem 1rem; flex-wrap: wrap;
+    }
+    .heading { margin-bottom: 1.3rem; align-items: end; }
+    .helper { color: var(--muted); font-size: .87rem; }
+    .heading .helper { margin-top: .55rem; }
+    .badge { display: inline-block; padding: .3rem .7rem; border-radius: 2rem; background: var(--mint);
+      color: var(--ink); font-size: .78rem; font-weight: 670; }
+    .panel { background: var(--paper); border: 1px solid var(--border); border-radius: 22px; }
+    .overview {
+      padding: var(--pad); margin-bottom: 1rem; display: grid; gap: 1rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center;
+    }
+    .summary-data { display: grid; gap: .55rem; }
+    .total { font: 400 clamp(1.9rem, 4vw, 2.8rem)/1.04 Georgia, serif; overflow-wrap: anywhere; }
+    .budget { display: grid; gap: .65rem; background: var(--mint); border-radius: 15px; padding: .85rem 1rem; }
+    .budget.is-over { background: var(--coral); }
+    .high-contrast .budget { border: 1px solid var(--border); }
+    .budget-heading label { font-weight: 670; }
+    progress {
+      appearance: none; width: 100%; height: .5rem; border: none; border-radius: 2rem;
+      background: var(--paper); color: var(--accent);
+    }
+    progress::-webkit-progress-bar { background: var(--paper); border-radius: 2rem; }
+    progress::-webkit-progress-value { background: currentColor; border-radius: 2rem; }
+    progress::-moz-progress-bar { background: currentColor; border-radius: 2rem; }
+    .high-contrast progress { outline: 1px solid var(--border); }
+    .is-over progress { color: var(--over); }
+    .is-over .budget-status { color: var(--over); font-weight: 670; }
+    .sheet-title { padding: var(--pad); }
+    ul { padding: 0; margin: 0; list-style: none; }
+    .checklist-item {
+      display: grid; align-items: center; gap: .7rem 1rem; padding: .9rem var(--pad);
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(5.5rem, .45fr) minmax(7.5rem, auto);
+      border-top: 1px solid var(--border);
+    }
+    .item-product, .item-fields { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+    .item-fields > label { min-width: 0; display: grid; gap: .15rem; }
+    .item-fields > label:first-child { flex: 1; }
+    .item-name { font-size: 1rem; font-weight: 680; }
+    .item-total { text-align: end; overflow-wrap: anywhere; }
+    .item-total strong { display: block; font-variant-numeric: tabular-nums; }
+    input:not([type=checkbox]), select {
+      min-height: 44px; border: 1px solid var(--border); border-radius: 9px; padding: .4rem .55rem;
+      background: var(--paper); color: var(--ink); width: 100%; min-width: 0; font: inherit;
+    }
+    input[type=number] { width: 5.15rem; }
+    input:disabled, select:disabled { opacity: 1; color: var(--muted); }
+    .done-control {
+      position: relative; display: inline-flex; justify-content: center; align-items: center; gap: .4rem;
+      justify-self: end;
+      min-height: 44px; min-width: 44px; padding: .25rem .7rem; border: 1px solid var(--border);
+      border-radius: 2rem; font-size: .82rem; font-weight: 680; cursor: pointer; text-align: center;
+    }
+    .done-control input { position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    :is(input, select):focus-visible, .done-control:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .done-control .icon { width: 1.05rem; height: 1.05rem; flex: none; }
+    .done-label, .checklist-item:has(input:checked) .mark-label { display: none; }
+    .checklist-item:has(input:checked) { background: var(--done); }
+    .checklist-item:has(input:checked) .item-name { text-decoration: line-through 2px; color: var(--muted); }
+    .checklist-item:has(input:checked) .done-control { background: var(--ink); color: var(--paper); }
+    .checklist-item:has(input:checked) .done-label { display: inline; }
+    .icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .icon { width: 1.45rem; height: 1.45rem; fill: none; stroke: currentColor; stroke-width: 1.65;
+      stroke-linecap: round; stroke-linejoin: round; }
+    .product-category-icon {
+      display: grid; place-items: center; flex: 0 0 2.65rem; height: 2.65rem;
+      border-radius: 12px; color: var(--accent); background: var(--mint);
+    }
+    :root:not(.high-contrast) [data-category-icon=dairy] { background: #e5ecf7; color: #375785; }
+    :root:not(.high-contrast) [data-category-icon=drink] { background: #f9e8df; color: #884932; }
+    :root:not(.high-contrast) [data-category-icon=pantry] { background: #f3ecd9; color: #755722; }
+    .sheet-footer { padding: .85rem var(--pad); background: var(--inset); border-radius: 0 0 21px 21px;
+      border-top: 1px solid var(--border); }
+    .empty { padding: var(--pad); border-top: 1px solid var(--border); }
+    @media (max-width: 760px) {
+      .checklist-item { grid-template-columns: minmax(0, 1fr) minmax(0, auto); }
+      .item-fields { grid-column: 1; grid-row: 2; }
+      .item-total { grid-column: 2; grid-row: 1; max-width: 8rem; }
+      .done-control { justify-self: end; }
+    }
+    @media (max-width: 520px) {
+      .overview { grid-template-columns: minmax(0, 1fr); }
+      .item-product { grid-row: 1 / span 2; }
+      .item-fields { grid-column: 1 / -1; grid-row: 3; }
+      .done-control { grid-column: 2; grid-row: 2; }
+      .product-category-icon { flex-basis: 2.15rem; height: 2.15rem; }
+    }
   </style>
 </head>
 <body>
+  <th:block th:replace="~{fragments/layout :: icon-library}"></th:block>
   <main id="offline-checklist">
-    <header>
-      <h1 th:text="${checklistName}">Cart</h1>
-      <p th:text="#{offline.intro}">Check off items while this file is open. These marks stay in this copy.</p>
-      <p th:if="${sampleCatalogue}" th:text="#{source.sample}">Historical sample</p>
-      <p th:if="${retrievedAt != null}">
-        <strong th:text="#{offline.retrieval}">Prices retrieved</strong>
-        <time th:datetime="${retrievedAt}" th:text="${format.time(retrievedAt)}"></time>
-      </p>
-      <p th:if="${retrievedAt == null}" th:text="#{offline.noTimestamp}">Price retrieval time is unavailable.</p>
+    <header class="heading">
+      <div>
+        <h1 th:text="${checklistName}">Cart</h1>
+        <p class="helper" th:text="#{offline.intro}">Changes apply while this file is open.</p>
+      </div>
+      <div>
+        <span class="badge" th:if="${sampleCatalogue}" th:text="#{source.sample}">Historical sample</span>
+        <p class="helper" th:if="${retrievedAt != null}">
+          <strong th:text="#{offline.retrieval}">Prices retrieved</strong>
+          <time th:datetime="${retrievedAt}" th:text="${format.time(retrievedAt)}"></time>
+        </p>
+        <p class="helper" th:if="${retrievedAt == null}" th:text="#{offline.noTimestamp}">Price retrieval time is unavailable.</p>
+      </div>
     </header>
-    <p th:if="${items.isEmpty()}" th:text="#{offline.empty}">This list has no saved items.</p>
-    <ul th:unless="${items.isEmpty()}" role="list">
-      <li class="checklist-item" th:each="item : ${items}">
-        <div>
-          <label>
-            <input type="checkbox" autocomplete="off" th:checked="${item.checked}">
-            <span class="item-name" th:text="${item.product.name.forLocale(#locale)}"></span>
-          </label>
-          <p class="item-meta">
-            <span th:text="${item.quantity + ' · ' + #messages.msg('common.packsUnit')}"></span>
-            <span th:if="${item.selectedRetailerCode != null}" th:text="#{list.chosen(${item.selectedRetailerCode})}"></span>
-            <span th:if="${item.selectedRetailerCode == null}" th:text="#{common.automaticPrice}"></span>
-            <span th:if="${item.unitPrice != null}" th:text="#{list.perPack(${format.money(item.unitPrice)},${item.retailerCode})}"></span>
-          </p>
+
+    <section class="panel overview" th:attr="aria-label=#{list.summary}">
+      <div class="summary-data" role="status" aria-atomic="true">
+        <span id="total-label" class="helper"
+              th:attr="data-estimate=#{offline.estimate},data-subtotal=#{common.subtotal}"
+              th:text="${summary.unknownItemCount > 0} ? #{common.subtotal} : #{offline.estimate}">Saved list estimate</span>
+        <strong id="list-total" class="total" th:text="${format.money(summary.knownSubtotal)}"></strong>
+        <p class="helper" id="incomplete" th:hidden="${summary.unknownItemCount == 0}"
+           th:text="#{offline.incomplete}">The total is incomplete.</p>
+      </div>
+      <div class="budget" th:classappend="${budget.state.name() == 'OVER_LIMIT'} ? 'is-over' : ''">
+        <div class="budget-heading">
+          <label for="offline-budget"
+                 th:text="#{shop.budgetPeriod(${#messages.msg('budget.period.' + budget.period.name())})}">Weekly budget</label>
+          <input id="offline-budget" type="text" inputmode="decimal" autocomplete="off" maxlength="20" disabled
+                 aria-describedby="budget-status" th:value="${budget.limitAmount == null ? '' : budget.limitAmount.stripTrailingZeros().toPlainString()}">
         </div>
-        <strong class="item-total" th:text="${item.lineTotal == null} ? #{common.unknown} : ${format.money(item.lineTotal)}"></strong>
-      </li>
-    </ul>
-    <p class="estimate" th:unless="${items.isEmpty()}">
-      <span th:text="${summary.unknownItemCount > 0} ? #{common.subtotal} : #{offline.estimate}"></span>
-      <strong th:text="${format.money(summary.knownSubtotal)}"></strong>
-    </p>
-    <p class="incomplete" th:if="${summary.unknownItemCount > 0}" th:text="#{offline.incomplete}">Prices are missing for part of this list. The total is incomplete.</p>
+        <progress id="budget-progress" max="100" th:value="${budget.progressPercent()}"
+                  th:hidden="${budget.limitAmount == null}" th:attr="aria-label=#{shop.budgetProgress}"></progress>
+        <p id="budget-status" class="helper budget-status" role="status"
+           th:attr="data-unset=#{shop.budgetNoLimit},data-incomplete=#{shop.budgetIncomplete},
+                    data-over=#{shop.budgetOver('%amount%')},data-left=#{shop.budgetLeft('%amount%')},
+                    data-invalid=#{offline.invalidBudget}">
+          <span th:if="${budget.state.name() == 'WITHIN_LIMIT'}" th:text="#{shop.budgetLeft(${format.money(budget.balance())})}"></span>
+          <span th:if="${budget.state.name() == 'OVER_LIMIT'}" th:text="#{shop.budgetOver(${format.money(budget.balance().negate())})}"></span>
+          <span th:if="${budget.state.name() == 'UNKNOWN_TOTAL'}" th:text="#{shop.budgetIncomplete}"></span>
+          <span th:if="${budget.state.name() == 'NOT_SET'}" th:text="#{shop.budgetNoLimit}"></span>
+        </p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="items-title">
+      <header class="sheet-title">
+        <h2 id="items-title" th:text="#{cart.itemsHeading}">Shopping list</h2>
+        <span class="badge" th:unless="${items.isEmpty()}">
+          <span id="completed" th:text="${completed + ' / ' + items.size()}"></span>
+          <span th:text="#{cart.done}">Done</span>
+        </span>
+      </header>
+      <p class="empty" th:if="${items.isEmpty()}" th:text="#{offline.empty}">This list has no saved items.</p>
+      <ul th:unless="${items.isEmpty()}" role="list">
+        <li class="checklist-item" th:each="item, row : ${items}"
+            th:with="itemName=${item.product.name.forLocale(#locale)}">
+          <div class="item-product">
+            <th:block th:replace="~{fragments/product-category :: icon(${item.product})}"></th:block>
+            <div>
+              <h3 class="item-name" th:id="|item-label-${row.index}|" th:text="${itemName}"></h3>
+              <p class="helper" th:text="${item.product.brand.forLocale(#locale) + ' · ' + item.product.code}"></p>
+            </div>
+          </div>
+          <div class="item-fields">
+            <label>
+              <span class="helper" th:id="|retailer-label-${row.index}|" th:text="#{common.retailer}">Retailer</span>
+              <select disabled th:attr="aria-labelledby=|retailer-label-${row.index} item-label-${row.index}|">
+                <option th:selected="${item.selectedRetailerCode == null}"
+                        th:attr="data-price=${item.product.lowestPrice}"
+                        th:text="${item.product.lowestListings.isEmpty()} ? #{cart.lowestPrice} : |#{cart.lowestPrice} · ${item.product.lowestListings.getFirst().retailerCode}|">Lowest price</option>
+                <option th:if="${item.selectedRetailerCode != null and !format.hasListingPrice(item.product, item.selectedRetailerCode)}"
+                        selected th:text="#{list.unavailable(${item.selectedRetailerCode})}"></option>
+                <option th:each="listing : ${item.product.listings}" th:if="${listing.price != null}"
+                        th:selected="${listing.retailerCode == item.selectedRetailerCode}" th:attr="data-price=${listing.price}"
+                        th:text="${listing.retailerCode}"></option>
+              </select>
+            </label>
+            <label>
+              <span class="helper" th:id="|packs-label-${row.index}|" th:text="#{common.packs}">Packs</span>
+              <input type="number" min="1" max="999" step="1" inputmode="numeric" required autocomplete="off" disabled
+                     th:value="${item.quantity}" th:attr="aria-labelledby=|packs-label-${row.index} item-label-${row.index}|">
+            </label>
+          </div>
+          <div class="item-total">
+            <strong data-line-total th:attr="data-unknown=#{common.unknown}"
+                    th:text="${item.lineTotal == null} ? #{common.unknown} : ${format.money(item.lineTotal)}"></strong>
+            <span data-unit-price class="helper" th:attr="data-priced=#{cart.unitPrice('%amount%')},data-unknown=#{list.noPrice}"
+                  th:text="${item.unitPrice == null} ? #{list.noPrice} : #{cart.unitPrice(${format.money(item.unitPrice)})}"></span>
+          </div>
+          <label class="done-control">
+            <input type="checkbox" autocomplete="off" th:checked="${item.checked}" th:attr="aria-label=#{cart.checkItem(${itemName})}">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+            <span class="mark-label" aria-hidden="true" th:text="#{cart.markDone}">Mark done</span>
+            <span class="done-label" aria-hidden="true" th:text="#{cart.done}">Done</span>
+          </label>
+        </li>
+      </ul>
+      <footer class="sheet-footer helper" th:text="#{cart.priceNote}">Estimates use listed prices.</footer>
+    </section>
   </main>
+  <script th:attr="nonce=${scriptNonce}">
+    "use strict";
+
+    const rows = Array.from(document.querySelectorAll(".checklist-item"), row => ({
+      check: row.querySelector("[type=checkbox]"),
+      quantity: row.querySelector("[type=number]"),
+      retailer: row.querySelector("select"),
+      total: row.querySelector("[data-line-total]"),
+      unit: row.querySelector("[data-unit-price]")
+    }));
+    const limitInput = document.querySelector("#offline-budget");
+    const budgetStatus = document.querySelector("#budget-status");
+    const budgetProgress = document.querySelector("#budget-progress");
+    const totalLabel = document.querySelector("#total-label");
+    const complete = document.querySelector("#completed");
+    const currency = new Intl.NumberFormat("en-HK", { style: "currency", currency: "HKD", maximumFractionDigits: 0 });
+
+    // Work in ten-thousandths of a dollar, the precision used by saved prices.
+    function moneyUnits(value) {
+      if (!/^\d{1,15}(?:\.\d{1,4})?$/.test(value ?? "")) return null;
+      const [whole, fraction = ""] = value.split(".");
+      return BigInt(whole) * 10000n + BigInt(fraction.padEnd(4, "0"));
+    }
+
+    function money(value) {
+      const fraction = String(value % 10000n).padStart(4, "0").replace(/0+$/, "").padEnd(2, "0");
+      return currency.format(value / 10000n) + "." + fraction;
+    }
+
+    function refreshBudget(total, incomplete) {
+      const input = limitInput.value.trim();
+      const limit = moneyUnits(input);
+      const invalid = input !== "" && limit === null;
+      limitInput.setAttribute("aria-invalid", invalid);
+      const over = limit !== null && total > limit;
+      budgetStatus.closest(".budget").classList.toggle("is-over", over);
+      budgetProgress.hidden = limit === null;
+      budgetProgress.value = limit === null || total === 0n ? 0 : total >= limit ? 100 : Number(total * 100n / limit);
+      const labels = budgetStatus.dataset;
+      budgetStatus.textContent = invalid ? labels.invalid : limit === null ? labels.unset :
+        over ? labels.over.replace("%amount%", money(total - limit)) :
+        incomplete ? labels.incomplete : labels.left.replace("%amount%", money(limit - total));
+    }
+
+    function refresh() {
+      let subtotal = 0n;
+      let incomplete = false;
+      let checked = 0;
+      for (const row of rows) {
+        if (row.check.checked) checked++;
+        row.quantity.disabled = row.retailer.disabled = row.check.checked;
+        const unit = moneyUnits(row.retailer.selectedOptions[0]?.dataset.price);
+        const valid = /^\d+$/.test(row.quantity.value) && Number(row.quantity.value) >= 1 && Number(row.quantity.value) <= 999;
+        row.quantity.setAttribute("aria-invalid", !valid);
+        const total = unit !== null && valid ? unit * BigInt(row.quantity.value) : null;
+        row.total.textContent = total === null ? row.total.dataset.unknown : money(total);
+        row.unit.textContent = unit === null ? row.unit.dataset.unknown : row.unit.dataset.priced.replace("%amount%", money(unit));
+        if (total === null) incomplete = true;
+        else subtotal += total;
+      }
+      if (complete) complete.textContent = checked + " / " + rows.length;
+      totalLabel.textContent = incomplete ? totalLabel.dataset.subtotal : totalLabel.dataset.estimate;
+      document.querySelector("#list-total").textContent = money(subtotal);
+      document.querySelector("#incomplete").hidden = !incomplete;
+      refreshBudget(subtotal, incomplete);
+    }
+
+    limitInput.disabled = false;
+    document.querySelector("main").addEventListener("input", refresh);
+    refresh();
+  </script>
 </body>
 </html>

@@ -54,7 +54,7 @@ This table replaces the old difficulty rankings and separate feature legend.
 | F16 | View, export, and delete local personal data | R45. List sharing must not export all personal data. |
 | F17 | App text and product labels in three languages | R46. The JSON supplies product labels; app screens still need translations. |
 | F18 | High-contrast, easy-to-read display | R47. Check text, controls, focus, and meaning without colour. |
-| F19 | Offline Cart checklist | R48. A standalone HTML file opens without the app and allows temporary checkmarks. |
+| F19 | Offline Cart checklist | R48. A standalone HTML copy opens without the app and allows temporary checklist, quantity, retailer, and budget edits. |
 | F20 | Selected-product history collection | Supports R10, R14, R21-R22, R35. Use separate product/pack/retailer records; collect only while the app runs. |
 | F21 | Price history charts | R10. Show available dates and gaps, not an invented 30/90-day series. |
 | F22 | Source and retrieval/source dates | R14 is tracked-only. A general saved-data age label does not imply tracking. |
@@ -95,7 +95,7 @@ Conditional scope rows keep their existing conditions.
 | J08 | Time reminders with shared alert history | Edit or delete a reminder in item rules. One entry appears per due occurrence while the app is running. Dismissal schedules the next reminder and keeps its history. | J04, J06 |
 | J09 | Text chat using checked search/comparison operations | The answer uses checked product, retailer, and amount; unclear requests ask for a choice; AI failure still leaves the normal comparison usable | J03 |
 | J10 | Separate-copy list sharing | Transfer a chosen list as versioned JSON. Preserve products, quantities, checked states, and retailer choices. Invalid input leaves existing lists unchanged. | J04 |
-| J11 | Standalone offline Cart checklist | Download the selected list as HTML with saved prices and retrieval time. Open it and check off items with the app stopped and network disconnected. | J10 |
+| J11 | Standalone offline Cart checklist | Download HTML with saved prices and retrieval time. Check items and recalculate costs in the open file with the app stopped and network disconnected. | J10 |
 | J12 | Complete languages, easy-to-read display, personal-data controls, and history views | Check all three UI languages, useful contrast, data view/export/delete, available history dates, and empty/gap states | Relevant earlier jobs |
 
 Within this milestone, J05 and J07 can proceed in parallel under the agreed
@@ -109,7 +109,10 @@ reminders. Agents must not each choose different rules. The
 [feasibility review](../feasibility-review-simple.md#5-open-decisions) separates
 these settled milestone rules from questions that remain for later work.
 
-Background device/cloud notifications, offline editing, and price prediction are not part of these jobs.
+Background device/cloud notifications, syncing offline edits to the Cart, and price prediction are future work.
+
+The current branch has implemented J09–J12. See the [shopper workflow checks](issue-21-workflow-checks.md)
+and [dated test results](../Test/history.md) for the verified paths.
 
 ## 6. Implementation contracts
 

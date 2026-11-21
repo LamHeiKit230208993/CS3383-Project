@@ -1,5 +1,5 @@
 <section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="history-title">
-  <a class="back-link" th:href="@{/products/{code}(code=${product.code})}" th:text="#{history.back}"></a>
+  <th:block th:replace="~{fragments/back-link :: link(@{/products/{code}(code=${product.code})}, #{app.scene.compare})}"></th:block>
   <header class="page-heading">
     <h1 id="history-title" th:text="#{app.scene.history}"></h1>
     <p class="intro"><strong th:text="${product.name.forLocale(#locale)}"></strong> · <span th:text="${product.code}"></span></p>

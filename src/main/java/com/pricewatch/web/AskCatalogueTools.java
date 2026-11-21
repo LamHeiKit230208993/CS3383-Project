@@ -149,6 +149,10 @@ public final class AskCatalogueTools {
         return selectedCode;
     }
 
+    String exactSearchCode() {
+        return exactSearchCode;
+    }
+
     List<AskController.Choice> choices() {
         return choices;
     }

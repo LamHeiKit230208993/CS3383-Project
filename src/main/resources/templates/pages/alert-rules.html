@@ -1,8 +1,12 @@
 <section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="rules-heading" class="item-rules"
          th:attr="data-close=#{watchEditor.close}">
-  <a class="button secondary rules-back" th:if="${rulesFrom == 'saved'}" th:href="@{/saved}" th:text="#{app.nav.saved}">Wishlist</a>
-  <a class="button secondary rules-back" th:if="${rulesFrom != 'saved'}"
-     th:href="@{/alerts(tab=${rulesFrom == 'rules' ? 'rules' : null})}" th:text="#{alertRules.back}">← Alerts</a>
+  <th:block th:replace="~{fragments/ask-return :: link}"></th:block>
+  <th:block th:if="${askReturnUrl == null and rulesFrom == 'saved'}">
+    <th:block th:replace="~{fragments/back-link :: link(@{/saved}, #{app.nav.saved})}"></th:block>
+  </th:block>
+  <th:block th:if="${askReturnUrl == null and rulesFrom != 'saved'}">
+    <th:block th:replace="~{fragments/back-link :: link(${rulesFrom == 'rules'} ? @{/alerts(tab='rules')} : @{/alerts}, #{app.nav.alerts})}"></th:block>
+  </th:block>
   <header class="page-heading">
     <h1 id="rules-heading" th:text="#{alertRules.heading}">Alert rules</h1>
   </header>

@@ -244,6 +244,34 @@
 }
 .chat-prices .chat-price-time { margin-top: 6px; color: var(--muted); font-size: 0.74rem; }
 
+.chat-tool-card {
+  width: min(100%, 32rem);
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.chat-tool-card h2 { font-size: 1rem; margin: 0; }
+.chat-tool-card .chat-tool-detail { margin-top: 5px; color: var(--muted); }
+.chat-tool-card[data-card-kind="confirmation"] { border-inline-start: 3px solid var(--blue); }
+.chat-tool-rows { list-style: none; padding: 0; margin: 7px 0 0; }
+.chat-tool-rows li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  padding: 6px 0;
+  border-block-start: 1px solid var(--line);
+}
+.chat-tool-row-detail { color: var(--muted); font-size: .875rem; }
+.chat-tool-links, .chat-action-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.chat-tool-links a { text-decoration: none; }
+.chat-message .chat-action-state { margin-top: 7px; color: var(--muted); }
+.chat-message[id] { scroll-margin-block-start: 12px; }
+
 .chat-pending { outline: 1.5px dashed rgba(20, 130, 96, 0.45); }
 
 .ask-choice { display: grid; gap: 10px; max-width: 740px; margin: 14px auto 0; }

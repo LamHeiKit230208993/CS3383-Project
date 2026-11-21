@@ -1,7 +1,48 @@
 <section xmlns:th="http://www.thymeleaf.org" th:fragment="content" class="cart-page" aria-labelledby="list-title">
   <header class="page-heading">
+    <th:block th:replace="~{fragments/ask-return :: link}"></th:block>
     <h1 id="list-title" th:text="#{app.scene.list}">Cart</h1>
   </header>
+
+  <section class="cart-list-workspace" th:attr="aria-label=#{cart.manageLists}">
+    <nav class="cart-list-switcher" th:attr="aria-label=#{list.picker}">
+      <strong class="button secondary" aria-current="page"
+              th:text="${namedList} ? ${selectedList.name} : #{app.scene.list}">Cart</strong>
+      <div class="cart-other-lists" th:if="${lists.size() > 1}">
+        <a th:each="choice, entry : ${lists}" th:unless="${choice.id == selectedList.id}"
+           class="button secondary" th:href="${entry.first} ? @{/list} : @{/list(listId=${choice.id})}"
+           th:text="${entry.first} ? #{app.scene.list} : ${choice.name}"></a>
+      </div>
+    </nav>
+    <div class="cart-list-management">
+      <details>
+        <summary class="button secondary" th:text="#{cart.newList}">New list</summary>
+        <form th:action="@{/list/new}" method="post" class="cart-list-fields">
+          <label for="new-list-name" th:text="#{cart.listName}">List name</label>
+          <input id="new-list-name" name="name" maxlength="100" required>
+          <button type="submit" class="button primary" th:text="#{cart.createList}">Create list</button>
+        </form>
+      </details>
+      <details th:if="${namedList}">
+        <summary class="button secondary" th:text="#{cart.renameList}">Rename list</summary>
+        <form th:action="@{/list/rename}" method="post" class="cart-list-fields">
+          <input type="hidden" name="listId" th:value="${selectedList.id}">
+          <label for="rename-list-name" th:text="#{cart.listName}">List name</label>
+          <input id="rename-list-name" name="name" maxlength="100" required th:value="${selectedList.name}">
+          <button type="submit" class="button primary" th:text="#{cart.saveListName}">Save name</button>
+        </form>
+      </details>
+      <details th:if="${namedList}">
+        <summary class="button secondary" th:text="#{cart.deleteList}">Delete list</summary>
+        <form th:action="@{/list/delete}" method="post" class="cart-list-fields">
+          <input type="hidden" name="listId" th:value="${selectedList.id}">
+          <input type="hidden" name="confirmed" value="true">
+          <p th:text="#{cart.deleteListPrompt(${selectedList.name},${items.size()})}"></p>
+          <button type="submit" class="button danger" th:text="#{cart.confirmDeleteListButton}">Confirm list deletion</button>
+        </form>
+      </details>
+    </div>
+  </section>
 
   <p class="sr-only" role="status" data-cart-status
      th:attr="data-saved=#{feedback.list.saved},data-failed=#{cart.checkFailed}"></p>
@@ -12,7 +53,6 @@
           <h2 id="cart-sheet-title" th:text="#{cart.itemsHeading}">Shopping list</h2>
           <span class="cart-count" th:text="#{cart.packCount(${summary.totalQuantity})}"></span>
         </div>
-        <strong th:if="${listId != null and selectedList.name != 'My list'}" th:text="${selectedList.name}"></strong>
       </header>
 
       <div class="empty-state cart-empty" th:if="${items.isEmpty()}">
@@ -108,6 +148,7 @@
 
     <aside class="panel basket-preview cart-summary" aria-labelledby="cart-summary-title">
       <h2 id="cart-summary-title" th:text="#{list.summary}">List summary</h2>
+      <p class="helper" th:text="#{cart.budgetList(${namedList ? selectedList.name : #messages.msg('app.scene.list')})}"></p>
       <dl class="cart-summary-facts">
         <div><dt th:text="#{cart.itemsHeading}">Items</dt><dd th:text="${items.size()}"></dd></div>
         <div><dt th:text="#{common.packs}">Packs</dt><dd th:text="${summary.totalQuantity}"></dd></div>
@@ -122,11 +163,6 @@
         <summary class="button primary"><span th:text="#{cart.files}">List actions</span><span aria-hidden="true">⌄</span></summary>
         <div class="cart-file-menu">
           <h3 th:text="#{cart.moveList}">Move your list</h3>
-          <nav class="cart-other-lists" th:if="${lists.size() > 1}" th:attr="aria-label=#{list.picker}">
-            <a class="button secondary" th:each="choice, entry : ${lists}" th:unless="${choice.id == selectedList.id}"
-               th:href="@{/list(listId=${entry.first ? null : choice.id})}"
-               th:text="${entry.first} ? #{app.scene.list} : ${choice.name}"></a>
-          </nav>
           <details class="cart-import">
             <summary class="button secondary">
               <svg class="icon" aria-hidden="true"><use href="#i-upload-list"/></svg>

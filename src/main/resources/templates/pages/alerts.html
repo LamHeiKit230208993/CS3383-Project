@@ -1,10 +1,15 @@
 <section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="alerts-title" class="alerts-center">
   <header class="page-heading">
+    <th:block th:replace="~{fragments/ask-return :: link}"></th:block>
     <h1 id="alerts-title" th:text="#{app.nav.alerts}">Alerts</h1>
   </header>
   <nav class="alerts-tabs" th:attr="aria-label=#{app.nav.alerts}">
-    <a class="button secondary" th:href="@{/alerts}" th:attr="aria-current=${currentRules ? null : 'page'}" th:text="#{watchEditor.history}">History</a>
-    <a class="button secondary" th:href="@{/alerts(tab='rules')}" th:attr="aria-current=${currentRules ? 'page' : null}" th:text="#{watchEditor.current}">Current rules</a>
+    <a class="button secondary"
+       th:href="${askReturnUrl != null} ? @{/alerts(askChatId=${askReturnChatId},askMessageId=${askReturnMessageId})} : @{/alerts}"
+       th:attr="aria-current=${currentRules ? null : 'page'}" th:text="#{watchEditor.history}">History</a>
+    <a class="button secondary"
+       th:href="${askReturnUrl != null} ? @{/alerts(tab='rules',askChatId=${askReturnChatId},askMessageId=${askReturnMessageId})} : @{/alerts(tab='rules')}"
+       th:attr="aria-current=${currentRules ? 'page' : null}" th:text="#{watchEditor.current}">Current rules</a>
   </nav>
   <div class="alerts-layout alerts-tab-content">
     <section class="alert-history" th:unless="${currentRules}" aria-labelledby="events-title">

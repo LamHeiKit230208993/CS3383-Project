@@ -31,3 +31,10 @@ restores automatic lowest. The legacy update retains a saved choice. Unknown or
 unpriced new retailer choices are rejected. After refresh removes the selected
 retailer's price, its selection remains saved and its total stays unknown rather
 than using another retailer. Offers are not included in the arithmetic.
+
+In the [shopper browser suite](../../../src/test/browser/market-desk.cjs),
+open a named cart with enough items to scroll. At 1280 × 650, the summary
+stays in view as the list scrolls and the expanded import button remains
+reachable by focus. At 375 px, it follows the items in normal page flow.
+From a Cart item comparison, verify that the back arrow reveals the destination
+name on hover and keyboard focus. Enter returns to the Cart that opened it.

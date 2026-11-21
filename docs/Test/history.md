@@ -4,6 +4,44 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## J09–J12 PR evidence — 21 November 2026
+
+- Official PlantUML 1.2026.9 checked both J09–J12 sequences and exported
+  SVG and PNG files. The PNGs were visually reviewed.
+- The preview set combines five supplied desktop captures with three
+  mobile captures from the controlled Chrome workflows.
+
+## Settings sections and back controls — 21 November 2026
+
+- 153 Maven tests, 22 Chrome shopper scenarios, and 13 Chrome milestone
+  scenarios passed. The database upgrade and restart checks passed.
+- All four desktop Settings links reached the intended scroll offset and
+  respected reduced motion. At 375 px, each submenu returned through its
+  arrow. The display switch worked with pointer and keyboard input.
+- Back arrows revealed the destination name on hover and focus. Returning
+  from a comparison preserved the originating Cart or Wishlist.
+
+## Interactive offline Cart and pinned list summary — 21 November 2026
+
+- 152 Maven tests, 21 Chrome shopper scenarios, and 13 Chrome milestone
+  scenarios passed. The file database upgrade and restart checks passed.
+- The standalone HTML recalculated quantities, retailer prices, and budget
+  with the server stopped and Chrome offline. It made no HTTP requests.
+  The desktop Cart summary stayed in view while scrolling and kept its
+  expanded controls reachable. The mobile summary followed the item list.
+
+## Named carts and Ask shopping tools — 21 November 2026
+
+- 152 Maven tests, 20 Chrome shopper scenarios, and 13 Chrome milestone
+  scenarios passed. The shopper suite used a controlled chat-provider fixture.
+- Chrome verified a named Cart, its shared budget comparison, Ask result
+  links, cancellation and confirmation, and a reminder drafted over two turns.
+- Live CityU DeepSeek checks returned a calculator card showing HK$30.00
+  for 15% of HK$200 and added the exact historical sample milk pack to a
+  named test cart. The packaged app used the Windows trust store.
+- The file database upgrade and restart preserved the existing cart, retailer
+  choice, checked state, and tracked observations.
+
 ## Per-rule alert cards and saved switches — 21 November 2026
 
 - 142 Maven tests and 32 Chrome scenarios passed. Chrome checked the reminder

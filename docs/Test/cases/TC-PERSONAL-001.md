@@ -15,6 +15,8 @@ that is absent from the catalogue.
 2. Open the reset confirmation, then return to Personal data. Check that the
    overview has the same list and item counts. Submit the reset without
    confirmation and check the confirmation error and retained settings.
+   In Chrome, start from desktop Settings and use Cancel to return to the
+   Personal data section. Confirming reset from there also returns to the section.
 3. Use a temporary foreign key to block deletion of the imported-only product
    at the end of the reset. Submit a confirmed reset and check that the
    failure preserves the lists, preferences, tracking flag, and session chat.

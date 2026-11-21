@@ -1,7 +1,7 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
   <section class="ask-workspace" data-ask-workspace th:attr="aria-label=#{chat.label},data-ask-url=@{/ask},
       data-you=#{chat.you},data-sending=#{chat.sending},data-checking=#{chat.checking},data-received=#{chat.received},
-      data-failed=#{chat.sendFailed},data-interrupted=#{chat.replyInterrupted}">
+      data-failed=#{chat.sendFailed},data-interrupted=#{chat.replyInterrupted},data-action-failed=#{chat.actionRequestFailed}">
     <aside class="ask-history" th:attr="aria-label=#{chat.history}">
       <a class="button secondary ask-new" th:href="@{/ask}" th:text="#{chat.new}">+ New chat</a>
       <details class="ask-recent">
@@ -36,12 +36,14 @@
           </form>
         </div>
         <ol class="chat-messages" role="list">
-          <li class="chat-message" th:each="message : ${messages}" th:classappend="${message.shopper ? 'chat-shopper' : ''}">
+          <li class="chat-message" th:each="message : ${messages}" th:classappend="${message.shopper ? 'chat-shopper' : ''}"
+              th:id="${'ask-message-' + message.id}" tabindex="-1">
             <strong th:text="${message.shopper} ? #{chat.you} : 'Market Desk'">Market Desk</strong>
-            <p th:text="${message.text}"></p>
+            <p th:unless="${message.text.isBlank()}" th:text="${message.text}"></p>
             <section class="chat-prices" th:each="card : ${message.priceCards}" th:attr="aria-label=#{chat.checkedPrices}">
               <p class="chat-price-caption" th:text="#{chat.checkedPrices}">Checked catalogue prices</p>
-              <a th:href="@{/products/{code}(code=${card.productCode})}" th:text="${card.productLabel}"></a>
+              <a th:href="@{/products/{code}(code=${card.productCode},askChatId=${chatId},askMessageId=${message.id})}"
+                 th:text="${card.productLabel}"></a>
               <p class="helper" th:if="${card.rows.isEmpty()}" th:text="#{common.notListed}">Not listed</p>
               <dl th:unless="${card.rows.isEmpty()}">
                 <div th:each="row : ${card.rows}">
@@ -54,6 +56,23 @@
               </dl>
               <p class="chat-price-time" th:if="${card.retrievedAt != null}"
                  th:text="#{alerts.retrievedAt(${format.time(card.retrievedAt)})}"></p>
+            </section>
+            <th:block th:each="card : ${message.cards}">
+              <th:block th:replace="~{pages/ask :: tool-card(${card},${chatId},${message.id})}"></th:block>
+            </th:block>
+            <section class="chat-action" th:each="action : ${message.actions}"
+                     th:attr="aria-label=#{chat.reviewAction},data-ask-action=${action.id}">
+              <th:block th:replace="~{pages/ask :: tool-card(${action.preview},${chatId},${message.id})}"></th:block>
+              <form class="chat-action-form" th:if="${action.state == 'PENDING'}" th:action="@{/ask/action}" method="post">
+                <input type="hidden" name="chatId" th:value="${chatId}">
+                <input type="hidden" name="actionId" th:value="${action.id}">
+                <button class="button primary" type="submit" name="decision" value="confirm"
+                        th:disabled="${awaitingReply}" th:text="#{chat.confirmAction}">Confirm</button>
+                <button class="button secondary" type="submit" name="decision" value="cancel"
+                        th:disabled="${awaitingReply}" th:text="#{chat.cancelAction}">Cancel</button>
+              </form>
+              <p class="chat-action-state" th:unless="${action.state == 'PENDING'}" th:text="#{${'chat.state.' + action.state}}"
+                 tabindex="-1" data-ask-action-state></p>
             </section>
           </li>
         </ol>
@@ -94,3 +113,38 @@
     </div>
   </section>
 </th:block>
+
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="tool-card(card,chatId,messageId)" class="chat-tool-card"
+         th:attr="aria-label=${card.title},data-card-kind=${card.kind}">
+  <h2 th:text="${card.title}"></h2>
+  <p class="chat-tool-detail" th:if="${card.detail != null and !card.detail.isBlank()}" th:text="${card.detail}"></p>
+  <ul class="chat-tool-rows" th:unless="${card.rows.isEmpty()}" role="list">
+    <li th:each="row : ${card.rows}">
+      <th:block th:if="${row.productCode != null and !row.productCode.isBlank()}">
+        <a th:if="${card.kind == 'alerts' or card.kind == 'alert-history'}"
+           th:href="@{/alerts/rules(code=${row.productCode},askChatId=${chatId},askMessageId=${messageId})}"
+           th:text="${row.label}"></a>
+        <a th:unless="${card.kind == 'alerts' or card.kind == 'alert-history'}"
+           th:href="@{/products/{code}(code=${row.productCode},askChatId=${chatId},askMessageId=${messageId})}"
+           th:text="${row.label}"></a>
+      </th:block>
+      <a th:if="${card.kind == 'lists'}"
+         th:href="@{/list(listId=${row.listId},askChatId=${chatId},askMessageId=${messageId})}" th:text="${row.label}"></a>
+      <span th:if="${card.kind != 'lists' and (row.productCode == null or row.productCode.isBlank())}" th:text="${row.label}"></span>
+      <span class="chat-tool-row-detail" th:if="${row.detail != null and !row.detail.isBlank()}" th:text="${row.detail}"></span>
+    </li>
+  </ul>
+  <div class="chat-tool-links" th:if="${card.kind == 'cart' or card.kind == 'wishlist' or card.kind == 'alerts' or card.kind == 'alert-history'}">
+    <a class="button secondary" th:if="${card.kind == 'cart'}"
+       th:href="@{/list(listId=${card.listId},askChatId=${chatId},askMessageId=${messageId})}"
+       th:text="#{chat.openCart}">Open list</a>
+    <a class="button secondary" th:if="${card.kind == 'wishlist'}"
+       th:href="@{/saved(askChatId=${chatId},askMessageId=${messageId})}" th:text="#{chat.openWishlist}">Open Wishlist</a>
+    <a class="button secondary" th:if="${card.kind == 'alerts'}"
+       th:href="@{/alerts(tab='rules',askChatId=${chatId},askMessageId=${messageId})}"
+       th:text="#{watchEditor.current}">Current rules</a>
+    <a class="button secondary" th:if="${card.kind == 'alert-history'}"
+       th:href="@{/alerts(askChatId=${chatId},askMessageId=${messageId})}"
+       th:text="#{alertCenter.history}">Alert history</a>
+  </div>
+</section>

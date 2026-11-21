@@ -1,8 +1,17 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
   <section aria-labelledby="compare-title">
-    <a class="back-link" th:if="${fromCart}" th:href="@{/list(listId=${returnListId})}" th:text="#{cart.back}">← Back to Cart</a>
-    <a class="back-link" th:if="${fromWishlist}" th:href="@{/saved}" th:text="#{wishlist.back}">← Back to Wishlist</a>
-    <a class="back-link" th:unless="${fromCart or fromWishlist}" th:href="@{/}" th:text="#{compare.back}">← Back to Discover</a>
+    <th:block th:replace="~{fragments/ask-return :: link}"></th:block>
+    <th:block th:if="${askReturnUrl == null}">
+      <th:block th:if="${fromCart}">
+        <th:block th:replace="~{fragments/back-link :: link(${returnListId == null} ? @{/list} : @{/list(listId=${returnListId})}, #{app.scene.list})}"></th:block>
+      </th:block>
+      <th:block th:if="${fromWishlist}">
+        <th:block th:replace="~{fragments/back-link :: link(@{/saved}, #{app.nav.saved})}"></th:block>
+      </th:block>
+      <th:block th:if="${!fromCart and !fromWishlist}">
+        <th:block th:replace="~{fragments/back-link :: link(@{/}, #{app.scene.discover})}"></th:block>
+      </th:block>
+    </th:block>
     <div class="page-heading">
       <p class="eyebrow" th:text="#{compare.eyebrow}">ONE PRODUCT. A CLEAR COMPARISON.</p>
       <h1 id="compare-title" th:text="#{app.scene.compare}">Compare listed prices</h1>
@@ -42,6 +51,15 @@
           method="post"
         >
           <input type="hidden" name="code" th:value="${product.code}">
+          <div class="compare-cart-choice" th:if="${cartChoices.size() > 1}">
+            <label for="compare-list" th:text="#{cart.addToList}">Add to list</label>
+            <select id="compare-list" name="listId">
+              <option th:each="choice, entry : ${cartChoices}"
+                      th:value="${entry.first ? '' : choice.id}"
+                      th:selected="${returnListId == null ? entry.first : choice.id == returnListId}"
+                      th:text="${entry.first} ? #{app.scene.list} : ${choice.name}"></option>
+            </select>
+          </div>
           <label for="quantity"><th:block th:text="#{compare.quantity}">Quantity</th:block> <small th:text="#{compare.packUnit}">(packs)</small></label>
           <input
             id="quantity"

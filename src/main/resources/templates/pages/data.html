@@ -1,51 +1,51 @@
-<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="content">
-  <section aria-labelledby="data-title">
-    <div class="page-heading">
-      <p class="eyebrow" th:text="#{data.eyebrow}">KNOW WHAT YOU ARE COMPARING</p>
-      <h1 id="data-title" th:text="#{data.heading}">Price data, made clear.</h1>
-      <p class="intro" th:text="#{data.intro}">You choose when to refresh. A failed import keeps your last accepted data.</p>
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" class="settings-detail">
+  <div class="settings-detail-back">
+    <th:block th:replace="~{fragments/back-link :: link(@{/settings},#{app.scene.settings})}"></th:block>
+  </div>
+  <th:block th:replace="~{pages/data :: settings-panel}"></th:block>
+</section>
+
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="settings-panel" id="price-data"
+         class="settings-card" tabindex="-1" aria-labelledby="data-title">
+  <header class="settings-card-heading">
+    <span class="settings-card-icon" aria-hidden="true"><svg class="icon"><use href="#i-data"/></svg></span>
+    <div>
+      <h1 id="data-title" th:unless="${scene == 'settings'}" th:text="#{app.scene.data}">Price data &amp; updates</h1>
+      <h2 id="data-title" th:if="${scene == 'settings'}" th:text="#{app.scene.data}">Price data &amp; updates</h2>
+      <p th:text="#{data.intro}">You choose when to refresh. A failed import keeps your last accepted data.</p>
     </div>
-    <div class="data-layout">
-      <div class="panel">
-        <h2 th:text="#{data.accepted}">Accepted catalogue</h2>
-        <p th:if="${importStatus == null}" class="helper" th:text="#{data.empty}">No catalogue has been imported yet.</p>
-        <dl class="data-facts" th:if="${importStatus != null}">
-          <dt th:text="#{data.origin}">Origin</dt>
-          <dd th:text="${importStatus.origin == 'SAMPLE'} ? #{data.sample.origin} : #{data.live.origin}"></dd>
-          <dt th:text="#{data.retrieved}">Retrieved by this app</dt>
-          <dd th:text="${format.time(importStatus.retrievedAt)}"></dd>
-          <dt th:text="#{data.priceDate}">Source price date</dt>
-          <dd th:text="#{data.unknownDate}">Unknown — not supplied by this feed</dd>
-          <dt th:text="#{data.records}">Records</dt>
-          <dd th:text="#{data.counts(${importStatus.productCount},${importStatus.listingCount},${importStatus.offerCount})}"></dd>
-          <dt th:text="#{data.source}">Source</dt>
-          <dd th:text="${importStatus.sourceUrl}" class="source-url"></dd>
-        </dl>
-        <p class="source-note" th:text="#{data.sourceHelp}">A new download time does not prove a new price observation. Prices stay saved until you accept another import.</p>
-      </div>
-      <div class="import-actions">
-        <div class="panel">
-          <span class="small-tag" th:text="#{data.sample.tag}">FIRST CHECK</span>
-          <h2 th:text="#{data.sample.heading}">Load the checked sample</h2>
-          <p th:text="#{data.sample.help}">Two original product records from 17 October 2026. Useful for checking the flow; not current shopping prices.</p>
-          <form th:action="@{/data/sample}" method="post" data-import-form th:attr="data-busy-label=#{data.import.busy}">
-            <label class="check-label" th:if="${importStatus != null}">
-              <input type="checkbox" required name="confirmSample">
-              <th:block th:text="#{data.sample.confirm}">Replace the accepted catalogue with this historical excerpt.</th:block>
-            </label>
-            <button class="button secondary full" type="submit" th:text="#{data.sample.submit}">Load checked sample</button>
-          </form>
-        </div>
-        <div class="panel">
-          <span class="small-tag" th:text="#{data.live.tag}">CURRENT SOURCE</span>
-          <h2 th:text="#{data.live.submit}">Refresh live prices</h2>
-          <p th:text="#{data.live.help}">Download the daily file from the Consumer Council. Validate it before accepting any changes.</p>
-          <form th:action="@{/data/refresh}" method="post" data-import-form th:attr="data-busy-label=#{data.import.busy}">
-            <button class="button primary full" type="submit" th:text="#{data.live.submit}">Refresh live prices</button>
-          </form>
-          <p class="helper" th:text="#{data.connection}">Needs a connection. No automatic refresh runs at startup.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-</th:block>
+  </header>
+  <div class="notice" role="status" th:if="${dataNotice}" th:text="${dataNotice}"></div>
+  <div class="notice error" role="alert" th:if="${dataError}" th:text="${dataError}"></div>
+  <h3 th:text="#{data.accepted}">Accepted catalogue</h3>
+  <p th:if="${importStatus == null}" class="helper" th:text="#{data.empty}">No catalogue has been imported yet.</p>
+  <dl class="data-facts settings-price-facts" th:if="${importStatus != null}">
+    <dt th:text="#{data.origin}">Origin</dt>
+    <dd th:text="${importStatus.origin == 'SAMPLE'} ? #{data.sample.origin} : #{data.live.origin}"></dd>
+    <dt th:text="#{data.retrieved}">Retrieved by this app</dt>
+    <dd th:text="${format.time(importStatus.retrievedAt)}"></dd>
+    <dt th:text="#{data.priceDate}">Source price date</dt>
+    <dd th:text="#{data.unknownDate}">Unknown — not supplied by this feed</dd>
+    <dt th:text="#{data.records}">Records</dt>
+    <dd th:text="#{data.counts(${importStatus.productCount},${importStatus.listingCount},${importStatus.offerCount})}"></dd>
+    <dt th:text="#{data.source}">Source</dt>
+    <dd th:text="${importStatus.sourceUrl}" class="source-url"></dd>
+  </dl>
+  <div class="settings-price-actions">
+    <form th:action="@{/data/refresh}" method="post" data-import-form th:attr="data-busy-label=#{data.import.busy}">
+      <input type="hidden" name="fromSettings" value="true" th:if="${scene == 'settings'}">
+      <button class="button primary" type="submit" th:text="#{data.live.submit}">Refresh live prices</button>
+      <p class="helper" th:text="#{data.connection}">Needs a connection. No automatic refresh runs at startup.</p>
+    </form>
+    <form th:action="@{/data/sample}" method="post" data-import-form th:attr="data-busy-label=#{data.import.busy}">
+      <input type="hidden" name="fromSettings" value="true" th:if="${scene == 'settings'}">
+      <button class="button secondary" type="submit" th:text="#{data.sample.submit}">Load checked sample</button>
+      <label class="check-label" th:if="${importStatus != null}">
+        <input type="checkbox" required name="confirmSample">
+        <span th:text="#{data.sample.confirm}">Replace the accepted catalogue with this historical excerpt.</span>
+      </label>
+      <p class="helper" th:if="${importStatus == null}" th:text="#{data.sample.help}"></p>
+    </form>
+  </div>
+  <p class="source-note" th:text="#{data.sourceHelp}">A new download time does not prove a new price observation.</p>
+</section>

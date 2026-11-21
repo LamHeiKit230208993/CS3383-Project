@@ -200,7 +200,7 @@ async function main() {
     await page.locator('[name="limit"]').fill("15.00");
     await submit(page.getByRole("button", { name: "Save budget" }), "/personal-data");
     assert.match(await page.locator("main").innerText(), /known subtotal is already above your limit/i);
-    assert.match(await page.locator(".summary-total").innerText(), /HK\$18\.00/);
+    assert.match(await page.locator(".settings-budget-estimate").innerText(), /HK\$18\.00/);
     await capture("budget");
   });
 
@@ -209,7 +209,7 @@ async function main() {
     await go("/data");
     await submit(page.getByRole("button", { name: "Refresh live prices" }), "/data");
     await go("/budget");
-    assert.match(await page.locator(".summary-total").innerText(), /HK\$17\.00/);
+    assert.match(await page.locator(".settings-budget-estimate").innerText(), /HK\$17\.00/);
     await go("/list");
     const milk = page.locator("article.list-item").filter({ hasText: "E2E-MILK" });
     assert.equal(await milk.locator('[name="retailerCode"]').inputValue(), "TEST-STORE");

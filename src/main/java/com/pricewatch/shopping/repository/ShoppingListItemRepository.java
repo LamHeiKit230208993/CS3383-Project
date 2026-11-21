@@ -12,4 +12,5 @@ public interface ShoppingListItemRepository extends JpaRepository<ShoppingListIt
     List<ShoppingListItemEntity> findAllByShoppingList_NameOrderByIdAsc(String listName);
     Optional<ShoppingListItemEntity> findByShoppingList_NameAndProduct_Code(String listName, String productCode);
     void deleteByShoppingList_NameAndProduct_Code(String listName, String productCode);
+    void deleteByShoppingList_Id(long listId);
 }

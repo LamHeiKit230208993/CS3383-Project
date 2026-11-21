@@ -14,6 +14,8 @@ Sources: [`BudgetServiceTest`](../../../src/test/java/com/pricewatch/budget/Budg
 2. Save a valid weekly or monthly nonnegative HKD limit. Expect a redirect and a
    confirmation. Reopen the page and expect the period and exact decimal limit
    to remain saved.
+   From unified Settings, success or a validation error returns to the Budget
+   anchor. A rejected edit preserves the stored limit.
 3. Compare the current list's known subtotal with the limit. The subtotal must
    use the effective line totals from My list, including checked items. An
    explicitly selected JASONS milk listing at HK$12.50 must remain HK$12.50 per

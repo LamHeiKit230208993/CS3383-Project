@@ -40,10 +40,43 @@ class HelloControllerTest {
 
     private final ObjectMapper json = new ObjectMapper();
 
+    @Test void namedCartCanBeCreatedSelectedRenamedAndDeleted() throws Exception {
+        catalog.importSample();
+        var result = mvc.perform(post("/list/new").param("name", "Weekend groceries"))
+                .andExpect(status().is3xxRedirection()).andReturn();
+        String listId = shopping.lists().get(1).id().toString();
+        assertEquals("/list?listId=" + listId, result.getResponse().getRedirectedUrl());
+        mvc.perform(get("/products/P000000124"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"compare-list\"")));
+        mvc.perform(post("/list/items").param("listId", listId).param("code", "P000000124")
+                        .param("quantity", "2").param("retailerCode", "JASONS"))
+                .andExpect(redirectedUrl("/list?listId=" + listId));
+        mvc.perform(post("/budget").param("period", "WEEKLY").param("limit", "100"))
+                .andExpect(redirectedUrl("/personal-data#budget"));
+        mvc.perform(get("/list").param("listId", listId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Estimate for Weekend groceries")))
+                .andExpect(content().string(containsString("HK$75.00")));
+        assertTrue(shopping.items().isEmpty());
+        mvc.perform(post("/list/rename").param("listId", listId).param("name", "Saturday"))
+                .andExpect(redirectedUrl("/list?listId=" + listId));
+        mvc.perform(get("/list").param("listId", listId))
+                .andExpect(content().string(containsString("Delete Saturday? This removes all items in the list (1).")));
+        mvc.perform(post("/list/delete").param("listId", listId))
+                .andExpect(redirectedUrl("/list?listId=" + listId));
+        assertEquals(1, shopping.items(Long.valueOf(listId)).size());
+        mvc.perform(post("/list/delete").param("listId", listId).param("confirmed", "true"))
+                .andExpect(redirectedUrl("/list"));
+        mvc.perform(get("/list").param("listId", listId)).andExpect(status().isNotFound());
+    }
+
     @Test void offlineChecklistDownloadsCheckedItemsAndTheirSavedPrices() throws Exception {
         catalog.importSample();
         shopping.add("P000000124", 2, "JASONS");
         shopping.update("P000000124", 2, true);
+        mvc.perform(post("/budget").param("period", "WEEKLY").param("limit", "100"))
+                .andExpect(redirectedUrl("/personal-data#budget"));
         var session = new MockHttpSession();
         mvc.perform(get("/list/offline").session(session)).andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("text/html"))
@@ -52,12 +85,17 @@ class HelloControllerTest {
                 .andExpect(content().string(containsString("Prices retrieved")))
                 .andExpect(content().string(containsString("Historical sample")))
                 .andExpect(content().string(containsString(catalog.status().retrievedAt().toString())))
-                .andExpect(content().string(containsString("2 · packs")))
+                .andExpect(content().string(containsString("value=\"2\"")))
                 .andExpect(content().string(containsString("JASONS")))
                 .andExpect(content().string(containsString("checked=\"checked\"")))
                 .andExpect(content().string(containsString("HK$12.50")))
                 .andExpect(content().string(containsString("HK$25.00")))
-                .andExpect(content().string(not(containsString("<script"))))
+                .andExpect(content().string(containsString("Weekly budget")))
+                .andExpect(content().string(containsString("HK$75.00")))
+                .andExpect(content().string(containsString("script-src &#39;nonce-")))
+                .andExpect(content().string(containsString("data-left=\"%amount% left\"")))
+                .andExpect(content().string(containsString("<script nonce=")))
+                .andExpect(content().string(not(containsString("<script src="))))
                 .andExpect(content().string(not(containsString("<link"))))
                 .andExpect(content().string(not(containsString("<form"))));
         var listId = shopping.lists().getFirst().id();

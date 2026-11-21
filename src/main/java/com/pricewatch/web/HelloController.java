@@ -85,6 +85,7 @@ public class HelloController {
         model.addAttribute("fromCart", fromCart);
         model.addAttribute("fromWishlist", !fromCart && fromWishlist);
         model.addAttribute("returnListId", listId);
+        model.addAttribute("cartChoices", shopping.lists());
         return screen(model, "compare", "Compare listed prices");
     }
     @GetMapping("/list")
@@ -96,10 +97,52 @@ public class HelloController {
         var items = listId == null ? shopping.items() : shopping.items(listId);
         model.addAttribute("lists", lists);
         model.addAttribute("selectedList", selected);
+        model.addAttribute("namedList", selected.id() != null && !"My list".equals(selected.name()));
         model.addAttribute("listId", listId);
         model.addAttribute("items", items);
         addEstimate(model, Summary.from(items));
         return screen(model, "list", "Cart");
+    }
+
+    @PostMapping("/list/new")
+    String createCart(@RequestParam String name, RedirectAttributes redirect) {
+        try {
+            long listId = shopping.createList(name);
+            redirect.addFlashAttribute("notice", text("cart.listCreated"));
+            return listRedirect(listId);
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", shoppingError(exception));
+            return listRedirect(null);
+        }
+    }
+
+    @PostMapping("/list/rename")
+    String renameCart(@RequestParam long listId, @RequestParam String name, RedirectAttributes redirect) {
+        try {
+            shopping.renameList(listId, name);
+            redirect.addFlashAttribute("notice", text("cart.listRenamed"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", shoppingError(exception));
+            return existingListRedirect(listId);
+        }
+        return listRedirect(listId);
+    }
+
+    @PostMapping("/list/delete")
+    String deleteCart(@RequestParam long listId, @RequestParam(defaultValue = "false") boolean confirmed,
+                      RedirectAttributes redirect) {
+        if (!confirmed) {
+            redirect.addFlashAttribute("error", text("cart.confirmDeleteList"));
+            return existingListRedirect(listId);
+        }
+        try {
+            shopping.deleteList(listId);
+            redirect.addFlashAttribute("notice", text("cart.listDeleted"));
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", shoppingError(exception));
+            return existingListRedirect(listId);
+        }
+        return listRedirect(null);
     }
 
     private void addEstimate(Model model, Summary summary) {
@@ -132,8 +175,6 @@ public class HelloController {
     }
     @GetMapping("/data")
     String data(Model model) { return screen(model, "data", "Price data & updates"); }
-    @GetMapping("/settings")
-    String settings(Model model) { return screen(model, "settings", "Settings"); }
     @GetMapping("/planned/{feature}")
     String planned(@PathVariable String feature, Model model) {
         if (feature.equals("saved")) return "redirect:/saved";
@@ -143,30 +184,37 @@ public class HelloController {
         return screen(model, "planned", PLANNED.get(feature));
     }
     @PostMapping("/data/{action:sample|refresh}")
-    String load(@PathVariable String action, @RequestParam(defaultValue = "false") boolean confirmSample, RedirectAttributes redirect) {
+    String load(@PathVariable String action, @RequestParam(defaultValue = "false") boolean confirmSample,
+                @RequestParam(defaultValue = "false") boolean fromSettings, RedirectAttributes redirect) {
+        String next = fromSettings ? "redirect:/settings#price-data" : "redirect:/data";
+        String error = fromSettings ? "dataError" : "error";
         if (action.equals("sample") && catalog.status() != null && !confirmSample) {
-            redirect.addFlashAttribute("error", text("data.confirmation.required"));
-            return "redirect:/data";
+            redirect.addFlashAttribute(error, text("data.confirmation.required"));
+            return next;
         }
         try {
             var accepted = action.equals("sample") ? catalog.importSample() : catalog.refreshLive();
-            redirect.addFlashAttribute("notice", text(action.equals("sample") ? "data.sample.accepted" : "data.live.accepted",
+            redirect.addFlashAttribute(fromSettings ? "dataNotice" : "notice", text(action.equals("sample") ? "data.sample.accepted" : "data.live.accepted",
                     Integer.toString(accepted.productCount())));
         } catch (RuntimeException exception) {
             // Keep provider and database details out of user-facing HTML.
             org.slf4j.LoggerFactory.getLogger(getClass()).warn("Catalogue import failed", exception);
-            redirect.addFlashAttribute("error", text("data.import.failed"));
+            redirect.addFlashAttribute(error, text("data.import.failed"));
         }
-        return "redirect:/data";
+        return next;
     }
     @PostMapping("/list/items")
     String add(@RequestParam String code, @RequestParam int quantity,
-               @RequestParam(defaultValue = "") String retailerCode, RedirectAttributes redirect) {
+               @RequestParam(defaultValue = "") String retailerCode, @RequestParam(required = false) Long listId,
+               RedirectAttributes redirect) {
         try {
-            shopping.add(code, quantity, retailerCode);
+            shopping.add(listId, code, quantity, retailerCode);
             redirect.addFlashAttribute("notice", text("feedback.list.added"));
-        } catch (IllegalArgumentException exception) { redirect.addFlashAttribute("error", shoppingError(exception)); }
-        return "redirect:/list";
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("error", shoppingError(exception));
+            return existingListRedirect(listId);
+        }
+        return listRedirect(listId);
     }
     @PostMapping({"/list/items/{pathCode}/update", "/list/items/update"})
     String update(@PathVariable(required = false) String pathCode,
@@ -235,6 +283,11 @@ public class HelloController {
     private String listRedirect(Long listId) {
         return listId == null ? "redirect:/list" : "redirect:/list?listId=" + listId;
     }
+
+    private String existingListRedirect(Long listId) {
+        return listId != null && shopping.lists().stream().anyMatch(choice -> listId.equals(choice.id()))
+                ? listRedirect(listId) : listRedirect(null);
+    }
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
     String oversizedUpload(Model model) {
@@ -278,6 +331,9 @@ public class HelloController {
     private String shoppingError(IllegalArgumentException exception) {
         return text(switch (exception.getMessage()) {
             case "That shopping list does not exist." -> "feedback.list.missing";
+            case "The main Cart cannot be renamed or deleted." -> "cart.mainProtected";
+            case "Enter a list name from 1 to 100 characters that is not reserved." -> "cart.invalidListName";
+            case "A shopping list already has that name." -> "cart.duplicateListName";
             case "That product is not in the accepted catalogue." -> "feedback.list.productMissing";
             case "That product is no longer in the current catalogue." -> "feedback.list.productRetired";
             case "This product is already in your list with another retailer; change retailer in My list." ->

@@ -33,18 +33,15 @@ else Invalid file
   Web --> Shopper: Show import error
 end
 
-== Review offline ==
+== Use a downloaded Cart offline ==
 
-Shopper -> Web: Enter offline review for selected list
-Web -> Web: Save list ID in browser session
-Web -> Service: Read selected list and accepted import status
-Service -> DB: Read items, prices and retrieval time
-Web --> Shopper: Show read-only list and price age
-Shopper -> Web: Attempt to edit, refresh or chat
-Web --> Shopper: Reject request while offline
-Shopper -> Web: Exit offline review
-Web -> Web: Clear offline session state
-Web --> Shopper: Reopen the list
+Shopper -> Web: Download selected Cart as HTML
+Web -> Service: Read Cart, saved prices, retrieval time and budget
+Service -> DB: Load the selected list and local settings
+Service --> Web: Return the saved snapshot
+Web --> Shopper: Download a self-contained HTML checklist
+Shopper -> Shopper: Open file and update quantities,\nretailer, budget or Done status
+note over Shopper: The file recalculates from its saved prices.\nChanges stay in the open file.
 
 == View saved preferences and prices ==
 

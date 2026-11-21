@@ -73,7 +73,14 @@ public record PersonalDataExport(
 
     public record Choice(String productCode, String label) {}
 
-    public record Message(boolean shopper, String text, List<PriceCard> priceCards) {}
+    public record Message(boolean shopper, String text, List<PriceCard> priceCards,
+                          List<ShoppingCard> shoppingCards, List<ChatAction> actions) {}
+
+    public record ShoppingCard(String kind, String title, String detail, Long listId, List<ShoppingRow> rows) {}
+
+    public record ShoppingRow(String label, String detail, String productCode, Long listId) {}
+
+    public record ChatAction(String state, ShoppingCard preview) {}
 
     public record PriceCard(String productCode, String productLabel, List<PriceRow> rows, Instant retrievedAt) {}
 

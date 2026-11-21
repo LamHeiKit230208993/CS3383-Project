@@ -1,11 +1,14 @@
 # Test Case Catalog
 
+[TC-CHAT-002](cases/TC-CHAT-002.md) covers shopping confirmations, retries, and conversation return links.
+[TC-CHAT-003](cases/TC-CHAT-003.md) covers shopping tool validation, stale previews, saved alert drafts, and decimal arithmetic.
+
 [TC-CHAT-001](cases/TC-CHAT-001.md) covers DeepSeek conversation and tool calls,
 checked prices, pack choices and follow-ups, chat history, and send and reply recovery.
 
-[TC-SHARE-001](cases/TC-SHARE-001.md) checks list export, editable copies, missing prices, and rejected imports.
-[TC-OFFLINE-001](cases/TC-OFFLINE-001.md) checks saved estimates and a downloaded checklist with the app stopped.
-[TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks saved languages, contrast, alert tab labels, and keyboard use.
+[TC-SHARE-001](cases/TC-SHARE-001.md) checks list creation, switching, renaming, confirmed deletion, scoped budget estimates, export, and imported copies.
+[TC-OFFLINE-001](cases/TC-OFFLINE-001.md) checks a downloaded Cart, local edits, and budget calculations with the app stopped.
+[TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks Settings navigation, saved languages, contrast, and keyboard use.
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
 
@@ -28,7 +31,7 @@ See the [dated run record](history.md).
 | [TC-DATA-002](cases/TC-DATA-002.md) | Source parser | Checked sample labels/offers survive; numeric decimals retain exact precision; unknown price remains null; invalid records are rejected | `CatalogJsonParserTest` |
 | [TC-DATA-003](cases/TC-DATA-003.md) | HTTP source client | Successful bytes are returned; failed HTTP status and oversized responses are rejected | `ConsumerCouncilSourceClientTest` |
 | [TC-CATALOG-001](cases/TC-CATALOG-001.md) | Import and comparison | Repeated import has no duplicates; three source names find one code; packs stay separate; ties and missing prices are correct; database-write failure rolls back catalogue, metadata, and list | `CatalogServiceIntegrationTest` |
-| [TC-LIST-001](cases/TC-LIST-001.md) | Shopping rules | Quantity and checked state persist; incomplete totals and vanished products stay clear; failed import preserves list | `ShoppingServiceTest` |
+| [TC-LIST-001](cases/TC-LIST-001.md) | Shopping rules and layout | Saved quantities and prices, incomplete totals, and a sticky desktop summary | `ShoppingServiceTest`, Chrome shopper suite |
 | [TC-SEARCH-001](cases/TC-SEARCH-001.md) | Search relevance | Ranked Matches/Related, multilingual normalization, and exact source-category filtering | `SearchRelevanceTest` |
 | [TC-STRUCTURE-001](cases/TC-STRUCTURE-001.md) | Read/query contract | One Cart read supplies rows, preview totals and budget; products, listings, and offers are fetched together | `ShoppingServiceTest`, `HelloControllerModelTest` |
 | [TC-BROWSER-001](cases/TC-BROWSER-001.md) | Browser regression | Native forms, compact Cart edits and done state, Discover budget, responsive navigation, and exact estimates | `market-desk.cjs` |

@@ -233,13 +233,12 @@
 }
 .high-contrast .item-rules-dialog { background: var(--surface); }
 .item-rules-dialog::backdrop { background: #152d27aa; }
-.item-rules-dialog .rules-back { display: none; }
+.item-rules-dialog .item-rules > .back-link { display: none; }
 .item-rules-dialog .page-heading { margin-top: 0; }
 .item-rules-dialog h1 { font-family: var(--display-font); }
 .item-rules-close { display: flex; margin-inline-start: auto; }
 .item-rules-dialog .notice { margin-top: 12px; }
 .item-rules-dialog .panel { border-radius: 12px; }
-.item-rules .rules-back { margin-block-end: 14px; }
 
 @media (prefers-reduced-motion: reduce) {
   .alarm-switch span { transition: none; }

@@ -1,6 +1,9 @@
 <section xmlns:th="http://www.thymeleaf.org" th:fragment="content" aria-labelledby="saved-title" class="wishlist">
   <header class="page-heading heading-with-action">
-    <h1 id="saved-title" th:text="#{app.nav.saved}">Wishlist</h1>
+    <div>
+      <th:block th:replace="~{fragments/ask-return :: link}"></th:block>
+      <h1 id="saved-title" th:text="#{app.nav.saved}">Wishlist</h1>
+    </div>
     <a class="button secondary" th:href="@{/}" th:text="#{common.find}">Find a product</a>
   </header>
 

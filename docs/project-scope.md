@@ -106,7 +106,7 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 | R45 | View, export, and delete stored personal data | ✅ + | Build for the local user's records. List sharing exports only the chosen list. Deleting local data cannot remove copies already sent to another person. |
 | R46 | English, Traditional Chinese, and Simplified Chinese | ✅ + | Build. Cover app text and product display; check search behaviour in each language. |
 | R47 | High-contrast, easy-to-read mode | ✅ + | Build. Check readable text, clear controls, and meaning that does not rely only on colour. |
-| R48 | Offline use of saved data | ✅ + | Download the selected Cart as a standalone HTML checklist that opens without the app or network. Include saved prices and retrieval time. Checkmarks changed in the open file stay in that copy. |
+| R48 | Offline use of saved data | ✅ + | Download the selected Cart as a standalone HTML checklist that opens without the app or network. Show saved prices and retrieval time. Checklist, quantity, retailer, and budget edits apply only to the open file. |
 
 ## 9. Rules for every included feature
 

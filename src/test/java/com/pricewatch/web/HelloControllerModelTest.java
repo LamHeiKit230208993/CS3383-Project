@@ -85,7 +85,7 @@ class HelloControllerModelTest {
         mvc.perform(post("/list/items").param("code", "P000000124")
                         .param("quantity", "2").param("retailerCode", "JASONS"))
                 .andExpect(view().name("redirect:/list"));
-        verify(shopping).add("P000000124", 2, "JASONS");
+        verify(shopping).add(null, "P000000124", 2, "JASONS");
         verifyNoMoreInteractions(shopping);
     }
 }

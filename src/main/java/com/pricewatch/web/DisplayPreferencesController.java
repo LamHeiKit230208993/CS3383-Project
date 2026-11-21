@@ -32,13 +32,14 @@ class DisplayPreferencesController {
 
     @PostMapping("/preferences")
     String save(@RequestParam(defaultValue = "") String language,
-                @RequestParam(defaultValue = "false") boolean highContrast, RedirectAttributes redirect) {
+                @RequestParam(defaultValue = "false") boolean highContrast,
+                @RequestParam(defaultValue = "false") boolean fromSettings, RedirectAttributes redirect) {
         try {
             preferences.update(language, highContrast);
             redirect.addFlashAttribute("displayFeedback", "preferences.saved");
         } catch (IllegalArgumentException exception) {
             redirect.addFlashAttribute("displayError", "preferences.unsupportedLanguage");
         }
-        return "redirect:/preferences";
+        return fromSettings ? "redirect:/settings#display" : "redirect:/preferences";
     }
 }

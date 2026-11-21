@@ -10,6 +10,12 @@ Tab to a retailer card and press Space. Check that the card has a focus
 outline before selection and a visible selected label and translated
 estimate after selection.
 
+Open Settings at desktop width and select each section in the left menu.
+Verify its heading reaches the top offset, the selected link updates, and
+reduced motion disables smooth scrolling. At 375 px, open Personal data,
+Display settings, and Price data from the menu. Use the back arrow to return
+from each section. Check that the Display switch works with the Space key.
+
 This scenario checks core keyboard operation and representative labels.
 It does not measure all contrast ratios or substitute for screen reader testing.
 

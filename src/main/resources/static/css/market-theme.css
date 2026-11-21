@@ -741,23 +741,6 @@ select:focus {
   color: var(--ink);
 }
 
-.back-link {
-  padding: 6px 14px 6px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-xs);
-  text-decoration: none;
-  font-weight: 650;
-  color: var(--ink);
-  transition: transform 260ms var(--ease-elastic), color 160ms ease, background-color 160ms ease;
-}
-.back-link:hover {
-  background: var(--glass-strong);
-  color: var(--blue);
-  transform: translateX(-3px);
-}
-
 /* ==========================================================================
    Mobile Glass Topbar & Floating Pill Dock
    ========================================================================== */

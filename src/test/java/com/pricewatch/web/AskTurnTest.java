@@ -7,6 +7,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +30,8 @@ import static org.mockito.Mockito.when;
 class AskTurnTest {
     private final CatalogService catalogue = mock(CatalogService.class);
     private final DeepSeekChatClient provider = mock(DeepSeekChatClient.class);
+    private final AskShoppingTools shoppingTools = mock(AskShoppingTools.class);
+    private final AskShoppingTools.Turn shoppingTurn = mock(AskShoppingTools.Turn.class);
     private final MockHttpSession session = new MockHttpSession();
     private final AskController ask = controller();
 
@@ -63,8 +66,7 @@ class AskTurnTest {
         }
         assertEquals(location, ask.replyToTurn(chatId, session));
         assertEquals(false, model(chatId).get("awaitingReply"));
-        assertEquals(List.of(new AskController.Message(true, question),
-                new AskController.Message(false, "Which pack size should I check?")), messages());
+        assertEquals(List.of(question, "Which pack size should I check?"), messageTexts());
         verify(provider).reply(anyString(), argThat(history -> history.equals(List.of(
                 new DeepSeekChatClient.ChatMessage("user", question)))), anyList(), any());
     }
@@ -83,8 +85,7 @@ class AskTurnTest {
         verifyNoInteractions(catalogue);
         assertPending(chatId, question);
         assertEquals(location, ask.replyToTurn(chatId, session));
-        assertEquals(List.of(new AskController.Message(true, question),
-                new AskController.Message(false, "Which pack size should I check?")), messages());
+        assertEquals(List.of(question, "Which pack size should I check?"), messageTexts());
     }
 
     @Test
@@ -109,13 +110,16 @@ class AskTurnTest {
     private AskController controller() {
         var messages = new StaticMessageSource();
         messages.setUseCodeAsDefaultMessage(true);
-        return new AskController(catalogue, provider, mock(HelloController.class), messages);
+        when(shoppingTools.open(any(), org.mockito.ArgumentMatchers.nullable(String.class),
+                org.mockito.ArgumentMatchers.nullable(AskShoppingTools.Draft.class))).thenReturn(shoppingTurn);
+        return new AskController(catalogue, provider, mock(HelloController.class), messages, shoppingTools, Clock.systemUTC());
     }
 
     private void assertPending(String chatId, String question) {
         var model = model(chatId);
         assertEquals(true, model.get("awaitingReply"));
-        assertEquals(List.of(new AskController.Message(true, question)), model.get("messages"));
+        assertEquals(List.of(question), messageTexts());
+        assertTrue(messages().getFirst().shopper());
     }
 
     private ExtendedModelMap model(String chatId) {
@@ -126,5 +130,60 @@ class AskTurnTest {
 
     private List<AskController.Message> messages() {
         return AskController.history(session).getFirst().messages();
+    }
+
+    private List<String> messageTexts() {
+        return messages().stream().map(AskController.Message::text).toList();
+    }
+
+    @Test
+    void preparedAddIsOnlyAppliedAfterSuccessfulReply() {
+        var addition = mock(AskShoppingTools.Operation.class);
+        when(shoppingTurn.operations()).thenReturn(List.of(addition));
+        when(shoppingTools.apply(any(), any())).thenReturn(new AskShoppingTools.Card("receipt", "Added", "", List.of(), null));
+        when(provider.reply(anyString(), anyList(), anyList(), any()))
+                .thenReturn(Optional.empty()).thenReturn(Optional.of("Ready to add."));
+        String chatId = ask.send("Add one pack", "", session).split("=")[1];
+
+        assertThrows(ResponseStatusException.class, () -> ask.replyToTurn(chatId, session));
+        verify(shoppingTools, times(0)).apply(any(), any());
+        ask.replyToTurn(chatId, session);
+        ask.replyToTurn(chatId, session);
+        verify(shoppingTools, times(1)).apply(any(), any());
+        assertEquals("Added", messages().getLast().cards().getFirst().title());
+    }
+
+    @Test
+    void confirmationIsBoundToItsChatAndConsumesTheActionOnce() {
+        var removal = mock(AskShoppingTools.Operation.class);
+        when(removal.requiresConfirmation()).thenReturn(true);
+        when(removal.preview()).thenReturn(new AskShoppingTools.Card("confirmation", "Remove", "", List.of(), null));
+        when(shoppingTurn.operations()).thenReturn(List.of(removal));
+        when(shoppingTools.apply(any(), any())).thenReturn(new AskShoppingTools.Card("receipt", "Removed", "", List.of(), null));
+        when(provider.reply(anyString(), anyList(), anyList(), any())).thenReturn(Optional.of("Ready to remove."));
+        String chatId = ask.ask("Remove a pack", "", session).split("=")[1];
+        String actionId = messages().getLast().actions().getFirst().id();
+        ask.action("different-chat", actionId, "confirm", session);
+        verify(shoppingTools, times(0)).apply(any(), any());
+        ask.action(chatId, actionId, "confirm", session);
+        ask.action(chatId, actionId, "confirm", session);
+        verify(shoppingTools, times(1)).apply(any(), any());
+        assertEquals("Removed", messages().getLast().cards().getFirst().title());
+    }
+
+    @Test
+    void cancelConsumesTheProposalWithoutApplyingIt() {
+        var removal = mock(AskShoppingTools.Operation.class);
+        when(removal.requiresConfirmation()).thenReturn(true);
+        when(removal.preview()).thenReturn(new AskShoppingTools.Card("confirmation", "Remove", "", List.of(), null));
+        when(shoppingTurn.operations()).thenReturn(List.of(removal));
+        when(provider.reply(anyString(), anyList(), anyList(), any())).thenReturn(Optional.of("Ready to remove."));
+        String chatId = ask.ask("Remove a pack", "", session).split("=")[1];
+        String actionId = messages().getLast().actions().getFirst().id();
+
+        ask.action(chatId, actionId, "cancel", session);
+        ask.action(chatId, actionId, "confirm", session);
+        verify(shoppingTools, times(0)).apply(any(), any());
+        assertEquals("CANCELLED", messages().get(1).actions().getFirst().state());
     }
 }

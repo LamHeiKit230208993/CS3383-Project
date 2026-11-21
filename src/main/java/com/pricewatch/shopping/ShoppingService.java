@@ -114,7 +114,7 @@ public class ShoppingService {
     }
 
     private String availableName(String requested) {
-        if (!LIST_NAME.equals(requested) && listRepository.findByName(requested).isEmpty()) return requested;
+        if (!reservedName(requested) && !listRepository.existsByNameIgnoreCase(requested)) return requested;
         for (int number = 2; ; number++) {
             String suffix = " (" + number + ")";
             String base = requested.substring(0, Math.min(requested.length(), 100 - suffix.length())).stripTrailing();
@@ -122,7 +122,7 @@ public class ShoppingService {
                 base = base.substring(0, base.length() - 1).stripTrailing();
             }
             String candidate = base + suffix;
-            if (listRepository.findByName(candidate).isEmpty()) return candidate;
+            if (!listRepository.existsByNameIgnoreCase(candidate)) return candidate;
         }
     }
 
@@ -140,17 +140,72 @@ public class ShoppingService {
 
     private String listName(Long listId) {
         if (listId == null) return LIST_NAME;
-        return listRepository.findById(listId).map(ShoppingListEntity::getName)
-                .orElseThrow(() -> new IllegalArgumentException("That shopping list does not exist."));
+        return findList(listId).getName();
     }
 
     public record ListChoice(Long id, String name) {}
+
+    public long createList(String name) {
+        synchronized (mutationLock) {
+            return Objects.requireNonNull(transactionTemplate.execute(status ->
+                    listRepository.save(new ShoppingListEntity(newListName(name, null))).getId()));
+        }
+    }
+
+    public void renameList(long listId, String name) {
+        mutate(() -> {
+            var list = manageableList(listId);
+            list.rename(newListName(name, list));
+        });
+    }
+
+    public void deleteList(long listId) {
+        mutate(() -> {
+            var list = manageableList(listId);
+            itemRepository.deleteByShoppingList_Id(listId);
+            listRepository.delete(list);
+        });
+    }
+
+    private ShoppingListEntity findList(long listId) {
+        return listRepository.findById(listId)
+                .orElseThrow(() -> new IllegalArgumentException("That shopping list does not exist."));
+    }
+
+    private ShoppingListEntity manageableList(long listId) {
+        var list = findList(listId);
+        if (LIST_NAME.equals(list.getName())) {
+            throw new IllegalArgumentException("The main Cart cannot be renamed or deleted.");
+        }
+        return list;
+    }
+
+    private String newListName(String name, ShoppingListEntity existing) {
+        String normalized = name == null ? "" : name.strip();
+        if (normalized.isBlank() || normalized.length() > 100 || normalized.chars().anyMatch(Character::isISOControl)
+                || reservedName(normalized)) {
+            throw new IllegalArgumentException("Enter a list name from 1 to 100 characters that is not reserved.");
+        }
+        if ((existing == null || !existing.getName().equalsIgnoreCase(normalized))
+                && listRepository.existsByNameIgnoreCase(normalized)) {
+            throw new IllegalArgumentException("A shopping list already has that name.");
+        }
+        return normalized;
+    }
+
+    private static boolean reservedName(String name) {
+        return LIST_NAME.equalsIgnoreCase(name) || "Cart".equalsIgnoreCase(name);
+    }
 
     public void add(String productCode, int quantity) {
         add(productCode, quantity, null);
     }
 
     public void add(String productCode, int quantity, String retailerCode) {
+        add(null, productCode, quantity, retailerCode == null ? "" : retailerCode);
+    }
+
+    public void add(Long listId, String productCode, int quantity, String retailerCode) {
         validateQuantity(quantity);
         String requestedRetailer = automaticIfBlank(retailerCode);
         mutate(() -> {
@@ -159,11 +214,11 @@ public class ShoppingService {
             if (!product.isActive()) {
                 throw new IllegalArgumentException("That product is no longer in the current catalogue.");
             }
-            ShoppingListEntity list = getOrCreateList();
+            ShoppingListEntity list = listId == null ? getOrCreateList() : findList(listId);
             ShoppingListItemEntity existing = itemRepository
-                    .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode).orElse(null);
+                    .findByShoppingList_NameAndProduct_Code(list.getName(), productCode).orElse(null);
             if (existing != null) {
-                if (!Objects.equals(existing.getSelectedRetailerCode(), requestedRetailer)) {
+                if (retailerCode != null && !Objects.equals(existing.getSelectedRetailerCode(), requestedRetailer)) {
                     throw new IllegalArgumentException("This product is already in your list with another retailer; "
                             + "change retailer in My list.");
                 }

@@ -27,7 +27,14 @@ function scrollToLatest() {
   transcript.scrollTop = transcript.scrollHeight;
 }
 
-scrollToLatest();
+function scrollToMessage(id) {
+  const message = document.getElementById(id);
+  if (!message || !transcript.contains(message)) return false;
+  transcript.scrollTop += message.getBoundingClientRect().top - transcript.getBoundingClientRect().top - 12;
+  return true;
+}
+
+if (!scrollToMessage(location.hash.slice(1))) scrollToLatest();
 
 recentChats.addEventListener("keydown", event => {
   if (event.key === "Escape" && recentChats.open && !desktop.matches) {
@@ -103,7 +110,7 @@ async function loadChat(url, fields) {
   return { nextTranscript, nextHistory, chatId };
 }
 
-function renderChat({ nextTranscript, nextHistory, chatId }) {
+function renderChat({ nextTranscript, nextHistory, chatId }, messageId = location.hash.slice(1)) {
   const oldScroll = transcript.scrollTop;
   const readingLatest = transcript.scrollHeight - transcript.clientHeight - oldScroll < 80;
   awaitingReply = nextTranscript.dataset.awaitingReply === "true";
@@ -111,10 +118,38 @@ function renderChat({ nextTranscript, nextHistory, chatId }) {
   transcript.replaceChildren(...nextTranscript.childNodes);
   historyItems.replaceChildren(...nextHistory.childNodes);
   composer.elements.chatId.value = chatId;
-  history.replaceState(history.state, "", currentChatUrl());
+  const url = currentChatUrl();
+  if (messageId && scrollToMessage(messageId)) {
+    url.hash = messageId;
+  } else if (readingLatest) {
+    scrollToLatest();
+  } else {
+    transcript.scrollTop = oldScroll;
+  }
+  history.replaceState(history.state, "", url);
   updateControls();
-  if (readingLatest) scrollToLatest();
-  else transcript.scrollTop = oldScroll;
+}
+
+async function submitAction(form, submitter) {
+  const fields = new FormData(form, submitter);
+  const messageId = form.closest(".chat-message").id;
+  const actionId = fields.get("actionId");
+  accepting = true;
+  updateControls();
+  announce(chatWorkspace.dataset.sending);
+  try {
+    renderChat(await loadChat(form.action, fields), messageId);
+    const action = [...transcript.querySelectorAll("[data-ask-action]")]
+      .find(section => section.dataset.askAction === actionId);
+    const result = action?.querySelector("[data-ask-action-state]") || document.getElementById(messageId);
+    result?.focus({ preventScroll: true });
+    announce("");
+  } catch {
+    announce(chatWorkspace.dataset.actionFailed, { visible: true, error: true });
+  } finally {
+    accepting = false;
+    updateControls();
+  }
 }
 
 async function requestReply() {
@@ -151,10 +186,15 @@ chatWorkspace.addEventListener("submit", async event => {
   const action = new URL(form.action);
   const path = action.pathname.split(";")[0];
   const isQuestion = path === askUrl.pathname;
+  const isAction = path === askUrl.pathname + "/action";
   if (form.method !== "post" || action.origin !== askUrl.origin ||
-      (!isQuestion && path !== askUrl.pathname + "/choose")) return;
+      (!isQuestion && !isAction && path !== askUrl.pathname + "/choose")) return;
   event.preventDefault();
   if (accepting || awaitingReply) return;
+  if (isAction) {
+    await submitAction(form, event.submitter);
+    return;
+  }
 
   const fields = new FormData(form, event.submitter);
   if (!isQuestion) fields.set("deferReply", "true");
@@ -171,7 +211,7 @@ chatWorkspace.addEventListener("submit", async event => {
   scrollToLatest();
 
   try {
-    renderChat(await loadChat(isQuestion ? routeFor("send") : action, fields));
+    renderChat(await loadChat(isQuestion ? routeFor("send") : action, fields), "");
     if (!awaitingReply) announce(chatWorkspace.dataset.received);
   } catch {
     pendingBubble?.remove();

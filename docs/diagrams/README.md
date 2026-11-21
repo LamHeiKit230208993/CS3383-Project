@@ -2,7 +2,11 @@
 
 The accepted [J01–J04 diagrams](baseline/) remain the historical baseline.
 
-The J10–J12 sequence covers the selected-list transfer, read-only review,
+The J09 sequence shows checked catalogue answers, shopping tools, confirmation,
+and the retry path.
+[Editable PlantUML](j10-j12/ask-sequence.puml) · [SVG](j10-j12/ask-sequence.svg) · [PNG](j10-j12/ask-sequence.png)
+
+The J10–J12 sequence covers selected-list transfer, the offline HTML checklist,
 display preferences, retained history, and personal-data export or reset.
 [Editable PlantUML](j10-j12/shopper-sequence.puml) · [SVG](j10-j12/shopper-sequence.svg) · [PNG](j10-j12/shopper-sequence.png)
 

@@ -14,12 +14,16 @@
     >
     <link rel="stylesheet" th:href="@{/css/market-desk.css}">
     <link rel="stylesheet" th:href="@{/css/market-theme.css}">
+    <link rel="stylesheet" th:if="${scene == 'settings' or scene == 'personal' or scene == 'preferences' or scene == 'data'}"
+          th:href="@{/css/settings-ui.css}">
+    <link rel="stylesheet" th:href="@{/css/back-link.css}">
     <link rel="stylesheet" th:if="${scene == 'discover' or scene == 'list'}" th:href="@{/css/shop-summary.css}">
     <link rel="stylesheet" th:if="${scene == 'list'}" th:href="@{/css/cart-ui.css}">
     <link rel="stylesheet" th:if="${scene == 'alerts' or scene == 'rules' or scene == 'saved'}" th:href="@{/css/alerts-ui.css}">
     <link rel="stylesheet" th:if="${scene == 'ask'}" th:href="@{/css/ask-chat.css}">
     <link rel="stylesheet" th:if="${scene == 'history'}" th:href="@{/css/price-history.css}">
     <script th:src="@{/js/market-desk.js}" defer></script>
+    <script th:if="${scene == 'settings'}" th:src="@{/js/settings-ui.js}" defer></script>
     <script th:if="${scene == 'alerts' or scene == 'rules' or scene == 'saved'}" th:src="@{/js/alert-rules.js}" defer></script>
     <script th:if="${scene == 'ask'}" th:src="@{/js/ask-chat.js}" defer></script>
     <script th:if="${scene == 'history'}" th:src="@{/js/price-history.js}" defer></script>

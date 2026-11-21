@@ -47,7 +47,12 @@ class PersonalDataController {
 
     @GetMapping("/personal-data")
     String show(HttpServletRequest request, HttpServletResponse response, Model model) {
-        return overview(request, response, model);
+        return overview(request, response, model, false);
+    }
+
+    @GetMapping("/settings")
+    String settings(HttpServletRequest request, HttpServletResponse response, Model model) {
+        return overview(request, response, model, true);
     }
 
     @GetMapping("/budget")
@@ -58,22 +63,30 @@ class PersonalDataController {
     @PostMapping({"/personal-data/budget", "/budget"})
     String saveBudget(@RequestParam(defaultValue = "") String period,
                       @RequestParam(name = "limit", defaultValue = "") String limit,
+                      @RequestParam(defaultValue = "false") boolean fromSettings,
                       HttpServletRequest request, HttpServletResponse response, Model model,
                       RedirectAttributes redirect) {
         try {
             var savedPeriod = budgets.save(period, limit);
             redirect.addFlashAttribute("budgetNotice", text(messages, "budget.saved",
                     text(messages, "budget.period." + savedPeriod.name())));
-            return "redirect:/personal-data#budget";
+            return fromSettings ? "redirect:/settings#budget" : "redirect:/personal-data#budget";
         } catch (IllegalArgumentException exception) {
-            model.addAttribute("budgetError", inputError(messages, exception));
+            String error = inputError(messages, exception);
+            if (fromSettings) {
+                redirect.addFlashAttribute("budgetError", error);
+                redirect.addFlashAttribute("budgetFormPeriod", period);
+                redirect.addFlashAttribute("budgetFormLimit", limit);
+                return "redirect:/settings#budget";
+            }
+            model.addAttribute("budgetError", error);
             model.addAttribute("budgetFormPeriod", period);
             model.addAttribute("budgetFormLimit", limit);
-            return overview(request, response, model);
+            return overview(request, response, model, false);
         }
     }
 
-    private String overview(HttpServletRequest request, HttpServletResponse response, Model model) {
+    private String overview(HttpServletRequest request, HttpServletResponse response, Model model, boolean unified) {
         var budget = budgets.view();
         model.addAttribute("overview", personalData.overview());
         model.addAttribute("chatCount", AskController.history(request.getSession(false)).size());
@@ -82,7 +95,12 @@ class PersonalDataController {
             model.addAttribute("budgetFormPeriod", budget.period().name());
             model.addAttribute("budgetFormLimit", budget.limitAmount() == null ? "" : budget.limitAmount().toPlainString());
         }
-        return screen(response, model, false);
+        String view = screen(response, model, false);
+        if (unified) {
+            model.addAttribute("scene", "settings");
+            model.addAttribute("title", "Settings");
+        }
+        return view;
     }
 
     @GetMapping(value = "/personal-data/export", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -105,34 +123,53 @@ class PersonalDataController {
                     .map(row -> new PersonalDataExport.PriceRow(row.retailer(), row.price(), row.lowest())).toList();
             return new PersonalDataExport.PriceCard(card.productCode(), card.productLabel(), prices, card.retrievedAt());
         }).toList();
-        return new PersonalDataExport.Message(message.shopper(), message.text(), cards);
+        return new PersonalDataExport.Message(message.shopper(), message.text(), cards,
+                message.cards().stream().map(PersonalDataController::shoppingCard).toList(),
+                message.actions().stream().map(action -> new PersonalDataExport.ChatAction(
+                        action.state(), shoppingCard(action.preview()))).toList());
+    }
+
+    private static PersonalDataExport.ShoppingCard shoppingCard(AskShoppingTools.Card card) {
+        return new PersonalDataExport.ShoppingCard(card.kind(), card.title(), card.detail(), card.listId(),
+                card.rows().stream().map(row -> new PersonalDataExport.ShoppingRow(
+                        row.label(), row.detail(), row.productCode(), row.listId())).toList());
     }
 
     @GetMapping("/personal-data/reset")
-    String confirmReset(HttpServletResponse response, Model model) {
+    String confirmReset(@RequestParam(defaultValue = "false") boolean fromSettings,
+                        HttpServletResponse response, Model model) {
+        model.addAttribute("resetFromSettings", fromSettings);
         return screen(response, model, true);
     }
 
     @PostMapping("/personal-data/reset")
     String reset(@RequestParam(name = "confirm", defaultValue = "false") boolean confirmed,
+                 @RequestParam(defaultValue = "false") boolean fromSettings,
                  HttpServletRequest request, RedirectAttributes redirect) {
+        String confirmation = fromSettings ? "redirect:/personal-data/reset?fromSettings=true" : "redirect:/personal-data/reset";
         if (!confirmed) {
             redirect.addFlashAttribute("personalError", "personal.confirmRequired");
-            return "redirect:/personal-data/reset";
+            return confirmation;
         }
+        var session = request.getSession(false);
         try {
-            personalData.reset();
+            if (session == null) {
+                personalData.reset();
+            } else {
+                synchronized (session) {
+                    personalData.reset();
+                    // Keep a shopping tool from writing between the committed reset and invalidation.
+                    session.invalidate();
+                }
+            }
         } catch (DataAccessException | TransactionException | PersistenceException failure) {
             LoggerFactory.getLogger(getClass()).warn("Local personal data reset failed ({})",
                     failure.getClass().getSimpleName());
             redirect.addFlashAttribute("personalError", "personal.resetFailed");
-            return "redirect:/personal-data/reset";
+            return confirmation;
         }
-        // The service has committed before we clear any current session data.
-        var session = request.getSession(false);
-        if (session != null) session.invalidate();
         redirect.addFlashAttribute("personalFeedback", "personal.resetDone");
-        return "redirect:/personal-data";
+        return fromSettings ? "redirect:/settings#personal-data" : "redirect:/personal-data";
     }
 
     private String screen(HttpServletResponse response, Model model, boolean confirmingReset) {

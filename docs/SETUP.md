@@ -167,22 +167,31 @@ Open **Cart**. Select a product card to open its comparison, then use **Back
 to Cart** to return to the same list. Use **Mark done** to cross out and lock
 a row. Select **Done** to reopen it before changing packs or retailer.
 **Continue browsing** takes you back to Discover.
-Open **List actions** below the summary to switch to an imported list.
+On wide screens, the list summary stays in view as you scroll through the items.
+Use the Cart list switcher to open a named list. **New list** creates an
+empty list and opens it. Rename or delete a named list from its list controls.
+The product comparison page lets you choose the destination before adding.
 **Export JSON** downloads the open
 list. **Import list** creates a separate editable copy from a JSON file.
 The file keeps each pack, quantity, checked state, and retailer choice.
 The receiving app gets prices from its own catalogue. Missing products or
 retailer prices appear as **Unknown**. Quick-add and reminders use the default
-list. Discover shows that list against your saved budget. Cart compares the
-list you are viewing with the same limit.
+list. Discover and the budget settings summary use the main Cart. The Cart
+page compares the open list with the same saved limit. Switch lists to check
+another estimate. A list with missing prices shows an incomplete total.
 
 Choose **List actions → Download offline checklist** to save an HTML copy.
 Open the file in a browser without a connection or the local app running.
-It shows saved estimates and their retrieval time. Checkmarks changed in the
-file last while it is open and stay separate from the app's Cart.
+The file shows the selected Cart, saved retailer prices and retrieval time,
+and the saved budget, if set. Change pack quantities, select a saved retailer,
+edit the budget, or mark items done. The estimate and budget update as you edit.
+Changes apply while the downloaded copy is open.
 
 ### Display settings, personal data, and history
 
+On desktop, the Settings section menu scrolls to Personal data, Budget, Display
+settings, and Price data. On phones, choose a submenu and use its left arrow
+to return to Settings. Personal data includes the Budget form in both layouts.
 Open **Settings → Display settings** to choose English, Traditional Chinese, or
 Simplified Chinese, and to enable high contrast. The choice is saved on this
 device. Product names use the matching source labels when available.
@@ -200,7 +209,7 @@ stopped tracking periods. The table lists exact amounts and recorded gaps.
 
 ---
 
-### Ask about prices
+### Ask about shopping
 
 J09 uses the CityU OpenAI-compatible endpoint at `https://llm.cs.cityu.edu.hk/v1`.
 Set `DEEPSEEK_API_KEY_SKU` in Windows and launch the app from a terminal that
@@ -225,7 +234,14 @@ detail, or call the app's catalogue tools. It can search for matching products
 by relevance or lowest listed pack price, read a pack's prices, and offer exact
 pack choices. When you pick a pack, DeepSeek continues the conversation with
 that selection. **Checked catalogue prices** cards show the prices returned
-by the app from its accepted catalogue. Ask has read-only catalogue access.
+by the app from its accepted catalogue.
+
+Ask can also show your carts, Wishlist, alert rules and recent alerts. Try
+“Show my cart”, “Add one 236 mL milk to Weekend groceries”, or “What is 20%
+of HK$85?”. An unspecified destination means the main Cart. To set an alert,
+request a price target or reminder. Ask will collect the exact product and
+schedule, then show a preview. Confirm removals and alert changes in chat.
+Open a linked item and use **Back to Ask** to return to its conversation.
 Ask requires a working DeepSeek connection. If a reply fails, the question
 stays in the chat for **Try reply again**. Check the key and endpoint if replies
 keep failing. You can still browse and compare prices in **Discover**.
