@@ -6,6 +6,7 @@ import com.pricewatch.catalog.ProductView;
 import com.pricewatch.shopping.ListTransfer;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
+import com.pricewatch.tracking.DemoHistoryService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
@@ -37,12 +38,21 @@ public class HelloController {
     private final ShoppingService shopping;
     private final BudgetService budgets;
     private final MessageSource messages;
+    private final DemoHistoryService demoHistory;
 
-    public HelloController(CatalogService catalog, ShoppingService shopping, BudgetService budgets, MessageSource messages) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public HelloController(CatalogService catalog, ShoppingService shopping, BudgetService budgets,
+                           MessageSource messages, DemoHistoryService demoHistory) {
         this.catalog = catalog;
         this.shopping = shopping;
         this.budgets = budgets;
         this.messages = messages;
+        this.demoHistory = demoHistory;
+    }
+
+    public HelloController(CatalogService catalog, ShoppingService shopping, BudgetService budgets,
+                           MessageSource messages) {
+        this(catalog, shopping, budgets, messages, null);
     }
     @ModelAttribute
     void common(Model model) {
@@ -183,16 +193,24 @@ public class HelloController {
         model.addAttribute("feature", feature);
         return screen(model, "planned", PLANNED.get(feature));
     }
-    @PostMapping("/data/{action:sample|refresh}")
+    @PostMapping("/data/{action:sample|refresh|demo}")
     String load(@PathVariable String action, @RequestParam(defaultValue = "false") boolean confirmSample,
                 @RequestParam(defaultValue = "false") boolean fromSettings, RedirectAttributes redirect) {
         String next = fromSettings ? "redirect:/settings#price-data" : "redirect:/data";
         String error = fromSettings ? "dataError" : "error";
-        if (action.equals("sample") && catalog.status() != null && !confirmSample) {
+        if ((action.equals("sample") || action.equals("demo")) && catalog.status() != null && !confirmSample) {
             redirect.addFlashAttribute(error, text("data.confirmation.required"));
             return next;
         }
         try {
+            if (action.equals("demo")) {
+                if (demoHistory == null) throw new IllegalStateException("Demo history is unavailable.");
+                var demo = demoHistory.seed();
+                redirect.addFlashAttribute(fromSettings ? "dataNotice" : "notice",
+                        text("data.demo.accepted", Integer.toString(demo.productCount()),
+                                Integer.toString(demo.observationCount())));
+                return "redirect:/saved";
+            }
             var accepted = action.equals("sample") ? catalog.importSample() : catalog.refreshLive();
             redirect.addFlashAttribute(fromSettings ? "dataNotice" : "notice", text(action.equals("sample") ? "data.sample.accepted" : "data.live.accepted",
                     Integer.toString(accepted.productCount())));

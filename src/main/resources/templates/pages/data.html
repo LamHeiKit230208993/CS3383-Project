@@ -32,6 +32,14 @@
     <dd th:text="${importStatus.sourceUrl}" class="source-url"></dd>
   </dl>
   <div class="settings-price-actions">
+    <form th:action="@{/data/demo}" method="post" data-import-form th:attr="data-busy-label=#{data.import.busy}">
+      <input type="hidden" name="fromSettings" value="true" th:if="${scene == 'settings'}">
+      <button class="button secondary" type="submit" th:text="#{data.demo.submit}">Load demo data</button>
+      <label class="check-label" th:if="${importStatus != null}">
+        <input type="checkbox" required name="confirmSample">
+        <span th:text="#{data.demo.confirm}">Replace the accepted catalogue with demo data.</span>
+      </label>
+    </form>
     <form th:action="@{/data/refresh}" method="post" data-import-form th:attr="data-busy-label=#{data.import.busy}">
       <input type="hidden" name="fromSettings" value="true" th:if="${scene == 'settings'}">
       <button class="button primary" type="submit" th:text="#{data.live.submit}">Refresh live prices</button>

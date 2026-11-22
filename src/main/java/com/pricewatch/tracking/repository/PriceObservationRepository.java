@@ -15,7 +15,7 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
     List<PriceObservationEntity> findByTracking_IdOrderByObservedAtDescIdDesc(Long trackingId);
 
     @Query("""
-            select new com.pricewatch.tracking.PriceHistoryEntry(t.retailerCode, o.observedAt, o.price, t.id)
+            select new com.pricewatch.tracking.PriceHistoryEntry(t.retailerCode, o.observedAt, o.price, t.id, o.sourceUrl)
             from PriceObservationEntity o join o.tracking t
             where t.product.code = :code and o.observedAt >= :cutoff
             order by o.observedAt desc, t.retailerCode, o.id desc
