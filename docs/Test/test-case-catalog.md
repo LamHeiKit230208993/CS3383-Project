@@ -9,6 +9,7 @@ checked prices, pack choices and follow-ups, chat history, and send and reply re
 [TC-SHARE-001](cases/TC-SHARE-001.md) checks list creation, switching, renaming, confirmed deletion, scoped budget estimates, export, and imported copies.
 [TC-OFFLINE-001](cases/TC-OFFLINE-001.md) checks a downloaded Cart, local edits, and budget calculations with the app stopped.
 [TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks Settings navigation, saved languages, contrast, and keyboard use.
+[TC-USABILITY-001](cases/TC-USABILITY-001.md) records a Cart and Settings walkthrough at desktop and phone widths, including the mobile Done control retest.
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
 [TC-DATA-005](cases/TC-DATA-005.md) checks synthetic demo tracking history, confirmation, unknown rows, and visible demo sources.
@@ -19,10 +20,10 @@ for methods and planned coverage. Detailed steps and limits belong in
 
 ## Latest recorded validation
 
-The 22 November 2026 JaCoCo run passed **153 Java tests** with **81.13% line**
-and **62.39% branch** coverage. Three separate targeted budget tests passed.
-The 21 November run recorded **22 shopper and 13 milestone Chrome scenarios**
-and a passing H2 upgrade and restart check. See the [dated run record](history.md).
+The 22 November 2026 follow-up passed **164 Java tests** with **82.07% line**
+and **63.41% branch** coverage. It also passed **22 shopper and 13 milestone
+Chrome scenarios**, two browser coverage helper tests, and the H2 upgrade
+and restart check. See the [dated run record](history.md).
 
 ## J01–J04 baseline scenarios
 

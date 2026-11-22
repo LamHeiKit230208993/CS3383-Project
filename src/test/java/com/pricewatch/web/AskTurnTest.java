@@ -3,6 +3,7 @@ package com.pricewatch.web;
 import com.pricewatch.catalog.CatalogService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.StaticMessageSource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.server.ResponseStatusException;
@@ -185,5 +186,27 @@ class AskTurnTest {
         ask.action(chatId, actionId, "confirm", session);
         verify(shoppingTools, times(0)).apply(any(), any());
         assertEquals("CANCELLED", messages().get(1).actions().getFirst().state());
+    }
+
+    @Test
+    void failedConfirmationShowsAnErrorWithoutAReceiptAndCannotBeReplayed() {
+        var removal = mock(AskShoppingTools.Operation.class);
+        when(removal.requiresConfirmation()).thenReturn(true);
+        when(removal.preview()).thenReturn(new AskShoppingTools.Card("confirmation", "Remove", "", List.of(), null));
+        when(shoppingTurn.operations()).thenReturn(List.of(removal));
+        when(provider.reply(anyString(), anyList(), anyList(), any())).thenReturn(Optional.of("Ready to remove."));
+        when(shoppingTools.apply(any(), any())).thenThrow(new DataIntegrityViolationException("Test write failure"));
+        String location = ask.ask("Remove a pack", "", session);
+        String chatId = AskController.history(session).getFirst().id();
+        String actionId = messages().getLast().actions().getFirst().id();
+
+        assertEquals(location, ask.action(chatId, actionId, "confirm", session));
+        assertEquals("FAILED", messages().get(1).actions().getFirst().state());
+        assertEquals("chat.actionFailed", messages().getLast().text());
+        assertTrue(messages().getLast().cards().isEmpty());
+        int messageCount = messages().size();
+        assertEquals(location, ask.action(chatId, actionId, "confirm", session));
+        assertEquals(messageCount, messages().size());
+        verify(shoppingTools).apply(any(), any());
     }
 }

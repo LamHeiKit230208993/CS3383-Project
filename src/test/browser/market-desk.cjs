@@ -8,10 +8,14 @@ const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
 const { once } = require("node:events");
 const { chromium } = require("playwright");
+const { shopperCoverage } = require("./javascript-coverage.cjs");
 
 const root = path.resolve(__dirname, "../../..");
 const jar = path.join(root, "target/pricewatch-0.0.1-SNAPSHOT.jar");
 const artifacts = path.join(root, "target/browser-checks");
+const coverageEnabled = process.env.BROWSER_JS_COVERAGE === "1";
+const coverageOutput = path.join(artifacts, "javascript-coverage.json");
+const coverage = shopperCoverage(coverageEnabled);
 const sample = JSON.parse(fs.readFileSync(path.join(root,
   "src/main/resources/samples/pricewatch-products.json"), "utf8"));
 const label = text => ({ en: text, "zh-Hant": text, "zh-Hans": text });
@@ -224,6 +228,7 @@ function serveChatFixture(request, response) {
 async function main() {
   assert.ok(fs.existsSync(jar), "Build the app first: ./mvnw package (Windows: .\\mvnw.cmd package)");
   fs.mkdirSync(artifacts, { recursive: true });
+  if (coverageEnabled) fs.rmSync(coverageOutput, { force: true });
   source = http.createServer((request, response) => {
     if (request.url === "/v1/chat/completions") {
       serveChatFixture(request, response);
@@ -254,6 +259,7 @@ async function main() {
     });
   });
   const page = await context.newPage();
+  await coverage.start(page);
   let exportedList;
   const go = async route => {
     const response = await page.goto(base + route);
@@ -302,6 +308,7 @@ async function main() {
     const freshSession = await browser.newContext();
     try {
       const freshAsk = await freshSession.newPage();
+      await coverage.start(freshAsk);
       await freshAsk.goto(base + "/ask");
       const input = freshAsk.getByRole("textbox", { name: "Your price question" });
       await input.fill("who are u");
@@ -313,6 +320,7 @@ async function main() {
       await input.press("Enter");
       await freshAsk.getByText("可以，我可以用繁體中文和你聊天。").waitFor();
       assert.equal(await freshAsk.locator(".chat-prices").count(), 0);
+      await coverage.collect(freshAsk);
     } finally {
       await freshSession.close();
     }
@@ -421,6 +429,7 @@ async function main() {
     const outageContext = await browser.newContext();
     try {
       const outageAsk = await outageContext.newPage();
+      await coverage.start(outageAsk);
       await outageAsk.goto(base + "/ask");
       providerUnavailable = true;
       const readsBefore = providerRequests.length;
@@ -439,6 +448,7 @@ async function main() {
       await outageAsk.locator(".chat-message:not(.chat-shopper)").filter({ hasText: /HK\$7\.50/ }).waitFor();
       assert.equal(providerRequests.length, readsBefore + 2);
       assert.equal(await outageAsk.locator(".chat-shopper").count(), 1);
+      await coverage.collect(outageAsk);
     } finally {
       providerUnavailable = false;
       await outageContext.close();
@@ -927,6 +937,7 @@ async function main() {
     const receivingContext = await browser.newContext();
     try {
       const receiver = await receivingContext.newPage();
+      await coverage.start(receiver);
       await receiver.goto(receivingBase + "/list");
       const upload = async buffer => {
         await receiver.locator(".cart-files > summary").click();
@@ -957,6 +968,7 @@ async function main() {
       await receiver.waitForURL(url => url.searchParams.has("listId"));
       assert.equal(await copy.locator("[name=quantity]").inputValue(), String(original.quantity + 1));
       await receiver.screenshot({ path: path.join(artifacts, "j10-imported-list.png"), fullPage: true });
+      await coverage.collect(receiver);
     } finally {
       await receivingContext.close();
     }
@@ -998,6 +1010,7 @@ async function main() {
       offlinePage.on("request", incoming => {
         if (/^https?:/.test(incoming.url())) remoteRequests.push(incoming.url());
       });
+      await coverage.start(offlinePage);
       await offlinePage.goto(pathToFileURL(localFile).href);
       assert.equal(await offlinePage.locator("time").innerText(), cachedRetrieved);
       const checks = offlinePage.getByRole("checkbox");
@@ -1040,6 +1053,7 @@ async function main() {
         }
       }
       assert.deepEqual(remoteRequests, []);
+      await coverage.collect(offlinePage, localFile);
     } finally {
       await offlineContext.close();
     }
@@ -1171,7 +1185,10 @@ async function main() {
     assert.match(await page.locator("main .intro").innerText(), /鮮牛奶 236毫升/);
     assert.doesNotMatch(await rows.first().innerText(), /Unknown/);
     assert.equal(await page.locator("body").evaluate(body => body.scrollWidth <= body.clientWidth), true);
-    assert.equal(await rows.last().locator("td").last().evaluate(cell => {
+    const listedPrice = rows.last().locator(".history-price");
+    assert.equal(await listedPrice.innerText(), "HK$12.50");
+    assert.match(await rows.last().locator("td").last().innerText(), /^http:\/\/127\.0\.0\.1:\d+\/prices\.json$/);
+    assert.equal(await listedPrice.evaluate(cell => {
       const amount = document.createRange();
       amount.selectNodeContents(cell);
       return amount.getClientRects().length;
@@ -1283,6 +1300,8 @@ async function main() {
     assert.match(await page.locator("main").innerText(), /No saved price observations/);
   });
   await check("no browser script or console errors", async () => assert.deepEqual(browserErrors, []));
+  await coverage.collect(page);
+  coverage.write(coverageOutput, browser.version(), passed);
   console.log(`${passed} browser scenarios passed. Artifacts: ${path.relative(root, artifacts)}`);
 }
 

@@ -4,6 +4,39 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Coverage follow up — 22 November 2026
+
+The comparison uses the same production Java source before and after the
+new tests. The baseline is the merged branch at `4a61bf1`, which includes the
+demo-history update. The earlier PR #24 baseline remains below.
+
+| Measure | Merged baseline | Follow-up run |
+|---|---:|---:|
+| Maven cases passed | 154 | 164 |
+| Java source lines | 3,214/3,943 (81.51%) | 3,236/3,943 (82.07%) |
+| Java branch outcomes | 1,320/2,107 (62.65%) | 1,336/2,107 (63.41%) |
+| Web package branch outcomes | 557/1,126 (49.47%) | 571/1,126 (50.71%) |
+
+The follow-up verified stale and failed Ask confirmations, catalogue refresh
+failure and consent, quantity bounds, and selected budget and Ask decisions.
+The [test strategy](strategy.md#coverage-follow-up) links the case records
+and identifies the scope of the independence evidence.
+
+Chrome 157 passed 22 shopper and 13 milestone scenarios. The H2 file restart
+and upgrade checks also passed. The shopper run caught a mobile price history
+layout issue introduced with the Source column. The updated 375 px check
+verified the price stays on one line and the source remains visible.
+
+| Browser script | Executed V8 UTF-16 units | Share |
+|---|---:|---:|
+| Cart | 2,947/3,250 | 90.68% |
+| Ask | 8,140/8,838 | 92.10% |
+| Offline checklist inline script | 3,525/3,572 | 98.68% |
+
+Two Node unit tests passed for JavaScript range aggregation and required
+script validation. The [Cart and Settings walkthrough](cases/TC-USABILITY-001.md)
+records agent-operated browser observations and phone-width retests.
+
 ## Java coverage baseline — 22 November 2026
 
 - JaCoCo 0.8.14 measured the Java suite against PR #24 head `741d3fe` in an

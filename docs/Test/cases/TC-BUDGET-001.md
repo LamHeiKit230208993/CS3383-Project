@@ -23,8 +23,24 @@ zero) is true.
 Use M1 with M2 for A and M1 with M3 for B. Each pair changes one condition's
 input and changes the guard outcome. In M2, Java short-circuits B. Its input
 is still HK$25, while the actual false and true evaluations of B occur in M1
-and M3. A separate JUnit run of these cases passed in an isolated copy on
-22 November 2026. This analysis applies to the first guard only.
+and M3. The three cases are regression tests in
+[`BudgetViewTest`](../../../src/test/java/com/pricewatch/budget/BudgetViewTest.java).
+The test also checks the balance when the limit is absent or present.
+
+The additional warning in the [budget view](../../../src/main/resources/templates/pages/personal.html)
+requires **A** (known subtotal above the limit) and **B** (at least one unknown
+price). Use the checked milk and bread sample. The milk price is HK$7.50.
+Switch the pinned bread retailer's price to unknown when the case calls for it.
+
+| Case | Limit | Bread price | A | B input | Additional warning |
+|---|---:|---|---|---|---|
+| W1 | HK$0 | Unknown | True | True | Shown |
+| W2 | HK$0 | HK$11.50 | True | False | Hidden |
+| W3 | HK$100 | Unknown | False | True | Hidden |
+
+W1 and W3 exercise A independently. W1 and W2 exercise B independently.
+The template skips B when A is false. MockMvc renders the actual template in
+each case. The analysis applies to these two selected decisions.
 
 ## Maintained budget cases
 

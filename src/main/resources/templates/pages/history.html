@@ -84,7 +84,7 @@
           <tr>
             <th scope="col" th:text="#{history.retailer}"></th>
             <th scope="col" th:text="#{history.retrieved}"></th>
-            <th scope="col" th:text="#{history.price}"></th>
+            <th class="history-price" scope="col" th:text="#{history.price}"></th>
             <th scope="col" th:text="#{history.source}"></th>
           </tr>
         </thead>
@@ -92,8 +92,8 @@
           <tr th:each="entry : ${observations}" th:attr="data-history-x=${chart == null ? null : chart.dateX(entry.retrievedAt)}">
             <th scope="row" th:text="${entry.retailerCode}"></th>
             <td><time th:datetime="${entry.retrievedAt}" th:text="${format.time(entry.retrievedAt)}"></time></td>
-            <td th:if="${entry.price != null}" th:text="${format.money(entry.price)}"></td>
-            <td th:unless="${entry.price != null}" th:text="#{common.unknown}"></td>
+            <td class="history-price" th:if="${entry.price != null}" th:text="${format.money(entry.price)}"></td>
+            <td class="history-price" th:unless="${entry.price != null}" th:text="#{common.unknown}"></td>
             <td th:text="${entry.sourceUrl}"></td>
           </tr>
         </tbody>

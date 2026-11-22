@@ -54,26 +54,40 @@ relevant check after a fix, then run the applicable regression suites.
   their own evidence. Use the [budget example](cases/TC-BUDGET-001.md#targeted-decision-coverage)
   as the format for manual condition analysis.
 
-## Remaining test plan
+## Coverage follow up
 
-| Priority | Work | Evidence and completion criterion |
+| Priority | Work | Verified result |
 |---|---|---|
-| 1 | Review uncovered branches in the web package, starting with Ask confirmation and catalogue replacement | Add tests for stale or repeated confirmation, failed writes, and replacement without consent where gaps remain. Assert the response and stored state. Rerun JaCoCo and compare covered and total outcomes against the recorded baseline. |
-| 2 | Extend condition analysis to selected compound decisions in quantity validation, budget warnings, and Ask authorization of a pending action | Record feasible decision and condition outcomes. Add MC/DC independence pairs for conditions that can vary independently. Document coupled or short-circuited inputs where they affect the analysis. |
-| 3 | Measure browser-side code where useful | Run instrumented Chrome flows against Cart, Ask, and the standalone offline checklist. Report JavaScript counters separately and retain offline and keyboard scenarios as acceptance tests. |
-| 4 | Make manual usability retests repeatable | Run named Cart and Settings tasks with fresh reviewers at desktop and phone widths. Record the device, task, expectation, observation, revision, and outcome. Add before-and-after evidence when available. |
+| 1 | Review uncovered branches in Ask confirmation and catalogue replacement | Added cases for stale previews, invalid and repeated confirmation, a failed confirmation write, missing consent, and a failed refresh. Checked the HTTP result and saved state with H2 where the case used real persistence. [Ask](cases/TC-CHAT-002.md) · [Catalogue](cases/TC-CATALOG-001.md) |
+| 2 | Check selected compound decisions | Maintained tests document independence pairs for quantity bounds, budget progress and warning guards, and Ask authorization of an action. The case files identify inputs that Java or Thymeleaf short-circuit. [Cart](cases/TC-LIST-001.md) · [Budget](cases/TC-BUDGET-001.md) · [Ask](cases/TC-CHAT-002.md) |
+| 3 | Measure browser-side execution | Chrome recorded V8 source ranges for Cart, Ask, and the offline inline script. Two Node unit tests check the range calculation. The run also caught a mobile history layout regression, and the updated browser case checks the price and source cells separately. [Offline Cart](cases/TC-OFFLINE-001.md) · [History](cases/TC-HISTORY-001.md) |
+| 4 | Make usability retests repeatable | An agent completed and documented named Cart and Settings tasks at desktop and phone widths. The case records exact viewports, observed friction, and the scroll-to-expose retest. [Walkthrough](cases/TC-USABILITY-001.md) |
 
-The baseline identifies gaps for review. Report achieved coverage and any
-remaining gaps after the follow-up run.
+The [dated results](history.md) compare the same production Java source before
+and after the follow-up. Continue reviewing remaining uncovered branches when
+they affect shopper behaviour. The compound-decision analysis covers the
+listed guards. An independent human walkthrough on physical devices remains
+available for a later usability round.
 
 ## Reproduction and sources
 
 Run Maven and the three browser scripts using the [setup guide](../SETUP.md).
 For Java coverage, copy the build into an isolated folder and run JaCoCo
-0.8.14 with the Maven goals `prepare-agent`, `test`, and `report`, in that
-order. If Surefire already has JVM agents configured, preserve JaCoCo's agent
-argument in its forked JVM. Open `target/site/jacoco/index.html` and use the XML
-report for exact numerators and denominators.
+0.8.14 from that copy. If Surefire has other JVM agents configured, preserve
+JaCoCo's argument in the forked JVM.
+
+```powershell
+.\mvnw.cmd org.jacoco:jacoco-maven-plugin:0.8.14:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.14:report
+```
+
+Open `target/site/jacoco/index.html` and read the XML for exact counts. To
+measure JavaScript as a separate metric, set `BROWSER_JS_COVERAGE=1` before
+`npm run test:browser`. The report combines V8 ranges from the exercised
+pages and shows the executed share of each script's UTF-16 source units.
+The offline measurement covers its inline script. Chromium may lose earlier
+coverage on a renderer swap. A passing run requires all three target scripts.
+Check the range calculation with `node --test src/test/browser/javascript-coverage.test.cjs`.
 
 [JaCoCo coverage counters](https://www.jacoco.org/jacoco/trunk/doc/counters.html)
 · [NASA tutorial on MC/DC](https://ntrs.nasa.gov/citations/20010057789)
+· [Playwright coverage API](https://playwright.dev/docs/api/class-coverage)

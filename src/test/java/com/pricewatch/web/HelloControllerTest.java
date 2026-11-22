@@ -231,6 +231,88 @@ class HelloControllerTest {
                 .andExpect(content().string(containsString("HK$7.50")));
     }
 
+    @Test void staleAskRemovalRequiresANewConfirmationBeforeAffectingTheNamedCart() throws Exception {
+        catalog.importSample();
+        long listId = shopping.createList("Weekend groceries");
+        shopping.add(listId, "P000000124", 2, "JASONS");
+        var session = new MockHttpSession();
+        String location = prepareAskRemoval(session, listId);
+        String chatId = AskController.history(session).getFirst().id();
+        String original = pendingAskAction(session).id();
+
+        shopping.editDetails(listId, "P000000124", 4, "JASONS");
+        mvc.perform(post("/ask/action").session(session).param("chatId", chatId)
+                        .param("actionId", original).param("decision", "confirm"))
+                .andExpect(redirectedUrl(location));
+        assertEquals(4, shopping.items(listId).getFirst().quantity());
+        assertEquals("STALE", AskController.history(session).getFirst().messages().get(1).actions().getFirst().state());
+        String updated = pendingAskAction(session).id();
+        assertNotEquals(original, updated);
+        mvc.perform(get(location).session(session))
+                .andExpect(content().string(containsString("The saved data changed.")));
+
+        mvc.perform(post("/ask/action").session(session).param("chatId", chatId)
+                        .param("actionId", updated).param("decision", "confirm"))
+                .andExpect(redirectedUrl(location));
+        assertEquals(3, shopping.items(listId).getFirst().quantity());
+        assertEquals("JASONS", shopping.items(listId).getFirst().selectedRetailerCode());
+    }
+
+    @Test void askConfirmationRequiresAPendingActionAndAReadyConversation() throws Exception {
+        catalog.importSample();
+        long listId = shopping.createList("Weekend groceries");
+        shopping.add(listId, "P000000124", 2, "JASONS");
+        var session = new MockHttpSession();
+        String location = prepareAskRemoval(session, listId);
+        String chatId = AskController.history(session).getFirst().id();
+        String actionId = pendingAskAction(session).id();
+
+        mvc.perform(post("/ask/action").session(session).param("chatId", chatId)
+                        .param("actionId", "unknown-action").param("decision", "confirm"))
+                .andExpect(redirectedUrl(location));
+        mvc.perform(post("/ask/action").session(session).param("chatId", chatId)
+                        .param("actionId", actionId).param("decision", "invalid"))
+                .andExpect(status().isBadRequest());
+        assertEquals(2, shopping.items(listId).getFirst().quantity());
+
+        mvc.perform(post("/ask/send").session(session).param("chatId", chatId)
+                        .param("question", "Can you wait?"))
+                .andExpect(redirectedUrl(location));
+        mvc.perform(post("/ask/action").session(session).param("chatId", chatId)
+                        .param("actionId", actionId).param("decision", "confirm"))
+                .andExpect(redirectedUrl(location));
+        assertEquals(actionId, pendingAskAction(session).id());
+        assertEquals(2, shopping.items(listId).getFirst().quantity());
+
+        mvc.perform(post("/ask/reply").session(session).param("chatId", chatId))
+                .andExpect(redirectedUrl(location));
+        mvc.perform(post("/ask/action").session(session).param("chatId", chatId)
+                        .param("actionId", actionId).param("decision", "confirm"))
+                .andExpect(redirectedUrl(location));
+        assertEquals(1, shopping.items(listId).getFirst().quantity());
+    }
+
+    private String prepareAskRemoval(MockHttpSession session, long listId) throws Exception {
+        when(provider.reply(anyString(), anyList(), anyList(), any())).thenAnswer(invocation -> {
+            List<DeepSeekChatClient.ChatMessage> history = invocation.getArgument(1);
+            if (history.getLast().content().equals("Remove one pack")) {
+                BiFunction<String, JsonNode, Object> tool = invocation.getArgument(3);
+                var args = json.createObjectNode().put("operation", "remove").put("list_id", listId)
+                        .put("product_code", "P000000124").put("quantity", 1);
+                assertEquals("awaiting_confirmation",
+                        json.valueToTree(tool.apply("propose_cart", args)).path("status").asText());
+            }
+            return Optional.of("Ready.");
+        });
+        return mvc.perform(post("/ask").session(session).param("question", "Remove one pack"))
+                .andExpect(redirectedUrlPattern("/ask?chatId=*")).andReturn().getResponse().getRedirectedUrl();
+    }
+
+    private static AskController.Action pendingAskAction(MockHttpSession session) {
+        return AskController.history(session).getFirst().messages().stream().flatMap(message -> message.actions().stream())
+                .filter(action -> action.state().equals("PENDING")).findFirst().orElseThrow();
+    }
+
     private Optional<String> catalogueReply(InvocationOnMock invocation) {
         List<DeepSeekChatClient.ChatMessage> history = invocation.getArgument(1);
         BiFunction<String, JsonNode, Object> tool = invocation.getArgument(3);
@@ -323,11 +405,31 @@ class HelloControllerTest {
 
     @Test void replacingAnAcceptedCatalogueRequiresServerSideConfirmation() throws Exception {
         var previous = catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
         mvc.perform(post("/data/sample")).andExpect(redirectedUrl("/data"))
                 .andExpect(flash().attributeExists("error"));
         assertEquals(previous.retrievedAt(), catalog.status().retrievedAt());
-        mvc.perform(post("/data/sample").param("confirmSample", "true"))
-                .andExpect(redirectedUrl("/data")).andExpect(flash().attributeExists("notice"));
+        mvc.perform(post("/data/sample").param("fromSettings", "true"))
+                .andExpect(redirectedUrl("/settings#price-data")).andExpect(flash().attributeExists("dataError"));
+        assertEquals(previous, catalog.status());
+        assertEquals(2, shopping.items().getFirst().quantity());
+        mvc.perform(post("/data/sample").param("fromSettings", "true").param("confirmSample", "true"))
+                .andExpect(redirectedUrl("/settings#price-data")).andExpect(flash().attributeExists("dataNotice"));
+        assertEquals("JASONS", shopping.items().getFirst().selectedRetailerCode());
+    }
+
+    @Test void failedLiveRefreshReportsAnErrorInSettingsAndPreservesAcceptedData() throws Exception {
+        var previous = catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
+        var original = shopping.items().getFirst();
+
+        mvc.perform(post("/data/refresh").param("fromSettings", "true"))
+                .andExpect(redirectedUrl("/settings#price-data"))
+                .andExpect(flash().attributeExists("dataError"))
+                .andExpect(flash().attributeCount(1));
+
+        assertEquals(previous, catalog.status());
+        assertEquals(original, shopping.items().getFirst());
     }
     @Test void unrelatedSitesCannotSubmitLocalChanges() throws Exception {
         mvc.perform(post("/data/sample").header("Origin", "https://unrelated.example"))

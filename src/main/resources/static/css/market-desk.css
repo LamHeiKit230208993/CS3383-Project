@@ -390,8 +390,9 @@ dd { margin: 0; }
 @media (max-width: 480px) {
   .price-history { table-layout: fixed; font-size: .875rem; }
   .price-history :is(th, td) { padding: .55rem .35rem; }
-  .price-history thead th:first-child { width: 35%; }
-  .price-history thead th:last-child { width: 28%; }
+  .price-history thead th:first-child { width: 22%; }
+  .price-history thead th:nth-child(2) { width: 28%; }
+  .price-history thead .history-price { width: 28%; }
 }
 .preferences-panel { max-width: 520px; }
 form.preferences-panel { display: grid; gap: 24px; }

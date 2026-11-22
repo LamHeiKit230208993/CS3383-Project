@@ -346,6 +346,13 @@ npm run test:browser
 Remove-Item Env:BROWSER_CHANNEL
 ```
 
+To measure JavaScript executed during the shopper scenarios, set
+`BROWSER_JS_COVERAGE=1` for the browser run. The suite writes
+`target/browser-checks/javascript-coverage.json` with V8 source ranges for
+Cart, Ask, and the inline script in the downloaded offline Cart. The report
+measures source units reached during the run. See the
+[test strategy](Test/strategy.md) for how this relates to Java branch coverage.
+
 The checks cover native forms with JavaScript disabled, saved retailer choices,
 missing selected prices, exact price previews, multilingual search, category URL
 state, keyboard navigation, and four viewport widths. The combined workflow

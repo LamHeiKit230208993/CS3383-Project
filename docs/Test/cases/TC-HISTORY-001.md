@@ -22,7 +22,8 @@ retailer with known prices elsewhere in the chart.
 The tracking test places a record outside the 90-day window and verifies that the
 table excludes it without writing to the database. Chrome checks the same pack
 as Ask and list sharing, with localized headings and a 375 px viewport.
-The fixture price fits on one line at that width.
+The fixture price fits on one line at that width. The observation's source
+remains in its own table column and can wrap within the page.
 
 Sources [PriceHistoryChartTest.java](../../../src/test/java/com/pricewatch/web/PriceHistoryChartTest.java),
 [TrackingServiceTest.java](../../../src/test/java/com/pricewatch/catalog/TrackingServiceTest.java), and

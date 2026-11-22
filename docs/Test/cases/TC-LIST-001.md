@@ -14,6 +14,21 @@ Reject zero, values above 999, and a combined quantity above 999. Combine known
 and unknown-price items. Expect only known amounts in `knownSubtotal` and a
 separate unknown-item count; a missing price is never zero.
 
+Check both quantity limits against the guard **A or B**, where **A** is
+quantity below 1 and **B** is quantity above 999.
+
+| Quantity | A | B input | Expected result |
+|---:|---|---|---|
+| 0 | True | False | Reject the edit |
+| 1 | False | False | Accept the minimum |
+| 999 | False | False | Accept the maximum |
+| 1,000 | False | True | Reject the edit |
+
+The 0 and 1 pair exercises A independently. The 999 and 1,000 pair exercises
+B independently. Java skips B for 0. The test saves 999 checked packs with
+JASONS selected, attempts to change quantity, checked state, and retailer
+using each invalid value, then checks that the saved row is unchanged.
+
 Import a replacement without a saved product. Expect the item and checked state
 to remain, the product to be inactive, and its current price to be unknown.
 Reject an invalid import after saving a list. Expect unchanged accepted metadata

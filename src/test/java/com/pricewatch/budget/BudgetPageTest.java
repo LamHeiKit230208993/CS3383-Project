@@ -2,7 +2,10 @@ package com.pricewatch.budget;
 
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.shopping.ShoppingService;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +33,7 @@ class BudgetPageTest {
     @Autowired private CatalogService catalog;
     @Autowired private ShoppingService shopping;
     @Autowired private BudgetService budgets;
+    @Autowired private EntityManager entityManager;
 
     @Test
     void personalDataRendersBudgetFormWithDefaultPeriodAndNoLimit() throws Exception {
@@ -89,17 +93,28 @@ class BudgetPageTest {
                 .andExpect(model().attribute("budgetFormLimit", "125.0000"));
     }
 
-    @Test
-    void overLimitWithCompletePricesDoesNotClaimPricesAreMissing() throws Exception {
+    @ParameterizedTest(name = "limit {0}, missing bread price {1}, combined warning {2}")
+    @CsvSource({"0.00, false, false", "0.00, true, true", "100.00, true, false"})
+    void additionalBudgetWarningRequiresBothAnOverLimitSubtotalAndAMissingPrice(
+            String limit, boolean missingPrice, boolean combinedWarning) throws Exception {
         catalog.importSample();
         shopping.add("P000000124", 1);
-        budgets.save("WEEKLY", "0.00");
+        shopping.add("P000000229", 1, "JASONS");
+        if (missingPrice) {
+            entityManager.flush();
+            entityManager.createQuery("""
+                    update RetailerListingEntity listing set listing.price = null
+                    where listing.product.code = 'P000000229' and listing.retailerCode = 'JASONS'
+                    """).executeUpdate();
+            entityManager.clear();
+        }
+        budgets.save("WEEKLY", limit);
 
-        mvc.perform(get("/personal-data"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("The known subtotal is already above your limit.")))
-                .andExpect(content().string(not(containsString("The full total may be higher."))))
-                .andExpect(content().string(not(containsString("list items have no current selected price"))));
+        var response = mvc.perform(get("/personal-data")).andExpect(status().isOk());
+        var overLimit = containsString("The known subtotal is already above your limit.");
+        var extraWarning = containsString("The full total may be higher.");
+        response.andExpect(content().string(limit.equals("0.00") ? overLimit : not(overLimit)))
+                .andExpect(content().string(combinedWarning ? extraWarning : not(extraWarning)));
     }
 
     @Test
