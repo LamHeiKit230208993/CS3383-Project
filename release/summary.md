@@ -51,3 +51,26 @@ By default, the application is available at:
 ```text
 http://localhost:8080
 ```
+
+## Configure the Ask API key
+
+Set `DEEPSEEK_API_KEY_SKU` in the current PowerShell session before starting the JAR:
+
+```powershell
+$env:DEEPSEEK_API_KEY_SKU = "your-api-key"
+java -jar .\release\pricewatch-0.0.1-SNAPSHOT.jar
+```
+
+To save the key for future terminal sessions on the current Windows user:
+
+```powershell
+setx DEEPSEEK_API_KEY_SKU "your-api-key"
+```
+
+Close and reopen PowerShell or VS Code after using `setx`, then start the JAR normally:
+
+```powershell
+java -jar .\release\pricewatch-0.0.1-SNAPSHOT.jar
+```
+
+Do not commit the key or place it in `application.properties`. The key remains server-side and is not stored in the JAR.
