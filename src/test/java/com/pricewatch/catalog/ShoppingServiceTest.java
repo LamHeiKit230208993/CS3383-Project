@@ -55,6 +55,23 @@ class ShoppingServiceTest {
     }
 
     @Test
+    void batchAddKeepsExistingCartChoicesAndReportsSkippedProducts() {
+        catalog.importSample();
+        shopping.add("P000000124", 2, "JASONS");
+        shopping.checkOff(null, "P000000124", true);
+
+        assertEquals(new ShoppingService.BatchAddResult(1, 1, 1), shopping.addMissingProducts(
+                List.of("P000000124", "P000000229", "P000000229", "MISSING")));
+        var items = shopping.items();
+        assertEquals(2, items.size());
+        assertEquals("JASONS", items.getFirst().selectedRetailerCode());
+        assertEquals(2, items.getFirst().quantity());
+        assertTrue(items.getFirst().checked());
+        assertEquals(1, items.getLast().quantity());
+        assertNull(items.getLast().selectedRetailerCode());
+    }
+
+    @Test
     void listLoadsProductsAndOffersInOneQuery() {
         catalog.importSample();
         shopping.add("P000000124", 2, "JASONS");
@@ -189,8 +206,6 @@ class ShoppingServiceTest {
         shopping.add("KNOWN", 2);
         shopping.add("UNKNOWN", 3);
         assertThrows(IllegalArgumentException.class, () -> shopping.add("KNOWN", 998));
-        assertThrows(IllegalArgumentException.class, () -> shopping.add("KNOWN", 0));
-        assertThrows(IllegalArgumentException.class, () -> shopping.update("KNOWN", 1000, false));
 
         Summary summary = shopping.summary();
         assertEquals(new BigDecimal("4.5000"), summary.knownSubtotal());
@@ -202,6 +217,27 @@ class ShoppingServiceTest {
                 .findFirst().orElseThrow();
         assertNull(unknown.unitPrice());
         assertNull(unknown.lineTotal());
+    }
+
+    @Test
+    void quantityBoundsRejectInvalidEditsWithoutChangingTheSavedRow() {
+        catalog.importSample();
+        var code = "P000000124";
+        shopping.add(code, 1, "JASONS");
+        assertEquals(1, shopping.items().getFirst().quantity());
+
+        shopping.update(null, code, 999, true, "JASONS");
+        ItemView accepted = shopping.items().getFirst();
+        assertEquals(999, accepted.quantity());
+        assertTrue(accepted.checked());
+
+        for (int rejected : new int[]{0, 1000}) {
+            assertThrows(IllegalArgumentException.class, () -> shopping.update(null, code, rejected, false, "AEON"));
+            ItemView unchanged = shopping.items().getFirst();
+            assertEquals(accepted.quantity(), unchanged.quantity());
+            assertEquals(accepted.checked(), unchanged.checked());
+            assertEquals(accepted.selectedRetailerCode(), unchanged.selectedRetailerCode());
+        }
     }
 
     @Test

@@ -43,7 +43,7 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 | ID | Feature | Original mark | Decision and boundary |
 |---|---|---|---|
 | R09 | Regular price, sale price, and verified discount percentage | ❌ | Excluded. A listed price or offer claim is not a verified regular price. |
-| R10 | Price history charts for 30 or 90 days | ⚠️ ! | Tracked; conditional on dated records. Show only the available period. Older downloads may help if checked. |
+| R10 | Price history charts for 30 or 90 days | ⚠️ ! | Show retained retailer observations for the pack, with filters and a dated table. Mark unknown observations and gaps in tracking. |
 | R11 | Check advertised discounts, originally called “fake-discount detection” | ⚠️ | Conditional. Compare recorded prices and explain the result. History alone cannot prove a fake offer or intent. |
 | R12 | Offer age and end date | ❌ | Excluded. Do not invent dates from the first or last time the app saw an offer. |
 | R13 | Mark an offer as expired | ❌ | Excluded. Removal from a daily file does not prove expiry. |
@@ -64,12 +64,12 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 
 | ID | Feature | Original mark | Decision and boundary |
 |---|---|---|---|
-| R21 | Target-price alerts and price-drop alerts | ⚠️ + | Build as two checks inside the active app first. A target needs a current price; a drop needs an earlier price for the same product/retailer. Check after valid updates while the app is running. |
+| R21 | Target-price alerts and price-drop alerts | ⚠️ + | Each product-wide target lists the retailers that qualify. Each price or calendar rule can run once or repeat. Previously saved combined rules wait after their due time for a qualifying live price. Existing retailer-specific targets and drops keep their rules and evidence. |
 | R22 | Amount or percentage change thresholds | ⚠️ ! | Tracked; conditional on a stated comparison price. A percentage change is not a verified store discount. |
-| R23 | Quiet hours, prevention of repeated alerts, and snooze | ✅ + | Build. Define when a repeated price or a new tracking period can trigger another alert. |
+| R23 | Prevention of repeated alerts and snooze | ✅ + | A one-time rule turns off after it fires. Repeating rules follow their selected cadence, with a fresh accepted refresh required for a repeat price alert. Keep 24-hour snooze and event history. |
 | R24 | Different notification channels | ⚠️ | Conditional. Choose and test the channels; daily data does not support live flash-sale alerts. |
 | R25 | Alerts near a store branch | ❌ # | Future consideration. Branch location data is not established. |
-| R26 | Morning summary | ✅ + | Build inside the active app first. Agree which items it covers, its time, and what happens if the app was closed at that time. |
+| R26 | Morning summary | ❌ | Retired during the Market Desk redesign. Use Wishlist to review tracked products and Alerts to review events. Prior summaries remain in personal-data exports. |
 
 ## 6. Lists and spending
 
@@ -92,7 +92,7 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 | R36 | Add a reminder item to a list with a listed-price comparison | ✅ + | Build. Keep the chosen product and quantity clear. |
 | R37 | Clear or snooze a reminder | ✅ + | Build. Define the next reminder date after each action. |
 | R38 | Link to a purchase page | ⚠️ | Conditional. A verified retailer link is possible; an item page needs a verified item URL. No checkout is implied. |
-| R39 | Save to a wishlist | ✅ + | Build. Saving alone does not start tracking or record a purchase. Use an explicit tracking choice. |
+| R39 | Save to a wishlist | ✅ + | Saving an exact pack starts all-retailer tracking. Removing it stops new collection and keeps earlier observations. Choose one or several saved products to add them to Cart. |
 | R40 | Share a result to WhatsApp; copy a coupon code | ⚠️ | Conditional, with separate actions. Sharing needs a usable result. Copying a coupon needs an actual code from a checked source. |
 | R41 | Online-only, in-store-only, or member-only eligibility labels | ❌ | Excluded. No reliable structured source has been established. |
 | R42 | Buy inside the app or get a walking route | ⚠️ # | Future consideration. Needs store checkout support or branch/map data. |
@@ -106,7 +106,7 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 | R45 | View, export, and delete stored personal data | ✅ + | Build for the local user's records. List sharing exports only the chosen list. Deleting local data cannot remove copies already sent to another person. |
 | R46 | English, Traditional Chinese, and Simplified Chinese | ✅ + | Build. Cover app text and product display; check search behaviour in each language. |
 | R47 | High-contrast, easy-to-read mode | ✅ + | Build. Check readable text, clear controls, and meaning that does not rely only on colour. |
-| R48 | Offline use of saved data | ✅ + | Build read-only saved shopping-list review first, on the device where the list was saved. Show saved-data age; disable live price refresh and remote chat. Offline editing is later work. |
+| R48 | Offline use of saved data | ✅ + | Download the selected Cart as a standalone HTML checklist that opens without the app or network. Show saved prices and retrieval time. Checklist, quantity, retailer, and budget edits apply only to the open file. |
 
 ## 9. Rules for every included feature
 

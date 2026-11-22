@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Check that saving a product is separate from tracking it, that tracking uses one
-exact product and retailer, and that price history survives catalogue
+Check that saving a product tracks its retailers for the exact pack and
+that price history survives catalogue
 replacement and a stopped tracking period.
 
 ## Setup
@@ -15,9 +15,9 @@ replacement and a stopped tracking period.
 
 ## Steps
 
-1. Accept a `SAMPLE` catalogue, save the product, and start tracking one exact
-   retailer. Confirm the wishlist entry exists and the tracking period has no
-   observations from the sample.
+1. Accept a `SAMPLE` catalogue and save the product. Confirm the wishlist
+   entry and all listed retailer periods exist. There are no observations
+   from the sample.
 2. Accept a `LIVE` catalogue with a known price for the selected retailer.
    Confirm one observation records the product, retailer, retrieval time, source
    URL, and source checksum.
@@ -58,8 +58,12 @@ retailers and import a third listing. Existing history remains available
 and the third retailer is excluded. The file-backed restart test also checks
 that the product-wide preference survives reopening the database.
 
+An older H2 file with saved-only and tracked-only products reopens with both
+visible in Wishlist. An accepted LIVE import enrolls the missing retailers and
+preserves existing retailer history and rules.
+
 Only successfully accepted `LIVE` imports add observations to enabled periods.
-The exact product/retailer identity is kept. Saving alone never starts tracking.
+The exact product and retailer identity stays in every observation.
 Unknown prices break drop comparisons. Stopping preserves past observations;
 restarting creates a separate period. Retained price state suppresses repeated
 unchanged imports after observation rows expire; a changed price starts a new

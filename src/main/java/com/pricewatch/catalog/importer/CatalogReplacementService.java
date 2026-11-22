@@ -10,6 +10,8 @@ import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.OfferRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.catalog.repository.RetailerListingRepository;
+import com.pricewatch.notifications.ProductTargetService;
+import com.pricewatch.notifications.WatchRuleService;
 import com.pricewatch.tracking.TrackingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,17 +29,23 @@ public class CatalogReplacementService {
     private final OfferRepository offerRepository;
     private final AcceptedImportRepository importRepository;
     private final TrackingService trackingService;
+    private final ProductTargetService productTargets;
+    private final WatchRuleService watchRules;
 
     public CatalogReplacementService(ProductRepository productRepository,
                                      RetailerListingRepository listingRepository,
                                      OfferRepository offerRepository,
                                      AcceptedImportRepository importRepository,
-                                     TrackingService trackingService) {
+                                     TrackingService trackingService,
+                                     ProductTargetService productTargets,
+                                     WatchRuleService watchRules) {
         this.productRepository = productRepository;
         this.listingRepository = listingRepository;
         this.offerRepository = offerRepository;
         this.importRepository = importRepository;
         this.trackingService = trackingService;
+        this.productTargets = productTargets;
+        this.watchRules = watchRules;
     }
 
     @Transactional
@@ -60,6 +68,7 @@ public class CatalogReplacementService {
             product.setCategory2(toLabel(source.category2()));
             product.setCategory3(toLabel(source.category3()));
             product.setActive(true);
+            product.setImportedListReference(false);
             importedProducts.add(product);
         }
         List<ProductEntity> savedProducts = productRepository.saveAllAndFlush(importedProducts);
@@ -81,6 +90,8 @@ public class CatalogReplacementService {
 
         if ("LIVE".equals(origin)) {
             trackingService.recordLiveImport(catalog, retrievedAt, sourceUrl, checksum);
+            productTargets.evaluateLive(catalog, retrievedAt);
+            watchRules.evaluateLive(catalog, retrievedAt);
         }
 
         AcceptedImportEntity accepted = new AcceptedImportEntity(origin, sourceUrl, retrievedAt,

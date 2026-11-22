@@ -14,6 +14,21 @@ Reject zero, values above 999, and a combined quantity above 999. Combine known
 and unknown-price items. Expect only known amounts in `knownSubtotal` and a
 separate unknown-item count; a missing price is never zero.
 
+Check both quantity limits against the guard **A or B**, where **A** is
+quantity below 1 and **B** is quantity above 999.
+
+| Quantity | A | B input | Expected result |
+|---:|---|---|---|
+| 0 | True | False | Reject the edit |
+| 1 | False | False | Accept the minimum |
+| 999 | False | False | Accept the maximum |
+| 1,000 | False | True | Reject the edit |
+
+The 0 and 1 pair exercises A independently. The 999 and 1,000 pair exercises
+B independently. Java skips B for 0. The test saves 999 checked packs with
+JASONS selected, attempts to change quantity, checked state, and retailer
+using each invalid value, then checks that the saved row is unchanged.
+
 Import a replacement without a saved product. Expect the item and checked state
 to remain, the product to be inactive, and its current price to be unknown.
 Reject an invalid import after saving a list. Expect unchanged accepted metadata
@@ -31,3 +46,10 @@ restores automatic lowest. The legacy update retains a saved choice. Unknown or
 unpriced new retailer choices are rejected. After refresh removes the selected
 retailer's price, its selection remains saved and its total stays unknown rather
 than using another retailer. Offers are not included in the arithmetic.
+
+In the [shopper browser suite](../../../src/test/browser/market-desk.cjs),
+open a named cart with enough items to scroll. At 1280 × 650, the summary
+stays in view as the list scrolls and the expanded import button remains
+reachable by focus. At 375 px, it follows the items in normal page flow.
+From a Cart item comparison, verify that the back arrow reveals the destination
+name on hover and keyboard focus. Enter returns to the Cart that opened it.

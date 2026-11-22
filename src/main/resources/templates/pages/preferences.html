@@ -1,0 +1,45 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="content" class="settings-detail">
+  <div class="settings-detail-back">
+    <th:block th:replace="~{fragments/back-link :: link(@{/settings},#{app.scene.settings})}"></th:block>
+  </div>
+  <th:block th:replace="~{pages/preferences :: settings-panel}"></th:block>
+</section>
+
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="settings-panel" id="display"
+         class="settings-card" tabindex="-1" aria-labelledby="preferences-title">
+  <header class="settings-card-heading">
+    <span class="settings-card-icon" aria-hidden="true"><svg class="icon"><use href="#i-display"/></svg></span>
+    <div>
+      <h1 id="preferences-title" th:unless="${scene == 'settings'}" th:text="#{app.scene.preferences}">Display settings</h1>
+      <h2 id="preferences-title" th:if="${scene == 'settings'}" th:text="#{app.scene.preferences}">Display settings</h2>
+      <p th:text="#{preferences.intro}">These settings are saved on this device.</p>
+    </div>
+  </header>
+  <div th:if="${displayFeedback}" class="notice preferences-panel" role="status" th:text="#{${displayFeedback}}"></div>
+  <div th:if="${displayError}" class="notice error preferences-panel" role="alert" th:text="#{${displayError}}"></div>
+  <form th:action="@{/preferences}" method="post">
+    <input type="hidden" name="fromSettings" value="true" th:if="${scene == 'settings'}">
+    <div class="settings-display-row">
+      <label for="display-language" th:text="#{preferences.language}">Language</label>
+      <select id="display-language" name="language">
+        <option value="en" lang="en" th:selected="${displayPreferences.language == 'en'}">English</option>
+        <option value="zh-Hant" lang="zh-Hant" th:selected="${displayPreferences.language == 'zh-Hant'}">繁體中文</option>
+        <option value="zh-Hans" lang="zh-Hans" th:selected="${displayPreferences.language == 'zh-Hans'}">简体中文</option>
+      </select>
+    </div>
+    <div class="settings-display-row">
+      <div>
+        <label id="display-contrast-label" for="display-contrast" th:text="#{preferences.highContrast}">High contrast</label>
+        <p id="contrast-help" class="helper" th:text="#{preferences.contrastHelp}">Use darker text and stronger borders and focus outlines.</p>
+      </div>
+      <label class="settings-display-switch" for="display-contrast">
+        <input id="display-contrast" type="checkbox" name="highContrast" value="true"
+               aria-labelledby="display-contrast-label" aria-describedby="contrast-help" th:checked="${displayPreferences.highContrast}">
+        <span class="settings-switch-track" aria-hidden="true"></span>
+      </label>
+    </div>
+    <div class="settings-card-actions">
+      <button class="button primary" type="submit" th:text="#{preferences.save}">Save preferences</button>
+    </div>
+  </form>
+</section>

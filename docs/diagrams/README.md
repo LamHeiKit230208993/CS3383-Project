@@ -2,12 +2,19 @@
 
 The accepted [J01–J04 diagrams](baseline/) remain the historical baseline.
 
-The [J01–J08 implementation views](j05-j08/README.md) describe the current local
+The J09 sequence shows checked catalogue answers, shopping tools, confirmation,
+and the retry path.
+[Editable PlantUML](j10-j12/ask-sequence.puml) · [SVG](j10-j12/ask-sequence.svg) · [PNG](j10-j12/ask-sequence.png)
+
+The J10–J12 sequence covers selected-list transfer, the offline HTML checklist,
+display preferences, retained history, and personal-data export or reset.
+[Editable PlantUML](j10-j12/shopper-sequence.puml) · [SVG](j10-j12/shopper-sequence.svg) · [PNG](j10-j12/shopper-sequence.png)
+
+The [J01–J08 implementation views](j05-j08/README.md) describe the baseline
 code, including the tracking, alert, budget and reminder additions. Their
 meaning, relationships and rendered layouts have been reviewed against the
 source. Official PlantUML 1.2026.9 syntax checking and SVG/PNG rendering passed.
 The integrator also reviewed all four rendered views on 6 November 2026.
-This is the current local implementation set; the original baseline is preserved.
 A diagram does not prove that the application's implementation tests pass.
 
 | View | Editable source | Export |

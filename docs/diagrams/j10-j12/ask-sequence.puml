@@ -1,0 +1,53 @@
+@startuml
+skinparam backgroundColor #ffffff
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam defaultFontColor #111827
+skinparam shadowing false
+skinparam arrowColor #4b5563
+skinparam sequenceParticipantBackgroundColor #f3f4f6
+skinparam sequenceParticipantBorderColor #4b5563
+skinparam sequenceLifeLineBorderColor #4b5563
+hide footbox
+title Market Desk | Ask and shopping tools
+
+actor Shopper
+participant "Ask controller" as Web
+participant "CityU DeepSeek" as Model
+participant "Local tools" as Tools
+database "H2" as DB
+
+Shopper -> Web: Submit a question
+Web --> Shopper: Show the question and pending reply
+Web -> Model: Recent messages and tool definitions
+loop As needed within the current reply
+  Model -> Web: Request catalogue, shopping or calculation tool
+  Web -> Tools: Validate tool arguments and run the requested operation
+  opt Tool reads saved records
+    Tools -> DB: Query the accepted catalogue or local shopper data
+    DB --> Tools: Return checked records
+  end
+  Tools --> Web: Return checked data or an action preview
+  Web --> Model: Send tool result
+end
+alt Model returns a reply
+  Model --> Web: Reply text
+  opt Valid action can apply without confirmation
+    Web -> Tools: Apply action and build a receipt
+    Tools -> DB: Save the local change
+  end
+  Web --> Shopper: Show the reply with checked cards or action preview
+  opt Action requires confirmation
+    Shopper -> Web: Confirm the specific preview
+    Web -> Tools: Validate the preview against current records
+    alt Preview is current
+      Tools -> DB: Save the confirmed change
+      Web --> Shopper: Show the receipt
+    else Records have changed
+      Web --> Shopper: Show an updated preview or an error
+    end
+  end
+else Provider unavailable
+  Web --> Shopper: Keep the question available for retry
+end
+@enduml

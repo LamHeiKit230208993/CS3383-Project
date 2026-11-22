@@ -17,6 +17,14 @@ supplies successful live-source bytes, then injects a fetch failure. The accepte
 checksum and catalogue must remain unchanged after failure. HTTP transport is
 covered in TC-DATA-003. A parser rejection alone does not prove database rollback.
 
+In [HelloControllerTest](../../../src/test/java/com/pricewatch/web/HelloControllerTest.java),
+load the checked sample and save two packs with JASONS selected. Try to replace
+the accepted catalogue from Settings without confirming. Expect a redirect to
+the Price data section, an error, and unchanged import metadata and Cart.
+Confirm the replacement and expect a success notice with the Cart choice
+preserved. Request a live refresh from Settings with the test source unavailable.
+Expect an error without a success notice and verify that the accepted import
+and Cart row are unchanged.
 
 `databaseWriteFailureRollsBackDeletedCatalogueAndKeepsMetadataAndList` checks
 recovery from a real database write failure. It first commits the checked sample

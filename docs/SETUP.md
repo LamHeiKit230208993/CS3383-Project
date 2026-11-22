@@ -106,41 +106,38 @@ time is not a price date.
 
 Running the app needs no separate frontend build, React, Node runtime, or frontend
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
-Saved, Alerts, Budget, and Reminders now have working forms in the J05–J08
-implementation. Local integration checks passed on 6 November 2026; Ask remains planned.
+Use Wishlist for tracked products and Alerts for price alerts.
+Open Ask for the price assistant described below.
 See the [baseline guide](implementation-baseline-j01-j04.md) and
 [extension guide](implementation-j05-j08.md) for behaviour and limits.
 
 ### Try the J05–J08 flow
 
-1. Open a product comparison and choose **Save or track this product**. Save it to the
-   wishlist, or explicitly track a retailer. These are separate actions.
-2. Open **Alerts** to set a target or enable a drop rule for that tracking period.
-   Only accepted LIVE data can create live history and price alerts. Loading the
-   historical sample is useful for screens, lists, budgets, and reminders; it
-   does not simulate live observations.
-3. Open **Budget**, choose Weekly or Monthly, and save a planned limit. It is
+1. Open a product comparison and choose **Save to wishlist**. The app starts
+   watching all retailers for the exact pack. New retailers are picked up on
+   accepted live refreshes. Use the actions on the Wishlist row or select
+   several products to add one pack of each missing item to the default Cart.
+   Removing a product stops new price tracking and keeps its recorded history.
+2. Select **Set rules** on the pack. Use **Add rule** to choose a price
+   condition or a calendar time in Hong Kong time. A price condition checks
+   accepted live refreshes and lists the retailers that meet the target.
+   Choose one time, daily, weekly, every two weeks, or monthly. One-time
+   rules turn off after they fire. A repeating price rule needs a new
+   qualifying live refresh in a later repeat period.
+3. Open **Settings → Personal data**, choose Weekly or Monthly in the Budget
+   card, and save a planned limit. It is
    compared with the current My list estimate, including checked items. An
    explicit retailer choice stays selected when its price becomes unknown.
-4. From a product comparison, choose **Set a replenishment reminder**. Choose packs, an interval
-   in days, and an optional retailer. Adding its quantity to My list leaves the
-   reminder active. Clear starts a new interval from now; Snooze delays its
-   effective due time by 24 hours.
+4. Open **Alerts → History** to see what fired. Open a history row's rule
+   editor to make a change. Each **Current rules** card shows the product,
+   condition, and On or Off switch. Switches also work on earlier retailer
+   rules and quantity-based reminders. Removing a rule keeps its history.
 
-Alert timing uses Hong Kong time. Defaults are quiet hours **22:00–08:00** and
-daily summary **08:00**. Change them on Alerts; equal quiet start/end disables
-quiet hours. Quiet hours delay notification eligibility, not manual list actions.
-Events and reminders stay inside the app. Nothing is delivered while the app is
-closed, and startup does not fetch prices.
-
-The running web app checks summaries every minute. Alerts and Reminders pages
-also refresh every minute when visible, unless a form has edits or focus, or a
-disclosure is open. Reopen or reload the page to refresh manually. Without
-JavaScript, forms still work and page opening checks the current state.
-
-For isolated checks, disable the scheduled summary job with
-`--pricewatch.jobs.enabled=false`. This does not disable manual refresh, page
-checks, or the browser's safe page refresh.
+The running app checks due rules each minute and when Alerts opens. Its
+scheduled work can be disabled for isolated checks with
+`--pricewatch.jobs.enabled=false`. Page opening still checks due reminders.
+Alert and price records show Hong Kong time. Quiet hours and scheduled
+summaries are retired. Old settings and summary records remain exportable.
 
 To stop the app, press `Ctrl+C` in the terminal.
 
@@ -164,7 +161,136 @@ isolated databases and do not need your normal data file.
 The default server binds to `127.0.0.1`. It is a local app, not a shared cloud
 service. Saved data on this computer does not by itself make a phone work offline.
 
+### Share or review a saved list
+
+Open **Cart**. Select a product card to open its comparison, then use **Back
+to Cart** to return to the same list. Use **Mark done** to cross out and lock
+a row. Select **Done** to reopen it before changing packs or retailer.
+**Continue browsing** takes you back to Discover.
+On wide screens, the list summary stays in view as you scroll through the items.
+Use the Cart list switcher to open a named list. **New list** creates an
+empty list and opens it. Rename or delete a named list from its list controls.
+The product comparison page lets you choose the destination before adding.
+**Export JSON** downloads the open
+list. **Import list** creates a separate editable copy from a JSON file.
+The file keeps each pack, quantity, checked state, and retailer choice.
+The receiving app gets prices from its own catalogue. Missing products or
+retailer prices appear as **Unknown**. Quick-add and reminders use the default
+list. Discover and the budget settings summary use the main Cart. The Cart
+page compares the open list with the same saved limit. Switch lists to check
+another estimate. A list with missing prices shows an incomplete total.
+
+Choose **List actions → Download offline checklist** to save an HTML copy.
+Open the file in a browser without a connection or the local app running.
+The file shows the selected Cart, saved retailer prices and retrieval time,
+and the saved budget, if set. Change pack quantities, select a saved retailer,
+edit the budget, or mark items done. The estimate and budget update as you edit.
+Changes apply while the downloaded copy is open.
+
+### Display settings, personal data, and history
+
+On desktop, the Settings section menu scrolls to Personal data, Budget, Display
+settings, and Price data. On phones, choose a submenu and use its left arrow
+to return to Settings. Personal data includes the Budget form in both layouts.
+Open **Settings → Display settings** to choose English, Traditional Chinese, or
+Simplified Chinese, and to enable high contrast. The choice is saved on this
+device. Product names use the matching source labels when available.
+
+Open **Personal data** to review saved record counts, find the relevant
+screens, or download a JSON copy. **Review reset** opens a confirmation
+screen. A confirmed reset clears local personal records and the current
+session's chats. The accepted catalogue and its import details stay available.
+Previously exported files remain on the devices that received them.
+
+Open **Price history** from Wishlist or a product comparison. Filter the
+chart and table to one retailer or all retailers, and choose 30 or 90 days.
+The chart uses recorded retrieval times and breaks at unknown prices and
+stopped tracking periods. The table lists exact amounts and recorded gaps.
+
 ---
+
+### Ask about shopping
+
+J09 uses the CityU OpenAI-compatible endpoint at `https://llm.cs.cityu.edu.hk/v1`.
+Set `DEEPSEEK_API_KEY_SKU` in Windows and launch the app from a terminal that
+inherits it. The key stays server-side. The default model ID is
+`CS3383/DeepSeek-V4-Flash`. Override it with `PRICEWATCH_CHAT_MODEL` if CityU
+advertises a different ID. `PRICEWATCH_CHAT_BASE_URL` overrides the base URL.
+
+For a terminal-only setup, set the key in the current PowerShell session:
+
+```powershell
+$env:DEEPSEEK_API_KEY_SKU = "replace-with-your-api-key"
+.\mvnw.cmd spring-boot:run
+```
+
+This setup lasts until the terminal is closed. It is the recommended option
+for shared or temporary machines because the key is not saved by the app.
+
+To save the key for future terminal sessions, set it for the current Windows
+user instead:
+
+```powershell
+setx DEEPSEEK_API_KEY_SKU "replace-with-your-api-key"
+```
+
+Close every open terminal and VS Code window, reopen a terminal, verify that
+the variable is available, and start the server:
+
+```powershell
+echo $env:DEEPSEEK_API_KEY_SKU
+.\mvnw.cmd spring-boot:run
+```
+
+Optional persistent model and endpoint overrides:
+
+```powershell
+setx PRICEWATCH_CHAT_MODEL "CS3383/DeepSeek-V4-Flash"
+setx PRICEWATCH_CHAT_BASE_URL "https://llm.cs.cityu.edu.hk/v1"
+```
+
+Do not commit the key to Git, put it in `application.properties`, or paste it
+into source or documentation files. Restart the terminal or VS Code after
+using `setx`.
+
+Open **Ask** and enter a product name or code, or a question such as
+“Where is Kowloon Dairy’s 236 mL fresh milk cheapest?” with the sample loaded.
+Then ask “What about Wellcome?” to check the same pack at that retailer.
+The current browser session keeps up to 12 chats, each with 24 recent messages
+and its own selected product. Use **New chat** to start a separate conversation.
+Open any retained chat under **Recent chats** to continue it during the session.
+The message appears as soon as you send it. Ask saves your message before
+requesting a reply and shows its progress in the chat. You can draft the next
+message while you wait. A failed send restores the draft. If the reply is
+interrupted, use **Try reply again**. Press **Enter** to send or
+**Shift+Enter** to start a new line.
+
+DeepSeek receives the recent messages and can reply directly, ask for a missing
+detail, or call the app's catalogue tools. It can search for matching products
+by relevance or lowest listed pack price, read a pack's prices, and offer exact
+pack choices. When you pick a pack, DeepSeek continues the conversation with
+that selection. **Checked catalogue prices** cards show the prices returned
+by the app from its accepted catalogue.
+
+Ask can also show your carts, Wishlist, alert rules and recent alerts. Try
+“Show my cart”, “Add one 236 mL milk to Weekend groceries”, or “What is 20%
+of HK$85?”. An unspecified destination means the main Cart. To set an alert,
+request a price target or reminder. Ask will collect the exact product and
+schedule, then show a preview. Confirm removals and alert changes in chat.
+Open a linked item and use **Back to Ask** to return to its conversation.
+Ask requires a working DeepSeek connection. If a reply fails, the question
+stays in the chat for **Try reply again**. Check the key and endpoint if replies
+keep failing. You can still browse and compare prices in **Discover**.
+
+If Windows can reach CityU but Java reports a TLS handshake error, launch
+the app with Windows' trusted certificate store. Certificate and hostname
+verification remain enabled.
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.jvmArguments=-Djavax.net.ssl.trustStoreType=Windows-ROOT -Djavax.net.ssl.trustStore=NONE'
+```
+
+For a packaged JAR, put both `-D` options before `-jar`.
 
 ## Troubleshooting
 
@@ -220,9 +346,18 @@ npm run test:browser
 Remove-Item Env:BROWSER_CHANNEL
 ```
 
+To measure JavaScript executed during the shopper scenarios, set
+`BROWSER_JS_COVERAGE=1` for the browser run. The suite writes
+`target/browser-checks/javascript-coverage.json` with V8 source ranges for
+Cart, Ask, and the inline script in the downloaded offline Cart. The report
+measures source units reached during the run. See the
+[test strategy](Test/strategy.md) for how this relates to Java branch coverage.
+
 The checks cover native forms with JavaScript disabled, saved retailer choices,
 missing selected prices, exact price previews, multilingual search, category URL
-state, keyboard navigation, and four viewport widths. Synthetic source records
+state, keyboard navigation, and four viewport widths. The combined workflow
+checks Ask, sharing, offline review, translated history, and personal-data reset.
+Synthetic source records
 exercise relevance and decimal boundaries; they are test data, not real prices.
 The script stops its own app and test server on completion or failure. It saves
 screenshots and the app log under ignored `target/browser-checks/`.
@@ -252,6 +387,11 @@ $env:BASELINE_JAR = 'D:/path/to/earlier-pricewatch.jar'
 npm run test:persistence
 Remove-Item Env:BASELINE_JAR
 ```
+
+When the earlier build supports J05–J08 tracking, also set
+`$env:UPGRADE_TRACKING = '1'`. This adds a controlled live source and checks
+that retailer tracking and a recorded price survive reopening the legacy
+database. Clear the setting with `Remove-Item Env:UPGRADE_TRACKING`.
 
 Neither check uses the normal `data/pricewatch` database. An upgrade result is
 valid only for the two supplied JAR versions; a current-to-current restart does

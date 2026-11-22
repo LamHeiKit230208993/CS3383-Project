@@ -37,6 +37,9 @@ public class TrackingEntity {
     @Column(name = "stopped_at")
     private Instant stoppedAt;
 
+    @Column(name = "wishlist_paused")
+    private Boolean wishlistPaused;
+
     @Column(name = "target_price", precision = 19, scale = 4)
     private BigDecimal targetPrice;
 
@@ -45,6 +48,9 @@ public class TrackingEntity {
 
     @Column(name = "drop_enabled", nullable = false)
     private boolean dropEnabled;
+
+    @Column(name = "alerts_paused", nullable = false, columnDefinition = "boolean default false")
+    private boolean alertsPaused;
 
     @Column(name = "has_observed_price_state", nullable = false)
     private boolean hasObservedPriceState;
@@ -72,9 +78,11 @@ public class TrackingEntity {
     public boolean isEnabled() { return enabled; }
     public Instant getStartedAt() { return startedAt; }
     public Instant getStoppedAt() { return stoppedAt; }
+    public boolean isWishlistPaused() { return Boolean.TRUE.equals(wishlistPaused); }
     public BigDecimal getTargetPrice() { return targetPrice; }
     public boolean isTargetArmed() { return targetArmed; }
     public boolean isDropEnabled() { return dropEnabled; }
+    public boolean isAlertsEnabled() { return !alertsPaused; }
     public boolean hasObservedPriceState() { return hasObservedPriceState; }
     public BigDecimal getLastObservedPrice() { return lastObservedPrice; }
     public Instant getLastObservedAt() { return lastObservedAt; }
@@ -84,9 +92,23 @@ public class TrackingEntity {
         this.stoppedAt = stoppedAt;
     }
 
+    public void pauseForWishlist(Instant stoppedAt) {
+        stop(stoppedAt);
+        wishlistPaused = true;
+    }
+
+    public void resumeRulesInto(TrackingEntity next) {
+        next.targetPrice = targetPrice;
+        next.targetArmed = targetArmed;
+        next.dropEnabled = dropEnabled;
+        next.alertsPaused = alertsPaused;
+        wishlistPaused = false;
+    }
+
     public void setTargetPrice(BigDecimal targetPrice) {
         this.targetPrice = targetPrice;
         this.targetArmed = true;
+        if (targetPrice == null && !dropEnabled) this.alertsPaused = false;
     }
 
     public void setTargetArmed(boolean targetArmed) {
@@ -95,6 +117,11 @@ public class TrackingEntity {
 
     public void setDropEnabled(boolean dropEnabled) {
         this.dropEnabled = dropEnabled;
+        if (!dropEnabled && targetPrice == null) this.alertsPaused = false;
+    }
+
+    public void setAlertsEnabled(boolean enabled) {
+        this.alertsPaused = !enabled;
     }
 
     public void recordPriceState(BigDecimal price, Instant observedAt) {

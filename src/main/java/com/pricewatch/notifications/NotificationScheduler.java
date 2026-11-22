@@ -1,26 +1,26 @@
 package com.pricewatch.notifications;
 
+import com.pricewatch.reminder.ReminderService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-
 @Component
 @ConditionalOnWebApplication
 @ConditionalOnProperty(name = "pricewatch.jobs.enabled", havingValue = "true", matchIfMissing = true)
 public class NotificationScheduler {
-    private final AlertService alertService;
-    private final Clock clock;
+    private final ReminderService reminders;
+    private final WatchRuleService watchRules;
 
-    public NotificationScheduler(AlertService alertService, Clock appClock) {
-        this.alertService = alertService;
-        this.clock = appClock;
+    public NotificationScheduler(ReminderService reminders, WatchRuleService watchRules) {
+        this.reminders = reminders;
+        this.watchRules = watchRules;
     }
 
     @Scheduled(fixedDelay = 60_000)
     public void processDueEvents() {
-        alertService.processDue(clock.instant());
+        reminders.recordDue();
+        watchRules.checkDue();
     }
 }
