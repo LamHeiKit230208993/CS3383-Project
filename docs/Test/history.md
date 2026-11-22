@@ -4,6 +4,19 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Java coverage baseline — 22 November 2026
+
+- JaCoCo 0.8.14 measured the Java suite against PR #24 head `741d3fe` in an
+  isolated build. All 153 tests passed. Coverage was 81.13% for lines
+  (3,135/3,864), 62.39% for branches (1,297/2,079), 77.14% for instructions
+  (17,858/23,149), 84.72% for methods (904/1,067), and 90.36% for classes
+  (150/166). The web package covered 551 of 1,118 branch outcomes (49.28%).
+- Three separate JUnit cases passed for the MC/DC independence pairs of the
+  first Budget progress guard. See the [case values](cases/TC-BUDGET-001.md#targeted-decision-coverage).
+  This focused run is separate from the coverage baseline.
+- The existing Chrome and H2 evidence is recorded below. See the
+  [test strategy](strategy.md) for scope and follow-up coverage.
+
 ## J09–J12 PR evidence — 21 November 2026
 
 - Official PlantUML 1.2026.9 checked both J09–J12 sequences and exported

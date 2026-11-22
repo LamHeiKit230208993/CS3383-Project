@@ -8,6 +8,26 @@ Sources: [`BudgetServiceTest`](../../../src/test/java/com/pricewatch/budget/Budg
 [`BudgetPageTest`](../../../src/test/java/com/pricewatch/budget/BudgetPageTest.java), and
 [`BudgetSettingsPersistenceTest`](../../../src/test/java/com/pricewatch/budget/BudgetSettingsPersistenceTest.java).
 
+## Targeted decision coverage
+
+The first guard in [`BudgetView.progressPercent()`](../../../src/main/java/com/pricewatch/budget/BudgetView.java)
+returns zero when **A** (there is no saved limit) or **B** (the subtotal is
+zero) is true.
+
+| Case | Limit | Subtotal | A | B input | Guard | Percentage |
+|---|---:|---:|---|---|---|---:|
+| M1 | HK$100 | HK$25 | False | False | False | 25 |
+| M2 | None | HK$25 | True | False | True | 0 |
+| M3 | HK$100 | HK$0 | False | True | True | 0 |
+
+Use M1 with M2 for A and M1 with M3 for B. Each pair changes one condition's
+input and changes the guard outcome. In M2, Java short-circuits B. Its input
+is still HK$25, while the actual false and true evaluations of B occur in M1
+and M3. A separate JUnit run of these cases passed in an isolated copy on
+22 November 2026. This analysis applies to the first guard only.
+
+## Maintained budget cases
+
 1. Open **Settings → Personal data** with no catalogue or Cart items. Expect a
    weekly period selected by default and no limit saved. Old `/budget` links
    redirect to the Budget card. Legacy form submissions still save there.

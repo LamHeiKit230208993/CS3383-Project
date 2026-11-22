@@ -12,15 +12,16 @@ checked prices, pack choices and follow-ups, chat history, and send and reply re
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
 
-This index describes maintained checks. Detailed steps and limits belong in
-`cases/`; dated results belong in [test history](history.md).
+This index describes maintained checks. Use the [test strategy](strategy.md)
+for methods and planned coverage. Detailed steps and limits belong in
+`cases/`. Dated results belong in [test history](history.md).
 
 ## Latest recorded validation
 
-The 18 November 2026 run passed **101 Java tests**, packaging,
-**15 shopper and 11 milestone Chrome scenarios**, and the J01–J08 to J12 H2
-upgrade check. The J10–J12 PlantUML sequence was rendered and visually reviewed.
-See the [dated run record](history.md).
+The 22 November 2026 JaCoCo run passed **153 Java tests** with **81.13% line**
+and **62.39% branch** coverage. Three separate targeted budget tests passed.
+The 21 November run recorded **22 shopper and 13 milestone Chrome scenarios**
+and a passing H2 upgrade and restart check. See the [dated run record](history.md).
 
 ## J01–J04 baseline scenarios
 
