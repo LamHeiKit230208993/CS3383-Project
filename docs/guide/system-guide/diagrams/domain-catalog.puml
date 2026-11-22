@@ -1,0 +1,105 @@
+@startuml
+top to bottom direction
+!pragma layout smetana
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam arrowColor #557567
+skinparam arrowThickness 1.1
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #F5FAF7
+skinparam classBorderColor #9DB9AB
+skinparam classFontColor #1C2B24
+skinparam classFontSize 12
+skinparam noteBackgroundColor #FDF6E8
+skinparam noteBorderColor #D9B56A
+skinparam noteFontSize 11
+
+title Market Desk · catalogue, carts and wishlist
+
+class ProductEntity {
+  code: String {PK}
+  brand: LocalizedLabel
+  name: LocalizedLabel
+  category1..3: LocalizedLabel
+  active: boolean
+  trackAllRetailers: Boolean
+}
+
+class RetailerListingEntity {
+  id: Long {PK}
+  retailerCode: String
+  price: BigDecimal {nullable}
+}
+
+class OfferEntity {
+  id: Long {PK}
+  text: LocalizedLabel
+}
+
+class AcceptedImportEntity {
+  id: 1
+  origin: LIVE | SAMPLE | DEMO
+  sourceUrl: String
+  retrievedAt: Instant
+  checksum: String
+  productCount, listingCount, offerCount: int
+}
+
+class ShoppingListEntity {
+  id: Long {PK}
+  name: String {unique}
+}
+
+class ShoppingListItemEntity {
+  id: Long {PK}
+  quantity: int {1..999}
+  checked: boolean
+  selectedRetailerCode: String {nullable}
+}
+
+class SavedProductEntity {
+  productCode: String {PK, FK}
+  savedAt: Instant
+}
+
+class LocalizedLabel <<embeddable>> {
+  en: String
+  zhHant: String
+  zhHans: String
+}
+
+ProductEntity "1" *-- "5" LocalizedLabel : embeds
+OfferEntity "1" *-- "0..1" LocalizedLabel : embeds
+ProductEntity "1" -- "0..*" RetailerListingEntity : lists
+RetailerListingEntity "1" *-- "0..*" OfferEntity : has
+ProductEntity "1" -- "0..*" ShoppingListItemEntity : referenced by
+ShoppingListEntity "1" *-- "0..*" ShoppingListItemEntity : contains
+ProductEntity "1" -- "0..1" SavedProductEntity : wishlist
+
+note right of ProductEntity
+  The product code is the stable key.
+  Exact packs are never merged.
+end note
+
+note bottom of ShoppingListItemEntity
+  One row per (list, product). A null
+  retailer means automatic lowest price.
+end note
+
+note bottom of AcceptedImportEntity
+  One row (id = 1) describes the catalogue
+  currently on screen: origin, checksum,
+  retrieval time and row counts.
+end note
+
+note left of ProductEntity
+  Import deactivates missing products
+  instead of deleting them, so carts and
+  history keep valid references.
+end note
+
+@enduml

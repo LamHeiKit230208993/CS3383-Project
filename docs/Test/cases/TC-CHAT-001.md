@@ -31,9 +31,13 @@ fixture supplies sample prices and replies.
 7. At 375 by 667 px, reopen a chat, check message alignment and that mobile
    navigation leaves the composer clear. Check that a personal-data export
    includes checked prices saved with the transcript.
+8. In `.env`, verify the key, base URL and model load as local configuration;
+   `.env.example` contains no real key and `.env` is excluded from Git.
 
 The provider contract is checked in
 [DeepSeekChatClientTest](../../../src/test/java/com/pricewatch/web/DeepSeekChatClientTest.java).
+[ChatConfigurationTest](../../../src/test/java/com/pricewatch/web/ChatConfigurationTest.java)
+checks that chat base URL and model overrides map to client properties.
 [AskTurnTest](../../../src/test/java/com/pricewatch/web/AskTurnTest.java)
 checks turn acceptance, duplicate reply requests and retry.
 [AskCatalogueToolsTest](../../../src/test/java/com/pricewatch/web/AskCatalogueToolsTest.java)

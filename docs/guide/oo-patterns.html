@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en" data-theme="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive guide to the object-oriented patterns used by Market Desk.">
+  <title>Market Desk · OO Pattern Guide</title>
+  <style>
+    :root {
+      --paper: #f5f1e6;
+      --paper-2: #ede7d7;
+      --card: #fffdf6;
+      --ink: #16241e;
+      --ink-2: #40534a;
+      --muted: #718077;
+      --line: #d8d1bf;
+      --green: #0c6b53;
+      --green-soft: #e2efe8;
+      --amber: #b97210;
+      --blue: #2f5f8a;
+      --shadow: 0 18px 44px -26px rgba(22, 36, 30, .38);
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: "Segoe UI", system-ui, sans-serif;
+      --mono: Consolas, monospace;
+    }
+
+    html[data-theme="night"] {
+      --paper: #0c1613;
+      --paper-2: #101d18;
+      --card: #14231d;
+      --ink: #eef3ec;
+      --ink-2: #c2d1c7;
+      --muted: #92a69a;
+      --line: #2a3d33;
+      --green: #7ac7a9;
+      --green-soft: #1a3027;
+      --amber: #e2a64c;
+      --blue: #8bb8dc;
+      --shadow: 0 22px 50px -28px rgba(0, 0, 0, .8);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.65 var(--sans);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .18;
+      background-image: radial-gradient(var(--ink) .5px, transparent .5px);
+      background-size: 5px 5px;
+    }
+    a { color: var(--green); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    code, .eyebrow, .tag, .source {
+      font-family: var(--mono);
+      font-size: .82em;
+    }
+    .shell { position: relative; max-width: 1160px; margin: auto; padding: 28px; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      padding: 34px 0 44px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--green);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { font-family: var(--serif); line-height: 1.08; }
+    h1 { max-width: 760px; margin: 0; font-size: clamp(42px, 7vw, 78px); letter-spacing: -.05em; }
+    h2 { margin: 0 0 10px; font-size: clamp(28px, 4vw, 44px); }
+    h3 { margin: 0 0 8px; font-size: 25px; }
+    .lede { max-width: 720px; margin: 18px 0 0; color: var(--ink-2); font-size: 1.12rem; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 13px;
+      background: var(--card);
+      color: var(--ink);
+    }
+    .button:hover, .button[aria-pressed="true"] { border-color: var(--green); color: var(--green); }
+    .section { margin: 30px 0 68px; }
+    .section-head { margin-bottom: 22px; }
+    .map {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      margin: 24px 0 0;
+    }
+    .map-step {
+      position: relative;
+      min-height: 135px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+    .map-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      z-index: 1;
+      right: -14px;
+      top: 44px;
+      color: var(--green);
+      font-size: 22px;
+    }
+    .map-step strong { display: block; margin: 4px 0; font-family: var(--serif); font-size: 20px; }
+    .map-step small { color: var(--muted); }
+    .uml-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .uml-card {
+      margin: 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .uml-card figcaption { margin-bottom: 12px; color: var(--ink-2); }
+    .uml-card figcaption strong { display: block; color: var(--ink); font-family: var(--serif); font-size: 21px; }
+    .uml-card svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .uml-box { fill: var(--card); stroke: var(--green); stroke-width: 1.5; }
+    .uml-box.framework { stroke: var(--blue); }
+    .uml-box.external { stroke: var(--amber); }
+    .uml-line { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+    .uml-dash { stroke-dasharray: 6 4; }
+    .uml-text { fill: var(--ink); font: 13px var(--sans); }
+    .uml-small { fill: var(--muted); font: 11px var(--mono); }
+    .uml-label { fill: var(--green); font: 11px var(--mono); }
+    .pattern-uml {
+      display: block;
+      width: 100%;
+      max-width: 620px;
+      margin: 12px 0 18px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--paper-2) 65%, var(--card));
+    }
+    .uml-node { fill: var(--card); stroke: var(--green); stroke-width: 1.4; }
+    .uml-node.blue { stroke: var(--blue); }
+    .uml-node.amber { stroke: var(--amber); }
+    .uml-node-text { fill: var(--ink); font: 12px var(--sans); }
+    .uml-node-meta { fill: var(--muted); font: 10.5px var(--mono); }
+    .uml-arrow { fill: none; stroke: var(--ink-2); stroke-width: 1.3; }
+    .uml-arrow.dash { stroke-dasharray: 5 4; }
+    .uml-arrow-label { fill: var(--green); font: 10.5px var(--mono); }
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .pattern {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .pattern[hidden] { display: none; }
+    .pattern-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      width: 100%;
+      padding: 21px;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+    }
+    .pattern-head[aria-expanded="true"] { border-bottom-color: var(--line); background: var(--green-soft); }
+    .number {
+      display: grid;
+      flex: 0 0 38px;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--green);
+      color: var(--paper);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    .pattern-title { flex: 1; }
+    .pattern-title h3 { margin: 0; }
+    .pattern-title p { margin: 3px 0 0; color: var(--muted); }
+    .chevron { color: var(--green); font-size: 22px; }
+    .pattern-body { padding: 0 21px 22px; }
+    .pattern-body p { color: var(--ink-2); }
+    .pattern-body ul { margin: 12px 0 18px; padding-left: 21px; }
+    .pattern-body li { margin: 5px 0; }
+    .source {
+      display: inline-block;
+      margin: 3px 5px 3px 0;
+      padding: 5px 8px;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      background: var(--paper-2);
+      text-decoration: none;
+    }
+    .source:hover { border-color: var(--green); }
+    .signal {
+      margin-top: 15px;
+      padding: 11px 13px;
+      border-left: 3px solid var(--amber);
+      background: color-mix(in srgb, var(--amber) 11%, transparent);
+      color: var(--ink-2);
+    }
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0;
+    }
+    .filter-row input {
+      min-width: 240px;
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 15px;
+      background: var(--card);
+      color: var(--ink);
+    }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .legend article {
+      padding: 19px;
+      border-top: 3px solid var(--green);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .legend article:nth-child(2) { border-color: var(--blue); }
+    .legend article:nth-child(3) { border-color: var(--amber); }
+    .legend h3 { font-size: 21px; }
+    .legend p { margin: 6px 0 0; color: var(--ink-2); }
+    .not-pattern {
+      padding: 22px;
+      border: 1px dashed var(--line);
+      background: var(--paper-2);
+    }
+    footer { padding: 18px 0 35px; color: var(--muted); font-size: .9rem; }
+    @media (max-width: 800px) {
+      .shell { padding: 20px; }
+      header { display: block; }
+      .toolbar { margin-top: 20px; }
+      .map, .pattern-grid, .legend { grid-template-columns: 1fr; }
+      .uml-grid { grid-template-columns: 1fr; }
+      .map-step:not(:last-child)::after { content: "↓"; right: auto; left: 20px; top: auto; bottom: -19px; }
+      .map-step { min-height: 0; padding: 15px; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .pattern { transition: transform .18s ease, box-shadow .18s ease; }
+      .pattern:hover { transform: translateY(-2px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">Market Desk · object-oriented design</p>
+        <h1>Patterns hiding in plain sight.</h1>
+        <p class="lede">This guide maps the project’s Java structure to familiar OO patterns. Open a card to see what the pattern means, how it appears in Market Desk, and where to inspect the evidence.</p>
+      </div>
+      <div class="toolbar" aria-label="Page controls">
+        <button class="button" id="theme-toggle" type="button" aria-pressed="false">Night mode</button>
+        <a class="button" href="#architecture-title">Back to top</a>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="architecture-title">
+      <div class="section-head">
+        <p class="eyebrow">The big picture</p>
+        <h2 id="architecture-title">A request crosses layers.</h2>
+        <p class="lede">The strongest pattern in the project is architectural: Spring MVC separates the browser-facing request from domain rules and storage.</p>
+      </div>
+      <div class="map" aria-label="Application layers">
+        <div class="map-step"><span class="tag">01 · client</span><strong>Browser</strong><small>Thymeleaf pages and small JavaScript modules</small></div>
+        <div class="map-step"><span class="tag">02 · entry</span><strong>Controller</strong><small>Binds input and chooses a view or redirect</small></div>
+        <div class="map-step"><span class="tag">03 · rules</span><strong>Service</strong><small>Owns transactions and business invariants</small></div>
+        <div class="map-step"><span class="tag">04 · storage</span><strong>Repository</strong><small>Reads and writes entities through JPA</small></div>
+        <div class="map-step"><span class="tag">05 · edges</span><strong>External APIs</strong><small>Feed, LLM and scheduler boundaries</small></div>
+      </div>
+      <div class="uml-grid">
+        <figure class="uml-card">
+          <figcaption><strong>Layered collaboration</strong>UML-style component view of a normal request.</figcaption>
+          <svg viewBox="0 0 620 250" role="img" aria-label="Browser calls TrackingController, which calls TrackingService, which calls TrackingRepository and ProductRepository">
+            <defs>
+              <marker id="arrow-layer" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker>
+            </defs>
+            <rect class="uml-box" x="18" y="88" width="100" height="62" rx="2"></rect>
+            <text class="uml-text" x="68" y="114" text-anchor="middle">Browser</text><text class="uml-small" x="68" y="133" text-anchor="middle">client</text>
+            <rect class="uml-box" x="158" y="88" width="132" height="62" rx="2"></rect>
+            <text class="uml-text" x="224" y="111" text-anchor="middle">TrackingController</text><text class="uml-small" x="224" y="132" text-anchor="middle">«controller»</text>
+            <rect class="uml-box" x="330" y="88" width="124" height="62" rx="2"></rect>
+            <text class="uml-text" x="392" y="111" text-anchor="middle">TrackingService</text><text class="uml-small" x="392" y="132" text-anchor="middle">«service»</text>
+            <rect class="uml-box framework" x="494" y="32" width="108" height="62" rx="2"></rect>
+            <text class="uml-text" x="548" y="55" text-anchor="middle">TrackingRepository</text><text class="uml-small" x="548" y="76" text-anchor="middle">«repository»</text>
+            <rect class="uml-box framework" x="494" y="156" width="108" height="62" rx="2"></rect>
+            <text class="uml-text" x="548" y="179" text-anchor="middle">ProductRepository</text><text class="uml-small" x="548" y="200" text-anchor="middle">«repository»</text>
+            <path class="uml-line" marker-end="url(#arrow-layer)" d="M118 119 H158"></path>
+            <path class="uml-line" marker-end="url(#arrow-layer)" d="M290 119 H330"></path>
+            <path class="uml-line" marker-end="url(#arrow-layer)" d="M454 105 H494"></path>
+            <path class="uml-line" marker-end="url(#arrow-layer)" d="M454 133 H475 V187 H494"></path>
+            <text class="uml-label" x="136" y="108">HTTP</text><text class="uml-label" x="300" y="108">calls</text>
+            <text class="uml-label" x="460" y="96">queries</text>
+          </svg>
+        </figure>
+        <figure class="uml-card">
+          <figcaption><strong>Ports and external adapters</strong>Concrete clients isolate remote protocols.</figcaption>
+          <svg viewBox="0 0 620 250" role="img" aria-label="CatalogService depends on ConsumerCouncilSourceClient and DeepSeekChatClient adapters for external systems">
+            <defs>
+              <marker id="arrow-edge" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker>
+            </defs>
+            <rect class="uml-box" x="28" y="93" width="145" height="62" rx="2"></rect>
+            <text class="uml-text" x="100" y="116" text-anchor="middle">CatalogService</text><text class="uml-small" x="100" y="137" text-anchor="middle">application rule</text>
+            <rect class="uml-box framework" x="238" y="35" width="160" height="62" rx="2"></rect>
+            <text class="uml-text" x="318" y="58" text-anchor="middle">ConsumerCouncil</text><text class="uml-small" x="318" y="78" text-anchor="middle">SourceClient</text>
+            <rect class="uml-box framework" x="238" y="153" width="160" height="62" rx="2"></rect>
+            <text class="uml-text" x="318" y="176" text-anchor="middle">DeepSeekChatClient</text><text class="uml-small" x="318" y="196" text-anchor="middle">«component»</text>
+            <rect class="uml-box external" x="468" y="35" width="120" height="62" rx="2"></rect>
+            <text class="uml-text" x="528" y="58" text-anchor="middle">Price feed</text><text class="uml-small" x="528" y="78" text-anchor="middle">HTTP / JSON</text>
+            <rect class="uml-box external" x="468" y="153" width="120" height="62" rx="2"></rect>
+            <text class="uml-text" x="528" y="176" text-anchor="middle">LLM API</text><text class="uml-small" x="528" y="196" text-anchor="middle">HTTP / tools</text>
+            <path class="uml-line uml-dash" marker-end="url(#arrow-edge)" d="M173 111 C198 111 205 66 238 66"></path>
+            <path class="uml-line uml-dash" marker-end="url(#arrow-edge)" d="M173 137 C198 137 205 184 238 184"></path>
+            <path class="uml-line" marker-end="url(#arrow-edge)" d="M398 66 H468"></path>
+            <path class="uml-line" marker-end="url(#arrow-edge)" d="M398 184 H468"></path>
+            <text class="uml-label" x="179" y="84">depends on</text><text class="uml-label" x="179" y="169">depends on</text>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="patterns-title">
+      <div class="section-head">
+        <p class="eyebrow">Explore the evidence</p>
+        <h2 id="patterns-title">Patterns used by the project.</h2>
+        <div class="filter-row">
+          <input id="pattern-search" type="search" placeholder="Search patterns or classes…" aria-label="Search patterns">
+          <button class="button filter" type="button" data-filter="all" aria-pressed="true">All</button>
+          <button class="button filter" type="button" data-filter="architecture" aria-pressed="false">Architecture</button>
+          <button class="button filter" type="button" data-filter="oo" aria-pressed="false">OO / framework</button>
+        </div>
+      </div>
+
+      <div class="pattern-grid" id="pattern-grid">
+        <article class="pattern" data-kind="architecture" data-search="mvc layered architecture controller service repository">
+          <button class="pattern-head" type="button" aria-expanded="true" aria-controls="pattern-1">
+            <span class="number">01</span><span class="pattern-title"><h3>MVC and layered architecture</h3><p>Web layer · domain services · persistence</p></span><span class="chevron">−</span>
+          </button>
+          <div class="pattern-body" id="pattern-1">
+            <p><strong>Idea:</strong> Give request handling, business rules and storage separate responsibilities.</p>
+            <ul><li>Controllers bind parameters and return views or redirects.</li><li>Services enforce application rules and transaction boundaries.</li><li>Repositories isolate database queries.</li></ul>
+            <svg class="pattern-uml" viewBox="0 0 620 150" role="img" aria-label="UML sequence for MVC and layered architecture">
+              <defs><marker id="mvc-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>
+              <rect class="uml-node" x="20" y="45" width="105" height="56" rx="3"></rect><text class="uml-node-text" x="72" y="69" text-anchor="middle">TrackingController</text><text class="uml-node-meta" x="72" y="88" text-anchor="middle">«MVC controller»</text>
+              <rect class="uml-node blue" x="195" y="45" width="105" height="56" rx="3"></rect><text class="uml-node-text" x="247" y="69" text-anchor="middle">TrackingService</text><text class="uml-node-meta" x="247" y="88" text-anchor="middle">«domain service»</text>
+              <rect class="uml-node blue" x="370" y="45" width="105" height="56" rx="3"></rect><text class="uml-node-text" x="422" y="69" text-anchor="middle">TrackingRepository</text><text class="uml-node-meta" x="422" y="88" text-anchor="middle">«Spring Data»</text>
+              <rect class="uml-node amber" x="520" y="45" width="80" height="56" rx="3"></rect><text class="uml-node-text" x="560" y="69" text-anchor="middle">H2 DB</text><text class="uml-node-meta" x="560" y="88" text-anchor="middle">persistence</text>
+              <path class="uml-arrow" marker-end="url(#mvc-arrow)" d="M125 73 H195"></path><path class="uml-arrow" marker-end="url(#mvc-arrow)" d="M300 73 H370"></path><path class="uml-arrow" marker-end="url(#mvc-arrow)" d="M475 73 H520"></path>
+              <text class="uml-arrow-label" x="142" y="62">binds &amp; calls</text><text class="uml-arrow-label" x="316" y="62">queries</text><text class="uml-arrow-label" x="478" y="62">SQL</text>
+            </svg>
+            <span class="source">Embedded explanation</span>
+            <span class="source">Spring MVC structure</span>
+          </div>
+        </article>
+
+        <article class="pattern" data-kind="architecture oo" data-search="repository data access jpa database productrepository">
+          <button class="pattern-head" type="button" aria-expanded="false" aria-controls="pattern-2">
+            <span class="number">02</span><span class="pattern-title"><h3>Repository</h3><p>Persistence behind an object interface</p></span><span class="chevron">+</span>
+          </button>
+          <div class="pattern-body" id="pattern-2" hidden>
+            <p><strong>Idea:</strong> Domain code asks for records without knowing SQL or EntityManager details.</p>
+            <ul><li><code>ProductRepository</code> extends Spring Data’s <code>JpaRepository</code>.</li><li>Custom methods express queries such as active products and locked records.</li><li>Services depend on the repository abstraction.</li></ul>
+            <svg class="pattern-uml" viewBox="0 0 620 180" role="img" aria-label="UML class diagram for Repository pattern">
+              <defs><marker id="repo-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>
+              <rect class="uml-node" x="20" y="48" width="155" height="78" rx="3"></rect><text class="uml-node-text" x="98" y="70" text-anchor="middle">«service»</text><text class="uml-node-text" x="98" y="92" text-anchor="middle">CatalogService</text><line x1="20" y1="104" x2="175" y2="104" class="uml-arrow"></line><text class="uml-node-meta" x="33" y="118">uses repository</text>
+              <rect class="uml-node blue" x="235" y="48" width="180" height="78" rx="3"></rect><text class="uml-node-text" x="325" y="70" text-anchor="middle">«interface»</text><text class="uml-node-text" x="325" y="92" text-anchor="middle">ProductRepository</text><text class="uml-node-meta" x="252" y="118">findWithListingsByCode()</text>
+              <rect class="uml-node amber" x="475" y="48" width="125" height="78" rx="3"></rect><text class="uml-node-text" x="538" y="70" text-anchor="middle">JpaRepository</text><text class="uml-node-text" x="538" y="92" text-anchor="middle">«Spring Data»</text><text class="uml-node-meta" x="500" y="118">CRUD / queries</text>
+              <path class="uml-arrow" marker-end="url(#repo-arrow)" d="M175 87 H235"></path><path class="uml-arrow dash" marker-end="url(#repo-arrow)" d="M415 87 H475"></path>
+              <text class="uml-arrow-label" x="179" y="76">depends on</text><text class="uml-arrow-label" x="423" y="76">extends</text>
+            </svg>
+            <a class="source" href="../src/main/java/com/pricewatch/catalog/repository/ProductRepository.java">ProductRepository.java</a>
+            <a class="source" href="../src/main/java/com/pricewatch/catalog/CatalogService.java">CatalogService.java</a>
+          </div>
+        </article>
+
+        <article class="pattern" data-kind="architecture oo" data-search="service layer business logic transaction catalog tracking budget">
+          <button class="pattern-head" type="button" aria-expanded="false" aria-controls="pattern-3">
+            <span class="number">03</span><span class="pattern-title"><h3>Service Layer</h3><p>Feature rules in cohesive application objects</p></span><span class="chevron">+</span>
+          </button>
+          <div class="pattern-body" id="pattern-3" hidden>
+            <p><strong>Idea:</strong> Put workflows and multi-row invariants in services instead of controllers or repositories.</p>
+            <ul><li><code>CatalogService</code> coordinates searching, importing and snapshots.</li><li><code>CatalogReplacementService</code> replaces catalogue records transactionally.</li><li>Feature services prevent controllers from becoming business-rule containers.</li></ul>
+            <svg class="pattern-uml" viewBox="0 0 620 170" role="img" aria-label="UML sequence for Service Layer pattern">
+              <defs><marker id="service-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>
+              <rect class="uml-node" x="20" y="43" width="138" height="62" rx="3"></rect><text class="uml-node-text" x="89" y="68" text-anchor="middle">HelloController</text><text class="uml-node-meta" x="89" y="88" text-anchor="middle">request boundary</text>
+              <rect class="uml-node blue" x="215" y="43" width="170" height="62" rx="3"></rect><text class="uml-node-text" x="300" y="68" text-anchor="middle">CatalogReplacementService</text><text class="uml-node-meta" x="300" y="88" text-anchor="middle">@Transactional workflow</text>
+              <rect class="uml-node amber" x="442" y="43" width="158" height="62" rx="3"></rect><text class="uml-node-text" x="521" y="68" text-anchor="middle">repositories / tracking</text><text class="uml-node-meta" x="521" y="88" text-anchor="middle">atomic operations</text>
+              <path class="uml-arrow" marker-end="url(#service-arrow)" d="M158 74 H215"></path><path class="uml-arrow" marker-end="url(#service-arrow)" d="M385 74 H442"></path>
+              <text class="uml-arrow-label" x="168" y="63">replace(catalog)</text><text class="uml-arrow-label" x="390" y="63">execute</text>
+              <path class="uml-arrow dash" marker-end="url(#service-arrow)" d="M442 110 H385 H385 V105"></path>
+              <text class="uml-node-meta" x="215" y="142">The service protects catalogue, import metadata and tracking updates as one transaction.</text>
+            </svg>
+            <a class="source" href="../src/main/java/com/pricewatch/catalog/CatalogService.java">CatalogService.java</a>
+            <a class="source" href="../src/main/java/com/pricewatch/catalog/importer/CatalogReplacementService.java">CatalogReplacementService.java</a>
+            <div class="signal">Key rule: feature services own their transactions and protect multi-row invariants.</div>
+          </div>
+        </article>
+
+        <article class="pattern" data-kind="oo" data-search="dependency injection inversion control spring constructor">
+          <button class="pattern-head" type="button" aria-expanded="false" aria-controls="pattern-4">
+            <span class="number">04</span><span class="pattern-title"><h3>Dependency Injection</h3><p>Inversion of Control through constructors</p></span><span class="chevron">+</span>
+          </button>
+          <div class="pattern-body" id="pattern-4" hidden>
+            <p><strong>Idea:</strong> Objects receive collaborators instead of constructing them internally.</p>
+            <ul><li>Spring creates controllers, services and components.</li><li>Constructors make dependencies explicit and easy to replace in tests.</li><li>The class focuses on its work rather than object-lifecycle management.</li></ul>
+            <svg class="pattern-uml" viewBox="0 0 620 190" role="img" aria-label="UML class diagram for Dependency Injection pattern">
+              <defs><marker id="di-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>
+              <rect class="uml-node blue" x="230" y="18" width="160" height="58" rx="3"></rect><text class="uml-node-text" x="310" y="42" text-anchor="middle">Spring IoC Container</text><text class="uml-node-meta" x="310" y="62" text-anchor="middle">creates &amp; wires beans</text>
+              <rect class="uml-node" x="20" y="112" width="170" height="60" rx="3"></rect><text class="uml-node-text" x="105" y="136" text-anchor="middle">CatalogService</text><text class="uml-node-meta" x="105" y="156" text-anchor="middle">customer of collaborators</text>
+              <rect class="uml-node amber" x="225" y="112" width="170" height="60" rx="3"></rect><text class="uml-node-text" x="310" y="136" text-anchor="middle">ProductRepository</text><text class="uml-node-meta" x="310" y="156" text-anchor="middle">constructor dependency</text>
+              <rect class="uml-node amber" x="430" y="112" width="170" height="60" rx="3"></rect><text class="uml-node-text" x="515" y="136" text-anchor="middle">CatalogJsonParser</text><text class="uml-node-meta" x="515" y="156" text-anchor="middle">constructor dependency</text>
+              <path class="uml-arrow dash" marker-end="url(#di-arrow)" d="M310 76 V112"></path><path class="uml-arrow dash" marker-end="url(#di-arrow)" d="M280 76 C260 76 105 76 105 112"></path><path class="uml-arrow dash" marker-end="url(#di-arrow)" d="M340 76 C365 76 515 76 515 112"></path>
+              <text class="uml-arrow-label" x="315" y="96">inject</text>
+            </svg>
+            <a class="source" href="../src/main/java/com/pricewatch/catalog/CatalogService.java">CatalogService constructor</a>
+            <a class="source" href="../src/main/java/com/pricewatch/web/TrackingController.java">TrackingController constructor</a>
+          </div>
+        </article>
+
+        <article class="pattern" data-kind="oo" data-search="adapter gateway external api consumer council deepseek http">
+          <button class="pattern-head" type="button" aria-expanded="false" aria-controls="pattern-5">
+            <span class="number">05</span><span class="pattern-title"><h3>Adapter / Gateway</h3><p>External systems behind local APIs</p></span><span class="chevron">+</span>
+          </button>
+          <div class="pattern-body" id="pattern-5" hidden>
+            <p><strong>Idea:</strong> Wrap an incompatible or remote interface in an object the application can use safely.</p>
+            <ul><li><code>ConsumerCouncilSourceClient</code> handles HTTP, limits and source errors.</li><li><code>DeepSeekChatClient</code> handles request construction, tool rounds and API failures.</li><li>Callers do not need to know the wire protocol.</li></ul>
+            <svg class="pattern-uml" viewBox="0 0 620 180" role="img" aria-label="UML class diagram for Adapter or Gateway pattern">
+              <defs><marker id="adapter-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>
+              <rect class="uml-node" x="20" y="55" width="150" height="70" rx="3"></rect><text class="uml-node-text" x="95" y="79" text-anchor="middle">CatalogService</text><text class="uml-node-meta" x="95" y="100" text-anchor="middle">local Java API</text>
+              <rect class="uml-node blue" x="235" y="55" width="150" height="70" rx="3"></rect><text class="uml-node-text" x="310" y="79" text-anchor="middle">SourceClient</text><text class="uml-node-meta" x="310" y="100" text-anchor="middle">«gateway / adapter»</text>
+              <rect class="uml-node amber" x="450" y="55" width="150" height="70" rx="3"></rect><text class="uml-node-text" x="525" y="79" text-anchor="middle">HTTP price feed</text><text class="uml-node-meta" x="525" y="100" text-anchor="middle">network protocol</text>
+              <path class="uml-arrow" marker-end="url(#adapter-arrow)" d="M170 90 H235"></path><path class="uml-arrow" marker-end="url(#adapter-arrow)" d="M385 90 H450"></path>
+              <text class="uml-arrow-label" x="178" y="79">fetch()</text><text class="uml-arrow-label" x="395" y="79">GET / JSON</text>
+              <text class="uml-node-meta" x="235" y="151">Adapter translates remote failures and bytes into application results.</text>
+            </svg>
+            <a class="source" href="../src/main/java/com/pricewatch/catalog/importer/ConsumerCouncilSourceClient.java">ConsumerCouncilSourceClient.java</a>
+            <a class="source" href="../src/main/java/com/pricewatch/web/DeepSeekChatClient.java">DeepSeekChatClient.java</a>
+          </div>
+        </article>
+
+        <article class="pattern" data-kind="oo" data-search="template method filter inheritance onceperrequestfilter framework hook">
+          <button class="pattern-head" type="button" aria-expanded="false" aria-controls="pattern-6">
+            <span class="number">06</span><span class="pattern-title"><h3>Template Method</h3><p>Framework algorithm with an application hook</p></span><span class="chevron">+</span>
+          </button>
+          <div class="pattern-body" id="pattern-6" hidden>
+            <p><strong>Idea:</strong> A framework owns the overall algorithm while a subclass supplies one controlled step.</p>
+            <ul><li><code>LocalRequestGuard</code> extends Spring’s <code>OncePerRequestFilter</code>.</li><li>Spring controls the filter lifecycle and chain execution.</li><li>The application supplies <code>doFilterInternal</code> for local-host and origin checks.</li></ul>
+            <svg class="pattern-uml" viewBox="0 0 620 190" role="img" aria-label="UML inheritance diagram for Template Method pattern">
+              <defs><marker id="template-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>
+              <rect class="uml-node blue" x="205" y="22" width="210" height="78" rx="3"></rect><text class="uml-node-text" x="310" y="46" text-anchor="middle">«framework class»</text><text class="uml-node-text" x="310" y="68" text-anchor="middle">OncePerRequestFilter</text><text class="uml-node-meta" x="310" y="88" text-anchor="middle">doFilter() / lifecycle</text>
+              <rect class="uml-node" x="205" y="112" width="210" height="60" rx="3"></rect><text class="uml-node-text" x="310" y="136" text-anchor="middle">LocalRequestGuard</text><text class="uml-node-meta" x="310" y="156" text-anchor="middle">doFilterInternal()</text>
+              <path class="uml-arrow" d="M310 112 V100"></path><path class="uml-arrow" d="M302 100 L310 112 L318 100"></path>
+              <text class="uml-arrow-label" x="326" y="103">override hook</text>
+              <text class="uml-node-meta" x="20" y="55">Spring invokes the template</text><path class="uml-arrow dash" marker-end="url(#template-arrow)" d="M205 60 H20"></path>
+              <text class="uml-node-meta" x="430" y="55">The subclass supplies policy</text><path class="uml-arrow dash" marker-end="url(#template-arrow)" d="M415 142 H600"></path>
+            </svg>
+            <a class="source" href="../src/main/java/com/pricewatch/web/LocalRequestGuard.java">LocalRequestGuard.java</a>
+          </div>
+        </article>
+
+        <article class="pattern" data-kind="oo" data-search="strategy locale resolver interface display preferences">
+          <button class="pattern-head" type="button" aria-expanded="false" aria-controls="pattern-7">
+            <span class="number">07</span><span class="pattern-title"><h3>Strategy-like interface</h3><p>Pluggable locale resolution</p></span><span class="chevron">+</span>
+          </button>
+          <div class="pattern-body" id="pattern-7" hidden>
+            <p><strong>Idea:</strong> Define a common interface so a framework can use one of several interchangeable behaviors.</p>
+            <ul><li><code>DisplayLocaleResolver</code> implements Spring’s <code>LocaleResolver</code>.</li><li>It resolves language from saved display preferences.</li><li>The application can provide this behavior without changing Spring MVC internals.</li></ul>
+            <svg class="pattern-uml" viewBox="0 0 620 190" role="img" aria-label="UML interface diagram for Strategy-like locale resolution">
+              <defs><marker id="strategy-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor"></path></marker></defs>
+              <rect class="uml-node blue" x="235" y="20" width="150" height="66" rx="3"></rect><text class="uml-node-text" x="310" y="44" text-anchor="middle">«interface»</text><text class="uml-node-text" x="310" y="66" text-anchor="middle">LocaleResolver</text>
+              <rect class="uml-node" x="205" y="112" width="210" height="62" rx="3"></rect><text class="uml-node-text" x="310" y="136" text-anchor="middle">DisplayLocaleResolver</text><text class="uml-node-meta" x="310" y="157" text-anchor="middle">resolveLocale(request)</text>
+              <rect class="uml-node amber" x="20" y="112" width="155" height="62" rx="3"></rect><text class="uml-node-text" x="98" y="136" text-anchor="middle">Spring MVC</text><text class="uml-node-meta" x="98" y="157" text-anchor="middle">uses interface</text>
+              <rect class="uml-node amber" x="445" y="112" width="155" height="62" rx="3"></rect><text class="uml-node-text" x="522" y="136" text-anchor="middle">DisplayPreferences</text><text class="uml-node-meta" x="522" y="157" text-anchor="middle">language value</text>
+              <path class="uml-arrow dash" marker-end="url(#strategy-arrow)" d="M310 112 V86"></path><path class="uml-arrow dash" marker-end="url(#strategy-arrow)" d="M175 143 H205"></path><path class="uml-arrow" marker-end="url(#strategy-arrow)" d="M415 143 H445"></path>
+              <text class="uml-arrow-label" x="218" y="103">implements</text><text class="uml-arrow-label" x="178" y="132">calls</text><text class="uml-arrow-label" x="420" y="132">reads</text>
+            </svg>
+            <a class="source" href="../src/main/java/com/pricewatch/web/DisplayLocaleResolver.java">DisplayLocaleResolver.java</a>
+          </div>
+        </article>
+      </div>
+      <p id="empty-state" hidden>No matching patterns. Try a different search or filter.</p>
+    </section>
+
+    <section class="section" aria-labelledby="boundaries-title">
+      <div class="section-head">
+        <p class="eyebrow">Read carefully</p>
+        <h2 id="boundaries-title">What is not clearly present?</h2>
+      </div>
+      <div class="not-pattern">
+        <p>The project does not appear to contain a deliberate custom <strong>Factory</strong>, <strong>Singleton</strong>, or classic <strong>Observer</strong> implementation. Spring’s managed beans may have singleton scope by default, but that is framework lifecycle management—not a manually implemented Singleton pattern.</p>
+        <p>Records such as <code>ProductView</code> and <code>SearchResults</code> are useful immutable data carriers, but they are not design patterns by themselves.</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="legend-title">
+      <div class="section-head">
+        <p class="eyebrow">Pattern vocabulary</p>
+        <h2 id="legend-title">Three useful levels.</h2>
+      </div>
+      <div class="legend">
+        <article><h3>Architecture</h3><p>Large-scale organization, such as MVC and layered architecture.</p></article>
+        <article><h3>Object pattern</h3><p>Reusable collaboration between objects, such as Repository or Adapter.</p></article>
+        <article><h3>Framework pattern</h3><p>A Spring extension point, such as Template Method or a Strategy-like interface.</p></article>
+      </div>
+    </section>
+
+    <footer>
+      Standalone guide for the Market Desk project. All pattern definitions, diagrams and architectural explanations are included on this page; source links are optional evidence for readers browsing the repository.
+    </footer>
+  </main>
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const themeButton = document.getElementById("theme-toggle");
+      const cards = Array.from(document.querySelectorAll(".pattern"));
+      const filters = Array.from(document.querySelectorAll(".filter"));
+      const search = document.getElementById("pattern-search");
+      const empty = document.getElementById("empty-state");
+
+      themeButton.addEventListener("click", function () {
+        const night = root.dataset.theme !== "night";
+        root.dataset.theme = night ? "night" : "paper";
+        themeButton.textContent = night ? "Paper mode" : "Night mode";
+        themeButton.setAttribute("aria-pressed", String(night));
+      });
+
+      document.querySelectorAll(".pattern-head").forEach(function (head) {
+        head.addEventListener("click", function () {
+          const expanded = head.getAttribute("aria-expanded") === "true";
+          head.setAttribute("aria-expanded", String(!expanded));
+          head.querySelector(".chevron").textContent = expanded ? "+" : "−";
+          document.getElementById(head.getAttribute("aria-controls")).hidden = expanded;
+        });
+      });
+
+      function applyFilter(kind) {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        cards.forEach(function (card) {
+          const matchesKind = kind === "all" || card.dataset.kind.split(" ").includes(kind);
+          const matchesText = !query || card.dataset.search.includes(query);
+          card.hidden = !(matchesKind && matchesText);
+          if (!card.hidden) visible += 1;
+        });
+        empty.hidden = visible !== 0;
+      }
+
+      filters.forEach(function (button) {
+        button.addEventListener("click", function () {
+          filters.forEach(function (item) { item.setAttribute("aria-pressed", "false"); });
+          button.setAttribute("aria-pressed", "true");
+          applyFilter(button.dataset.filter);
+        });
+      });
+
+      search.addEventListener("input", function () {
+        const active = filters.find(function (item) { return item.getAttribute("aria-pressed") === "true"; });
+        applyFilter(active.dataset.filter);
+      });
+    }());
+  </script>
+</body>
+</html>

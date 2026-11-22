@@ -158,8 +158,28 @@ Use the same working folder and URL after restart to read the same catalogue and
 list. A different folder or URL creates a different local database. Tests use
 isolated databases and do not need your normal data file.
 
-The default server binds to `127.0.0.1`. It is a local app, not a shared cloud
-service. Saved data on this computer does not by itself make a phone work offline.
+The default server binds to all network interfaces. It is a local app, not a
+shared cloud service. The request guard accepts private-LAN addresses as well as
+localhost.
+
+### Open the app from a phone
+
+1. Keep the phone and computer on the same Wi-Fi or mobile hotspot network.
+2. Start the app with `.\mvnw.cmd spring-boot:run`.
+3. Find the computer's IPv4 address with `ipconfig`. Use the address under the
+   active Wi-Fi or Ethernet adapter, for example `192.168.1.25`.
+4. Open `http://192.168.1.25:8080` in the phone's browser.
+
+If Windows Firewall blocks the phone, an administrator can allow only TCP port
+8080 for the app:
+
+```powershell
+New-NetFirewallRule -DisplayName "Market Desk LAN" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private
+```
+
+Public networks can prevent device discovery or block local HTTP traffic. The app
+does not provide authentication or Internet hosting; only use it on a trusted
+network. Saved data on this computer does not by itself make a phone work offline.
 
 ### Share or review a saved list
 
@@ -212,10 +232,19 @@ stopped tracking periods. The table lists exact amounts and recorded gaps.
 ### Ask about shopping
 
 J09 uses the CityU OpenAI-compatible endpoint at `https://llm.cs.cityu.edu.hk/v1`.
-Set `DEEPSEEK_API_KEY_SKU` in Windows and launch the app from a terminal that
-inherits it. The key stays server-side. The default model ID is
-`CS3383/DeepSeek-V4-Flash`. Override it with `PRICEWATCH_CHAT_MODEL` if CityU
-advertises a different ID. `PRICEWATCH_CHAT_BASE_URL` overrides the base URL.
+Create a local `.env` file from `.env.example` and enter the API key:
+
+```dotenv
+DEEPSEEK_API_KEY_SKU=replace-with-your-api-key
+PRICEWATCH_CHAT_BASE_URL=https://llm.cs.cityu.edu.hk/v1
+PRICEWATCH_CHAT_MODEL=CS3383/DeepSeek-V4-Flash
+```
+
+The app loads `.env` from the folder where Maven is started, so a new terminal
+does not need environment variables configured again. `.env` is ignored by Git.
+The key stays server-side. Existing OS environment variables take precedence over
+`.env`. Override the model or base URL in `.env` when CityU advertises a
+different value.
 
 For a terminal-only setup, set the key in the current PowerShell session:
 

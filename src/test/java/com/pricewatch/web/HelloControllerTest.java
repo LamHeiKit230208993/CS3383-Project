@@ -443,6 +443,14 @@ class HelloControllerTest {
                 .andExpect(redirectedUrl("/data"));
         assertNotNull(catalog.status());
     }
+    @Test void privateLanAddressCanOpenTheAppAndSubmitSameOriginChanges() throws Exception {
+        mvc.perform(get("/").with(request -> { request.setServerName("192.168.1.25"); return request; }))
+                .andExpect(status().isOk());
+        mvc.perform(post("/data/sample")
+                        .header("Origin", "http://192.168.1.25:8080")
+                        .with(request -> { request.setServerName("192.168.1.25"); request.setServerPort(8080); return request; }))
+                .andExpect(redirectedUrl("/data"));
+    }
     @Test void chosenRetailerIsSavedAndCanBeChangedExplicitly() throws Exception {
         catalog.importSample();
         mvc.perform(get("/products/P000000124")).andExpect(status().isOk())

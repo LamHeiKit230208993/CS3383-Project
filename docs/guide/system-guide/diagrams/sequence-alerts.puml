@@ -1,0 +1,75 @@
+@startuml
+autonumber
+hide footbox
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam arrowColor #557567
+skinparam arrowThickness 1.1
+skinparam sequenceParticipantBackgroundColor #F5FAF7
+skinparam sequenceParticipantBorderColor #7FA694
+skinparam sequenceParticipantFontColor #1C2B24
+skinparam sequenceLifeLineBorderColor #A9C4B6
+skinparam sequenceGroupBackgroundColor #FDF6E8
+skinparam sequenceGroupBorderColor #D9B56A
+skinparam sequenceGroupFontColor #8A5A12
+skinparam noteBackgroundColor #FDF6E8
+skinparam noteBorderColor #D9B56A
+
+title Market Desk · tracking, alerts and reminders
+
+actor Shopper
+participant "Saved / Alerts page" as Web
+participant "TrackingService" as Tracking
+database "H2" as DB
+participant "Scheduler" as Scheduler
+participant "ReminderService" as Reminders
+participant "WatchRuleService" as Watch
+participant "AlertCenter" as Center
+
+group Start tracking a retailer
+  Shopper -> Web : Track product at retailer
+  Web -> Tracking : start(code, retailer)
+  Tracking -> DB : open a tracking period
+end
+
+group A LIVE import adds an observation
+  Tracking -> DB : append observation when the price changed
+  Tracking -> Tracking : evaluate target and drop rules
+  Tracking -> DB : TARGET / DROP event, deduplicated
+end
+
+group Every 60 seconds (fixed delay)
+  loop while the app runs
+    Scheduler -> Reminders : recordDue()
+    Reminders -> DB : insert occurrence once per (reminder, dueAt)
+    Scheduler -> Watch : checkDue()
+    Watch -> DB : read due rules + accepted LIVE prices
+    alt Calendar rule
+      Watch -> DB : event + advance schedule
+    else Price rule with a qualifying price
+      Watch -> DB : event + advance or re-arm
+    else No accepted LIVE price
+      Watch -> Watch : waitForLive()
+    end
+  end
+end
+
+group One merged timeline
+  Shopper -> Center : Open /alerts
+  Center -> DB : legacy retailer alerts (latest 100)
+  Center -> DB : price-target events (latest 100)
+  Center -> DB : reminder occurrences (active + recent)
+  Center --> Shopper : dated timeline grouped by trigger
+end
+
+note over Watch, DB
+  Calendar-only rules need no price.
+  Price rules require the product on the
+  Wishlist. One-time rules complete after
+  firing; repeating rules re-arm.
+end note
+
+@enduml

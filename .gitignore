@@ -9,3 +9,6 @@ target/
 
 # Optional browser test dependencies
 node_modules/
+
+# Local API configuration
+.env

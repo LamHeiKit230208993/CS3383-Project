@@ -1,0 +1,67 @@
+@startuml
+left to right direction
+!pragma layout smetana
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam arrowColor #557567
+skinparam arrowThickness 1.2
+skinparam actorBackgroundColor #FFFFFF
+skinparam actorBorderColor #0C6B53
+skinparam actorFontColor #1C2B24
+skinparam usecaseBackgroundColor #F5FAF7
+skinparam usecaseBorderColor #A9C4B6
+skinparam usecaseFontColor #1C2B24
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor #FFFFFF
+skinparam packageBorderColor #DCE8E1
+skinparam packageFontColor #0C6B53
+skinparam packageFontSize 14
+
+title Market Desk · actors and use cases
+
+actor "Local shopper" as Shopper
+
+rectangle "Market Desk — one local user, one Spring Boot process" {
+  package "Discover" {
+    usecase "Search & compare\nexact packs" as U1
+    usecase "Inspect recorded\nprice history" as U2
+    usecase "Import or refresh\nthe catalogue" as U3
+  }
+  package "Plan" {
+    usecase "Manage named carts\nand a budget" as U4
+    usecase "Transfer or export\na list" as U5
+  }
+  package "Track" {
+    usecase "Save products and\ntrack retailers" as U6
+    usecase "Set price or calendar\nwatch rules" as U7
+    usecase "Review alerts and\nreplenishment reminders" as U8
+  }
+  package "Ask" {
+    usecase "Ask a grounded\nprice question" as U9
+    usecase "Confirm a prepared\nchange" as U10
+  }
+}
+
+actor "Consumer Council\nOpen Price Watch" as Feed <<external>>
+actor "CityU DeepSeek\nchat API" as LLM <<external>>
+actor "Spring scheduler\n(every 60 s)" as Timer <<system>>
+
+Shopper --> U1
+Shopper --> U2
+Shopper --> U3
+Shopper --> U4
+Shopper --> U5
+Shopper --> U6
+Shopper --> U7
+Shopper --> U8
+Shopper --> U9
+Shopper --> U10
+U3 <-- Feed
+U9 <-- LLM
+U8 <-- Timer
+
+@enduml

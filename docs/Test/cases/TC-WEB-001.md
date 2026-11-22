@@ -33,8 +33,8 @@ choice and render the selected Cart option and price. They must retain the saved
 choice after refresh makes its price unavailable, show an incomplete subtotal,
 and label original offers as not calculated. These describe expected current
 behaviour; final run results belong in the dated catalogue record.
-- Cross-origin browser writes and non-loopback hostnames are rejected before
-  controllers run. Same-origin form submissions still work.
+- Cross-origin browser writes and public/unrelated hostnames are rejected before
+  controllers run. Private-LAN addresses and same-origin form submissions work.
 
 Search-mode regressions load the checked sample and open `Bakery` in Related.
 The search form must not carry a hidden Related parameter into a new query.

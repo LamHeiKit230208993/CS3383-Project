@@ -1,0 +1,60 @@
+@startuml
+top to bottom direction
+!pragma layout smetana
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam arrowColor #557567
+skinparam arrowThickness 1.2
+skinparam componentStyle rectangle
+skinparam componentBackgroundColor #F5FAF7
+skinparam componentBorderColor #7FA694
+skinparam componentFontColor #1C2B24
+skinparam databaseBackgroundColor #EAF4EE
+skinparam databaseBorderColor #7FA694
+skinparam cloudBackgroundColor #FDF6E8
+skinparam cloudBorderColor #D9B56A
+skinparam noteBackgroundColor #FDF6E8
+skinparam noteBorderColor #D9B56A
+
+title Market Desk · runtime components
+
+[Browser\nThymeleaf pages · vanilla JS] as UI
+
+package "One Spring Boot process" {
+  [Web layer\ncontrollers · LocalRequestGuard · locale] as Web
+  [Domain services\ncatalog · shopping · tracking · notifications\nreminders · budget · preferences · personal] as Services
+  [Ask tool layer\n11 tools · DeepSeekChatClient] as Ask
+  [NotificationScheduler\nfixed delay 60 s] as Scheduler
+  database "Spring Data repositories" as Repos
+}
+
+database "H2 file DB\n./data/pricewatch" as DB
+cloud "Consumer Council\nOpen Price Watch" as Feed
+cloud "CityU DeepSeek\n/v1/chat/completions" as LLM
+
+UI --> Web : HTTP form posts
+Web --> Services
+Web --> Ask
+Ask --> Services : read / propose
+Ask --> LLM : HTTPS
+Scheduler --> Services : due reminders + rules
+Services --> Repos
+Repos --> DB
+Services --> Feed : LIVE import
+
+note right of Services
+  Every feature package owns its
+  entities and repositories, but all
+  map to the same H2 file.
+end note
+
+note left of Ask
+  Tool calls are bounded: 3 rounds,
+  8 calls and 30 seconds per turn.
+end note
+
+@enduml

@@ -1,0 +1,59 @@
+@startuml
+autonumber
+hide footbox
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam arrowColor #557567
+skinparam arrowThickness 1.1
+skinparam sequenceParticipantBackgroundColor #F5FAF7
+skinparam sequenceParticipantBorderColor #7FA694
+skinparam sequenceParticipantFontColor #1C2B24
+skinparam sequenceLifeLineBorderColor #A9C4B6
+skinparam sequenceGroupBackgroundColor #FDF6E8
+skinparam sequenceGroupBorderColor #D9B56A
+skinparam sequenceGroupFontColor #8A5A12
+skinparam noteBackgroundColor #FDF6E8
+skinparam noteBorderColor #D9B56A
+
+title Market Desk · LIVE catalogue refresh
+
+actor Shopper
+participant "Data page" as Web
+participant "CatalogService" as Catalog
+participant "SourceClient" as Source
+participant "Consumer Council" as Feed
+participant "CatalogJsonParser" as Parser
+participant "ReplacementService" as Replace
+database "H2" as DB
+participant "TrackingService" as Tracking
+participant "Rule engines" as Rules
+
+Shopper -> Web : Refresh LIVE
+Web -> Catalog : refreshLive()
+Catalog -> Source : fetch()
+Source -> Feed : HTTPS GET pricewatch.json
+Feed --> Source : JSON bytes (max 10 MB)
+Source --> Catalog : bytes
+Catalog -> Parser : parse(bytes)
+Parser --> Catalog : ImportedCatalog
+Catalog -> Replace : replace(catalog, LIVE, retrievedAt, checksum)
+
+group One transaction
+  Replace -> DB : delete offers + listings,\ndeactivate products
+  Replace -> DB : upsert products, listings, offers
+  Replace -> Tracking : recordLiveImport(...)
+  Tracking -> DB : append changed observations\n(90-day retention)
+  Tracking -> Rules : evaluate target / drop
+  Rules -> DB : deduplicated alert events
+  Replace -> Rules : evaluateLive(...)
+  Rules -> DB : qualifying watch-rule events,\nadvance calendar rules
+  Replace -> DB : save accepted_import (id = 1)
+end
+
+Replace --> Catalog : ImportStatus
+Catalog --> Web : counts + origin + retrieval time
+Web --> Shopper : redirect with status banner
+@enduml
