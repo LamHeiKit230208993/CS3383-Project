@@ -313,6 +313,30 @@ class HelloControllerTest {
                 .filter(action -> action.state().equals("PENDING")).findFirst().orElseThrow();
     }
 
+    @Test void returnToAskAnchorRequiresBothIdsInTheCurrentSession() throws Exception {
+        var session = new MockHttpSession();
+        when(provider.reply(anyString(), anyList(), anyList(), any())).thenReturn(Optional.of("Hello."));
+        mvc.perform(post("/ask").session(session).param("question", "Hello"))
+                .andExpect(redirectedUrlPattern("/ask?chatId=*"));
+        var chat = AskController.history(session).getFirst();
+        String messageId = chat.messages().getLast().id();
+        mvc.perform(get("/list").session(session)
+                        .param("askChatId", chat.id()).param("askMessageId", messageId))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("askReturnUrl", "/ask?chatId=" + chat.id() + "#ask-message-" + messageId));
+        mvc.perform(get("/list").session(session)
+                        .param("askChatId", chat.id()).param("askMessageId", "wrong"))
+                .andExpect(model().attributeDoesNotExist("askReturnUrl"));
+        mvc.perform(get("/list").session(session)
+                        .param("askChatId", "wrong").param("askMessageId", messageId))
+                .andExpect(model().attributeDoesNotExist("askReturnUrl"));
+        mvc.perform(get("/list").session(session).param("askChatId", chat.id()))
+                .andExpect(model().attributeDoesNotExist("askReturnUrl"));
+        mvc.perform(get("/list").session(new MockHttpSession())
+                        .param("askChatId", chat.id()).param("askMessageId", messageId))
+                .andExpect(model().attributeDoesNotExist("askReturnUrl"));
+    }
+
     private Optional<String> catalogueReply(InvocationOnMock invocation) {
         List<DeepSeekChatClient.ChatMessage> history = invocation.getArgument(1);
         BiFunction<String, JsonNode, Object> tool = invocation.getArgument(3);
@@ -384,6 +408,11 @@ class HelloControllerTest {
         mvc.perform(post("/data/demo")).andExpect(redirectedUrl("/saved"))
                 .andExpect(flash().attributeExists("notice"));
         assertEquals("DEMO", catalog.status().origin());
+        mvc.perform(get("/saved")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Demo Whole Milk 1L")))
+                .andExpect(content().string(containsString("Demo Sandwich Bread 400g")))
+                .andExpect(content().string(containsString("Demo Ground Coffee 200g")))
+                .andExpect(content().string(containsString("/products/DEMO-MILK/history")));
         assertEquals(3, catalog.status().productCount());
         assertEquals(5, tracking.trackingPeriods().size());
         assertEquals(40, tracking.priceHistory("DEMO-MILK").size()
@@ -507,7 +536,7 @@ class HelloControllerTest {
                     .andExpect(content().string(not(containsString("chat-form"))));
         }
         mvc.perform(get("/data")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("No automatic refresh runs at startup")));
+                .andExpect(content().string(containsString("Live prices refresh on first use each Hong Kong day")));
     }
     @Test void oldPlannedLinksLeadToWorkingMilestonePages() throws Exception {
         mvc.perform(get("/planned/saved")).andExpect(redirectedUrl("/saved"));

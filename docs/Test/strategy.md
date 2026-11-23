@@ -8,6 +8,11 @@ Use the [case catalog](test-case-catalog.md) for maintained checks and
 [history](history.md) for dated results. The [J09–J12 workflows](../Plan/issue-21-workflow-checks.md)
 define the shopper tasks and acceptance criteria.
 
+Use the [system design guide](../guide/system-guide.html) from Eric's
+`eric/final-docs` revision `80966cd` to map components to integration tests.
+The approved localhost-only setup governs the request guard and the browser
+test environment. See [Setup](../SETUP.md) for the active configuration.
+
 ## Integration strategy and rationale
 
 Use incremental integration, primarily bottom-up. Test price parsing, exact
@@ -39,6 +44,12 @@ ID, revision, setup, input, steps, outcome, and evidence location. Repeat the
 relevant check after a fix, then run the applicable regression suites.
 
 ## Coverage decisions
+
+The coverage target is 100% of measured Java source lines and branch
+outcomes. Run the focused JUnit cases and Spring Boot integration tests in
+the same Maven suite. Keep all production Java classes in scope. Report the
+actual counters and identify source paths that cannot occur through current
+application inputs.
 
 - Line coverage reports executed source lines. JaCoCo branch coverage counts
   bytecode branch outcomes, including those from conditional and switch

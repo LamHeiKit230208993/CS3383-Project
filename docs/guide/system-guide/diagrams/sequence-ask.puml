@@ -1,0 +1,79 @@
+@startuml
+autonumber
+hide footbox
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam arrowColor #557567
+skinparam arrowThickness 1.1
+skinparam sequenceParticipantBackgroundColor #F5FAF7
+skinparam sequenceParticipantBorderColor #7FA694
+skinparam sequenceParticipantFontColor #1C2B24
+skinparam sequenceLifeLineBorderColor #A9C4B6
+skinparam sequenceGroupBackgroundColor #FDF6E8
+skinparam sequenceGroupBorderColor #D9B56A
+skinparam sequenceGroupFontColor #8A5A12
+skinparam noteBackgroundColor #FDF6E8
+skinparam noteBorderColor #D9B56A
+
+title Market Desk · one Ask turn, with tool calls and confirmation
+
+actor Shopper
+participant "Ask page" as Page
+participant "AskController" as Ask
+participant "HTTP session" as Session
+participant "DeepSeekChatClient" as Client
+participant "CityU DeepSeek" as LLM
+participant "Local tools" as Tools
+database "H2" as DB
+
+Shopper -> Page : Type a question
+Page -> Ask : POST /ask/send
+Ask -> Session : append question, state = WAITING
+Ask --> Page : 303 to /ask?chatId
+
+Page -> Ask : fetch /ask/reply
+Ask -> Session : claim turn, state = REPLYING
+Ask -> Client : reply(prompt, recent 9 messages, 11 tools)
+Client -> LLM : POST /chat/completions
+
+loop At most 3 rounds, 8 calls, 30 seconds
+  LLM --> Client : assistant message with tool_calls
+  Client -> Tools : execute(name, arguments)
+  Tools -> DB : read catalogue, cart, wishlist or alerts
+  Tools --> Client : checked JSON result
+  Client -> LLM : assistant message + tool results
+end
+
+LLM --> Client : final assistant text
+Client --> Ask : plain-text answer
+Ask -> Tools : collect price cards, proposals and draft
+Ask -> Session : append reply + actions, state = READY
+Ask --> Page : rendered transcript
+Page --> Shopper : answer with checked price rows
+
+opt Important change (cart delete, wishlist, alert rule)
+  Shopper -> Page : Confirm or Cancel
+  Page -> Ask : POST /ask/action
+  Ask -> Tools : apply(operation)
+  Tools -> DB : write cart, wishlist or rule
+  Ask -> Session : receipt, or a fresh proposal if stale
+  Ask --> Page : updated transcript
+end
+
+note over Tools, DB
+  Tools never write directly from model
+  output. They return proposals; the
+  controller applies direct additions and
+  asks for confirmation on important changes.
+end note
+
+note over Client, LLM
+  Missing API key or a failed/slow turn
+  surfaces a retry state. The page polls
+  /ask/reply up to 30 times at 500 ms.
+end note
+
+@enduml

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 @Service
 public class CatalogReplacementService {
@@ -51,6 +52,9 @@ public class CatalogReplacementService {
     @Transactional
     public ImportStatus replace(ImportedCatalog catalog, String origin, String sourceUrl,
                                 Instant retrievedAt, String checksum) {
+        boolean live = "LIVE".equals(origin);
+        var previousDropPrices = live ? watchRules.previousDropPrices()
+                : Map.<String, Map<String, BigDecimal>>of();
         offerRepository.deleteAllInBatch();
         listingRepository.deleteAllInBatch();
         productRepository.deactivateAll();
@@ -88,10 +92,10 @@ public class CatalogReplacementService {
         }
         listingRepository.saveAllAndFlush(listings);
 
-        if ("LIVE".equals(origin)) {
+        if (live) {
             trackingService.recordLiveImport(catalog, retrievedAt, sourceUrl, checksum);
             productTargets.evaluateLive(catalog, retrievedAt);
-            watchRules.evaluateLive(catalog, retrievedAt);
+            watchRules.evaluateLive(catalog, retrievedAt, previousDropPrices);
         }
 
         AcceptedImportEntity accepted = new AcceptedImportEntity(origin, sourceUrl, retrievedAt,

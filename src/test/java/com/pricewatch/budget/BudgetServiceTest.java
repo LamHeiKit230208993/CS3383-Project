@@ -133,11 +133,26 @@ class BudgetServiceTest {
     @Test
     void invalidPeriodAndAmountsNeverWriteSettings() {
         assertThrows(IllegalArgumentException.class, () -> budgets.save("yearly", "10"));
+        assertThrows(IllegalArgumentException.class, () -> budgets.save(null, "10"));
+        assertThrows(IllegalArgumentException.class, () -> budgets.save("WEEKLY", null));
         assertThrows(IllegalArgumentException.class, () -> budgets.save("WEEKLY", ""));
         assertThrows(IllegalArgumentException.class, () -> budgets.save("WEEKLY", "-0.01"));
         assertThrows(IllegalArgumentException.class, () -> budgets.save("WEEKLY", "1.00001"));
         assertThrows(IllegalArgumentException.class, () -> budgets.save("WEEKLY", "1000000000000000"));
         verify(settings, never()).save(any(BudgetSettingsEntity.class));
+    }
+
+    @Test
+    void categorizesMissingAndUntranslatedLabelsUnderTheSameTotal() {
+        var withNoCategory = new ProductView("MISSING", text("Brand"), text("Milk"), text("Root"),
+                null, text(""), true, List.of(), null, List.of());
+        when(shopping.items()).thenReturn(List.of(
+                new ItemView(withNoCategory, 1, false, new BigDecimal("3.00"), "AEON",
+                        new BigDecimal("3.00"), null),
+                item("WITHOUT-EN", null, null, new BigDecimal("4.25"), false)));
+
+        assertEquals(List.of(new CategoryTotal("Uncategorised", new BigDecimal("7.25"))),
+                budgets.view().categoryTotals());
     }
 
     private ItemView item(String code, String category, String selectedRetailer, BigDecimal lineTotal, boolean checked) {

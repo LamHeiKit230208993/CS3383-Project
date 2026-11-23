@@ -1,5 +1,7 @@
 # Test Case Catalog
 
+[TC-JAVA-COVERAGE-001](cases/TC-JAVA-COVERAGE-001.md) links the mixed JUnit and H2 integration cases used for the Java coverage target.
+
 [TC-CHAT-002](cases/TC-CHAT-002.md) covers shopping confirmations, retries, and conversation return links.
 [TC-CHAT-003](cases/TC-CHAT-003.md) covers shopping tool validation, stale previews, saved alert drafts, and decimal arithmetic.
 
@@ -12,7 +14,8 @@ checked prices, pack choices and follow-ups, chat history, and send and reply re
 [TC-USABILITY-001](cases/TC-USABILITY-001.md) records a Cart and Settings walkthrough at desktop and phone widths, including the mobile Done control retest.
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
-[TC-DATA-005](cases/TC-DATA-005.md) checks synthetic demo tracking history, confirmation, unknown rows, and visible demo sources.
+[TC-DATA-005](cases/TC-DATA-005.md) checks demo products in Wishlist, chronological price history, latest state, confirmation, and recorded price gaps.
+[TC-DATA-006](cases/TC-DATA-006.md) checks automatic refresh on first use in Hong Kong, failure recovery, and catalogue protection.
 
 This index describes maintained checks. Use the [test strategy](strategy.md)
 for methods and planned coverage. Detailed steps and limits belong in
@@ -20,10 +23,10 @@ for methods and planned coverage. Detailed steps and limits belong in
 
 ## Latest recorded validation
 
-The 22 November 2026 follow-up passed **164 Java tests** with **82.07% line**
-and **63.41% branch** coverage. It also passed **22 shopper and 13 milestone
-Chrome scenarios**, two browser coverage helper tests, and the H2 upgrade
-and restart check. See the [dated run record](history.md).
+The 23 November 2026 [issue 27 retest](history.md#issue-27-alerts-and-daily-refresh-retest--23-november-2026)
+passed **341 Java tests** with **93.70% line** and **84.31% branch** coverage.
+It also passed **22 shopper and 14 milestone Chrome scenarios** and the H2
+restart and upgrade checks, including a populated legacy reminder database.
 
 ## J01–J04 baseline scenarios
 
@@ -51,7 +54,8 @@ Case descriptions state expected behaviour; they do not prove a later build pass
 | [TC-ALERT-003](cases/TC-ALERT-003.md) | Independent and combined Watch rules | Separate thresholds, pending cadence, grouped evidence, concurrent checks, import rollback, and H2 upgrade | `WatchRuleServiceTest` |
 | [TC-ALERT-004](cases/TC-ALERT-004.md) | Scheduled and repeating alerts | One-time completion, price repeat limits, Hong Kong calendar repeats, pause, pending rules, and previous H2 constraints | `WatchRuleServiceTest` |
 | [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget | Settings card, selected-retailer totals, Discover and Cart progress, validation, and H2 file reopen | `BudgetServiceTest`, `BudgetPageTest`, `BudgetSettingsPersistenceTest` |
-| [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Time alerts | One due occurrence, editable rules, Cart actions, dismissal history, snooze, pause and resume, and H2 upgrade | `ReminderControllerTest`, `ReminderPersistenceRestartTest`, `SecondaryDisplayTest` |
+| [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Time alerts | H2 migration and rollback, active and orphan history, snooze, dismissal, and migrated Cart defaults | `LegacyReminderMigrationTest`, `SecondaryDisplayTest` |
+| [TC-ALERT-005](cases/TC-ALERT-005.md) | Price drops | HKD and percentage thresholds, matched retailers, saved evidence, Daily default, and Ask confirmation | `WatchRuleServiceTest`, `AlertCenterControllerTest`, `AskShoppingToolsTest`, Chrome milestone suite |
 | [TC-MILESTONE-001](cases/TC-MILESTONE-001.md) | Combined browser flow | Wishlist tracking, shared alert editor and history, one-time and calendar rules, legacy rules, budget, and responsive pages | `milestone-check.cjs` |
 | [TC-UPGRADE-001](cases/TC-UPGRADE-001.md) | Existing database upgrade | An old baseline's catalogue, selected retailer, quantity and checked state survive the new schema | `persistence-check.cjs` with `BASELINE_JAR` |
 

@@ -1,12 +1,11 @@
 # Project Scope and Team Decisions
 
-Updated: 24 October 2026. Feature decisions remain those agreed on 17 October 2026.
-
-Status: Reflects the team's manual feature review. J01–J04 implementation checks have passed; see the [test catalogue](Test/test-case-catalog.md). The wider scope, later jobs, and remaining data questions are not complete.
+The tables retain the team's original feature IDs and show current decisions.
+See the [test catalogue](Test/test-case-catalog.md) for implementation evidence.
 
 Team update, 17 October 2026: keep one local user, with no account, sign-in, or cloud saving. R32 shares a list by export and import; it does not require live shared editing.
 
-Baseline update: use Spring Boot with local file storage that survives restart. First alerts and reminders work inside the active app. Offline use first covers read-only saved-list review; live price refresh and remote chat stay off. Save history for selected products first; all-product history has not been measured or proved impossible.
+Use Spring Boot with local file storage that survives restart. Alerts and time reminders appear inside the active app. The offline Cart download opens on its own and supports temporary checklist and estimate edits. Price history covers selected products.
 
 This is the main record of feature decisions. The [feasibility review](feasibility-review-simple.md) records data limits. The [product description](product-description.md) defines shared terms. Earlier suggestions do not override this scope.
 
@@ -64,8 +63,8 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 
 | ID | Feature | Original mark | Decision and boundary |
 |---|---|---|---|
-| R21 | Target-price alerts and price-drop alerts | ⚠️ + | Each product-wide target lists the retailers that qualify. Each price or calendar rule can run once or repeat. Previously saved combined rules wait after their due time for a qualifying live price. Existing retailer-specific targets and drops keep their rules and evidence. |
-| R22 | Amount or percentage change thresholds | ⚠️ ! | Tracked; conditional on a stated comparison price. A percentage change is not a verified store discount. |
+| R21 | Target-price alerts and price-drop alerts | ⚠️ + | A watch price rule groups qualifying retailers for one exact pack. New price rules default to Daily. A one-time rule can be selected explicitly. Combined rules wait after their due time for a qualifying live price. Existing retailer-specific targets and drops keep their rules and evidence. |
+| R22 | Amount or percentage change thresholds | ⚠️ ! | A watch rule can require a drop in HKD or percent from the previous accepted live price for the same retailer and exact pack. Show both prices in the evidence. |
 | R23 | Prevention of repeated alerts and snooze | ✅ + | A one-time rule turns off after it fires. Repeating rules follow their selected cadence, with a fresh accepted refresh required for a repeat price alert. Keep 24-hour snooze and event history. |
 | R24 | Different notification channels | ⚠️ | Conditional. Choose and test the channels; daily data does not support live flash-sale alerts. |
 | R25 | Alerts near a store branch | ❌ # | Future consideration. Branch location data is not established. |
@@ -117,6 +116,6 @@ The tables preserve all 48 original feature rows and their marks. R01–R48 are 
 - Price calculations must use fixed app rules. AI must not invent prices, stock, dates, or purchase history.
 - Treat product and offer text as data, not instructions to the AI.
 - Do not silently broaden tracked-only features or move excluded/future features into the build.
-- Shared and offline features are planned work, not optional extras. Their exact behaviour still needs decisions.
+- List sharing exports an editable JSON copy for import. The offline HTML checklist is a separate saved-price view.
 
 Unresolved choices are listed once in the [feasibility review](feasibility-review-simple.md#5-open-decisions).

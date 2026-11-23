@@ -8,9 +8,7 @@ import com.pricewatch.notifications.ProductTargetEventView;
 import com.pricewatch.notifications.ProductTargetService;
 import com.pricewatch.notifications.WatchRuleService;
 import com.pricewatch.notifications.WatchRuleView;
-import com.pricewatch.reminder.ReminderOccurrenceView;
-import com.pricewatch.reminder.ReminderService;
-import com.pricewatch.reminder.ReminderView;
+import com.pricewatch.notifications.WatchPriceKind;
 import com.pricewatch.tracking.TrackingService;
 import com.pricewatch.tracking.TrackingView;
 import org.springframework.context.MessageSource;
@@ -54,20 +52,18 @@ class AlertCenterController {
     private final AlertService legacyAlerts;
     private final ProductTargetService priceTargets;
     private final WatchRuleService watchRules;
-    private final ReminderService reminders;
     private final HelloController format;
     private final MessageSource messages;
     private final Clock clock;
 
     AlertCenterController(CatalogService catalog, TrackingService tracking, AlertService legacyAlerts,
-                          ProductTargetService priceTargets, WatchRuleService watchRules, ReminderService reminders,
+                          ProductTargetService priceTargets, WatchRuleService watchRules,
                           HelloController format, MessageSource messages, Clock clock) {
         this.catalog = catalog;
         this.tracking = tracking;
         this.legacyAlerts = legacyAlerts;
         this.priceTargets = priceTargets;
         this.watchRules = watchRules;
-        this.reminders = reminders;
         this.format = format;
         this.messages = messages;
         this.clock = clock;
@@ -75,7 +71,6 @@ class AlertCenterController {
 
     @GetMapping("/alerts")
     String alerts(@RequestParam(defaultValue = "history") String tab, Model model, Locale locale) {
-        reminders.recordDue();
         watchRules.checkDue();
         boolean currentRules = "rules".equals(tab);
         model.addAttribute("currentRules", currentRules);
@@ -92,14 +87,11 @@ class AlertCenterController {
         var history = new ArrayList<TimelineEntry>();
         for (var legacy : legacyAlerts.events(now)) {
             if (legacy.productCode() != null) {
-                history.add(new TimelineEntry(legacy.createdAt(), legacy.productCode(), legacy, null, null));
+                history.add(new TimelineEntry(legacy.createdAt(), legacy.productCode(), legacy, null));
             }
         }
         for (var price : priceTargets.events(now)) {
-            history.add(new TimelineEntry(price.createdAt(), price.productCode(), null, price, null));
-        }
-        for (var time : reminders.occurrences(now)) {
-            history.add(new TimelineEntry(time.createdAt(), time.productCode(), null, null, time));
+            history.add(new TimelineEntry(price.createdAt(), price.productCode(), null, price));
         }
         history.sort(Comparator.comparing(TimelineEntry::createdAt).reversed());
 
@@ -107,23 +99,22 @@ class AlertCenterController {
         history.forEach(item -> labelCodes.add(item.productCode()));
         model.addAttribute("productLabels", catalog.localizedLabels(labelCodes, locale));
         var visible = new ArrayList<>(history.stream().limit(100).toList());
-        history.stream().skip(100).filter(item -> item.time() != null && item.time().active()).forEach(visible::add);
+        history.stream().skip(100).filter(item -> item.price() != null && item.price().activeReminder())
+                .forEach(visible::add);
         model.addAttribute("timelineDays", timelineDays(visible, locale));
     }
 
     private List<RuleProduct> ruleProducts(Locale locale) {
         var existingRules = watchRules.allRules().stream().collect(Collectors.groupingBy(WatchRuleView::productCode));
         var targets = priceTargets.rules().stream().collect(Collectors.toMap(ProductTargetService.RuleView::productCode, rule -> rule));
-        var timeRules = reminders.overview().reminders().stream().collect(Collectors.groupingBy(ReminderView::productCode));
         var retailerRules = tracking.legacyRules().stream().collect(Collectors.groupingBy(TrackingView::productCode));
         var codes = new TreeSet<>(existingRules.keySet());
         codes.addAll(targets.keySet());
-        codes.addAll(timeRules.keySet());
         codes.addAll(retailerRules.keySet());
         var labels = catalog.localizedLabels(codes, locale);
         return codes.stream()
                 .map(code -> new RuleProduct(code, name(labels, code), existingRules.getOrDefault(code, List.of()),
-                        targets.get(code), timeRules.getOrDefault(code, List.of()), retailerRules.getOrDefault(code, List.of())))
+                        targets.get(code), retailerRules.getOrDefault(code, List.of())))
                 .sorted(Comparator.comparing(RuleProduct::name)).toList();
     }
 
@@ -141,8 +132,6 @@ class AlertCenterController {
                 .anyMatch(saved -> saved.product().code().equals(code)));
         model.addAttribute("productTarget", priceTargets.rule(code).orElse(null));
         model.addAttribute("watchRules", watchRules.rules(code));
-        model.addAttribute("timeRules", reminders.overview().reminders().stream()
-                .filter(rule -> rule.productCode().equals(code)).toList());
         model.addAttribute("legacyRules", tracking.legacyRules().stream()
                 .filter(period -> period.productCode().equals(code)).toList());
         return screen(model, "rules", "Alert rules");
@@ -204,17 +193,22 @@ class AlertCenterController {
     String saveWatchRule(@RequestParam String code, @RequestParam(required = false) Long id,
                          @RequestParam(required = false) String targetPrice, @RequestParam(required = false) String intervalDays,
                          @RequestParam(required = false) String condition, @RequestParam(required = false) String startAt,
+                         @RequestParam(required = false) String priceKind, @RequestParam(required = false) String quantity,
+                         @RequestParam(required = false) String retailerCode,
                          @RequestParam(required = false) String repeat, @RequestParam(defaultValue = "") String from,
                          RedirectAttributes redirect) {
         try {
-            if (condition == null || condition.equals("legacy")) {
+            if ("migrated-time".equals(condition)) {
+                if (id == null) throw new IllegalArgumentException("Missing reminder rule");
+                watchRules.updateMigratedTimeRule(code, id, Integer.parseInt(intervalDays), Integer.parseInt(quantity), retailerCode);
+            } else if (condition == null || condition.equals("legacy")) {
                 var interval = intervalDays == null ? null : Integer.valueOf(intervalDays.strip());
                 watchRules.save(code, id, price(targetPrice), interval);
             } else {
                 switch (condition) {
-                    case "price" -> watchRules.save(code, id, price(targetPrice), null, repeat);
+                    case "price" -> savePriceRule(code, id, price(targetPrice), null, repeat, priceKind);
                     case "time" -> watchRules.save(code, id, null, schedule(startAt), repeat);
-                    case "combined" -> watchRules.save(code, id, price(targetPrice), schedule(startAt), repeat);
+                    case "combined" -> savePriceRule(code, id, price(targetPrice), schedule(startAt), repeat, priceKind);
                     default -> throw new IllegalArgumentException("Unknown alert condition");
                 }
             }
@@ -223,6 +217,12 @@ class AlertCenterController {
             redirect.addFlashAttribute("error", text(messages, "watchEditor.invalid"));
         }
         return toRules(code, from, redirect);
+    }
+
+    private void savePriceRule(String code, Long id, BigDecimal amount, LocalDateTime date, String repeat, String priceKind) {
+        var kind = WatchPriceKind.parse(priceKind);
+        if (kind == WatchPriceKind.TARGET) watchRules.save(code, id, amount, date, repeat);
+        else watchRules.save(code, id, amount, date, repeat, kind);
     }
 
     private static BigDecimal price(String input) {
@@ -266,12 +266,26 @@ class AlertCenterController {
 
     @PostMapping("/alerts/product-events/{id}/read")
     String readTarget(@PathVariable long id, RedirectAttributes redirect) {
-        return eventAction(redirect, () -> priceTargets.markRead(id), "alerts.notice.read");
+        return eventAction(redirect, () -> {
+            if (!watchRules.dismissCartReminder(id)) priceTargets.markRead(id);
+        }, "alerts.notice.read");
     }
 
     @PostMapping("/alerts/product-events/{id}/snooze")
     String snoozeTarget(@PathVariable long id, RedirectAttributes redirect) {
-        return eventAction(redirect, () -> priceTargets.snooze(id), "alerts.notice.snoozed");
+        return eventAction(redirect, () -> {
+            if (!watchRules.snoozeCartReminder(id)) priceTargets.snooze(id);
+        }, "alerts.notice.snoozed");
+    }
+
+    @PostMapping("/alerts/product-events/{id}/add")
+    String addReminderToCart(@PathVariable long id, RedirectAttributes redirect) {
+        return eventAction(redirect, () -> watchRules.addReminderToCart(id), "reminders.notice.added");
+    }
+
+    @GetMapping("/reminders")
+    String oldReminders() {
+        return "redirect:/alerts";
     }
 
     private String eventAction(RedirectAttributes redirect, Runnable action, String success) {
@@ -324,7 +338,7 @@ class AlertCenterController {
     }
 
     public record TimelineEntry(Instant createdAt, String productCode, AlertEventView legacy,
-                                ProductTargetEventView price, ReminderOccurrenceView time) {
+                                ProductTargetEventView price) {
         public String clockTime() {
             return TIMELINE_CLOCK.withZone(HONG_KONG).format(createdAt);
         }
@@ -345,5 +359,5 @@ class AlertCenterController {
     private record TimelineTrigger(String productCode, Instant triggeredAt) {}
     public record TimelineGroup(TimelineEntry first, List<TimelineEntry> entries) {}
     public record RuleProduct(String code, String name, List<WatchRuleView> rules, ProductTargetService.RuleView target,
-                              List<ReminderView> reminders, List<TrackingView> retailers) {}
+                              List<TrackingView> retailers) {}
 }

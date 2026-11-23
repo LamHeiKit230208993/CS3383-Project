@@ -7,9 +7,9 @@ import com.pricewatch.catalog.ProductView;
 import com.pricewatch.notifications.AlertService;
 import com.pricewatch.notifications.ProductTargetService;
 import com.pricewatch.notifications.WatchRepeat;
+import com.pricewatch.notifications.WatchPriceKind;
 import com.pricewatch.notifications.WatchRuleService;
 import com.pricewatch.notifications.WatchRuleView;
-import com.pricewatch.reminder.ReminderService;
 import com.pricewatch.shopping.ItemView;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.shopping.Summary;
@@ -41,7 +41,6 @@ public class AskShoppingTools {
     private static final int MAX_ROWS = 20;
     private static final int MAX_CHANGES = 5;
     private static final ZoneId HONG_KONG = ZoneId.of("Asia/Hong_Kong");
-    private static final BigDecimal MAX_PRICE = new BigDecimal("999999999999999.9999");
     private static final Map<String, Object> PRODUCT_CODE = string(
             "Exact product code from search or a saved list. Omit to use the already selected pack.");
     private static final Map<String, Object> LIST_ID = integer("Exact saved list ID returned by list_carts.");
@@ -72,7 +71,8 @@ public class AskShoppingTools {
                     """, fields("operation", choice("create", "update", "toggle", "delete", "draft", "discard_draft"),
                     "rule_id", string("Opaque rule_id from get_alerts."), "product_code", PRODUCT_CODE,
                     "condition", choice("price", "calendar", "combined"),
-                    "target", string("Positive or zero HKD price target as a decimal."),
+                    "price_kind", choice("TARGET", "DROP_AMOUNT", "DROP_PERCENT"),
+                    "target", string("Rule threshold as a decimal. Use percent for DROP_PERCENT, otherwise HKD."),
                     "start_at", string("Shopper-supplied Hong Kong date and time as YYYY-MM-DDTHH:mm."),
                     "repeat", choice("ONCE", "DAILY", "WEEKLY", "FORTNIGHTLY", "MONTHLY"),
                     "enabled", bool("true to resume; false to pause."),
@@ -85,21 +85,19 @@ public class AskShoppingTools {
     private final TrackingService tracking;
     private final WatchRuleService watches;
     private final ProductTargetService targets;
-    private final ReminderService reminders;
     private final AlertService alerts;
     private final BudgetService budgets;
     private final MessageSource messages;
     private final Clock clock;
 
     AskShoppingTools(CatalogService catalogue, ShoppingService shopping, TrackingService tracking,
-                     WatchRuleService watches, ProductTargetService targets, ReminderService reminders,
+                     WatchRuleService watches, ProductTargetService targets,
                      AlertService alerts, BudgetService budgets, MessageSource messages, Clock clock) {
         this.catalogue = catalogue;
         this.shopping = shopping;
         this.tracking = tracking;
         this.watches = watches;
         this.targets = targets;
-        this.reminders = reminders;
         this.alerts = alerts;
         this.budgets = budgets;
         this.messages = messages;
@@ -284,7 +282,7 @@ public class AskShoppingTools {
             return propose(new Change(Kind.UPDATE_ALERT, null, rule.productCode(),
                     optionalQuantity(number(args, "quantity")), arg(args, "retailer", 80), null, ruleId,
                     new AlertChange(optionalPrice(args), optionalDate(args), optionalRepeat(args),
-                            optionalInterval(number(args, "interval_days")), null)));
+                            optionalInterval(number(args, "interval_days")), null, optionalPriceKind(args))));
         }
 
         private Object draftAlert(JsonNode args) {
@@ -306,17 +304,20 @@ public class AskShoppingTools {
             var target = optionalPrice(args);
             var date = optionalDate(args);
             var repeat = optionalRepeat(args);
+            var priceKind = optionalPriceKind(args);
             if (draft != null) {
                 if (target == null) target = draft.target();
                 if (date == null) date = draft.startAt();
                 if (repeat == null) repeat = draft.repeat();
+                if (priceKind == null) priceKind = draft.priceKind();
             }
+            if ("price".equals(type) && repeat == null) repeat = WatchRepeat.DAILY.name();
             draft = new Draft(code, type, "calendar".equals(type) ? null : target,
-                    "price".equals(type) ? null : date, repeat);
+                    "price".equals(type) ? null : date, repeat, coalesce(priceKind, WatchPriceKind.TARGET));
             var missing = missing(draft);
             if (!missing.isEmpty()) return draftStatus(draft);
             var result = propose(new Change(Kind.CREATE_ALERT, null, code, null, null, null, null,
-                    new AlertChange(draft.target(), draft.startAt(), draft.repeat(), null, null)));
+                    new AlertChange(draft.target(), draft.startAt(), draft.repeat(), null, null, draft.priceKind())));
             draft = null;
             return result;
         }
@@ -367,6 +368,7 @@ public class AskShoppingTools {
         details.put("product_code", draft.productCode());
         details.put("condition", draft.condition());
         details.put("target", draft.target());
+        details.put("price_kind", draft.priceKind());
         details.put("start_at", stringDate(draft.startAt()));
         details.put("repeat", draft.repeat());
         return Map.of("status", "draft", "draft", details, "missing", missing(draft));
@@ -407,8 +409,8 @@ public class AskShoppingTools {
             }
             case ADD_WISHLIST -> tracking.save(code);
             case REMOVE_WISHLIST -> tracking.removeSaved(code);
-            case CREATE_ALERT -> watches.save(code, null, change.alert().target(), change.alert().startAt(),
-                    change.alert().repeat());
+            case CREATE_ALERT -> saveScheduledRule(code, null, change.alert().target(), change.alert().startAt(),
+                    change.alert().repeat(), change.alert().priceKind());
             case UPDATE_ALERT, TOGGLE_ALERT, DELETE_ALERT -> applyRuleChange(change, locale);
         }
         return new Card("receipt", ui(locale, "saved"), current.preview().detail(), current.preview().rows(), listId);
@@ -422,8 +424,10 @@ public class AskShoppingTools {
             case CREATE_ALERT -> {
                 var product = activeProduct(change.productCode());
                 requireAlertWishlist(change.productCode(), change.alert().target() != null);
+                if (change.alert().target() != null) change.alert().priceKind().validate(change.alert().target());
                 yield new Operation(change, "new", preview(change, locale,
-                        description(locale, change.alert().target(), change.alert().startAt(), change.alert().repeat()),
+                        description(locale, change.alert().target(), change.alert().startAt(), change.alert().repeat(),
+                                change.alert().priceKind()),
                         List.of(new Row(label(product, locale), null, product.code()))));
             }
             case UPDATE_ALERT, TOGGLE_ALERT, DELETE_ALERT -> prepareRuleChange(change, locale);
@@ -499,19 +503,23 @@ public class AskShoppingTools {
         var repeat = coalesce(settings.repeat(), rule.repeat());
         var interval = coalesce(settings.intervalDays(), rule.intervalDays());
         return switch (rule.type()) {
-            case "reminder" -> {
-                if (settings.target() != null || settings.startAt() != null || settings.repeat() != null) {
-                    throw invalid("Use packs, interval days, or retailer for this existing interval-based reminder.");
-                }
-                int packs = coalesce(change.quantity(), rule.quantity());
-                validateRetailer(product(rule.productCode()), change.retailer(), rule.retailer());
-                String retailer = change.retailer() == null ? rule.retailer() : normalizedRetailer(change.retailer());
-                yield ui(locale, "packs", packs) + " · " + ui(locale, "days", interval)
-                        + " · " + (retailer == null ? ui(locale, "automatic") : retailer);
-            }
             case "watch" -> {
+                if (rule.quantity() != null) {
+                    if (settings.target() != null || settings.startAt() != null || settings.repeat() != null
+                            || settings.priceKind() != null) {
+                        throw invalid("Use packs, interval days, or retailer for this existing interval-based reminder.");
+                    }
+                    int packs = coalesce(change.quantity(), rule.quantity());
+                    validateRetailer(product(rule.productCode()), change.retailer(), rule.retailer());
+                    String retailer = change.retailer() == null ? rule.retailer() : normalizedRetailer(change.retailer());
+                    yield ui(locale, "packs", packs) + " · " + ui(locale, "days", interval)
+                            + " · " + (retailer == null ? ui(locale, "automatic") : retailer);
+                }
                 boolean legacy = rule.repeat() == null && settings.repeat() == null && settings.startAt() == null;
                 if (legacy) {
+                    if (settings.priceKind() != null && settings.priceKind() != WatchPriceKind.TARGET) {
+                        throw invalid("Create a separate scheduled watch rule for a price drop.");
+                    }
                     if ((rule.intervalDays() == null) != (interval == null)) {
                         throw invalid("Create a separate rule to add or remove this interval.");
                     }
@@ -522,11 +530,16 @@ public class AskShoppingTools {
                 if (rule.repeat() == null) throw invalid("Create a new calendar rule to replace this older interval rule.");
                 if (target == null && date == null) throw invalid("Specify a price target or calendar time.");
                 if (rule.target() == null && target != null) requireAlertWishlist(rule.productCode(), true);
-                yield description(locale, target, date, repeat);
+                var kind = coalesce(settings.priceKind(), rule.priceKind());
+                if (target != null) kind.validate(target);
+                yield description(locale, target, date, repeat, kind);
             }
             case "target", "retailer" -> {
                 if (settings.target() == null || settings.startAt() != null || settings.repeat() != null
-                        || settings.intervalDays() != null) throw invalid("Specify a new target price for this existing rule.");
+                        || settings.intervalDays() != null
+                        || (settings.priceKind() != null && settings.priceKind() != WatchPriceKind.TARGET)) {
+                    throw invalid("Specify a new target price for this existing rule.");
+                }
                 yield describeTarget(locale, target);
             }
             default -> throw invalid("Unsupported alert rule.");
@@ -558,7 +571,6 @@ public class AskShoppingTools {
                     case "watch" -> watches.delete(rule.productCode(), rule.id());
                     case "target" -> targets.deleteTarget(rule.productCode());
                     case "retailer" -> tracking.deleteLegacyAlerts(rule.productCode(), rule.id());
-                    case "reminder" -> reminders.delete(rule.id());
                     default -> throw invalid("Unsupported alert rule.");
                 }
             }
@@ -568,7 +580,6 @@ public class AskShoppingTools {
                     case "watch" -> watches.setEnabled(rule.productCode(), rule.id(), enabled);
                     case "target" -> targets.setEnabled(rule.productCode(), enabled);
                     case "retailer" -> tracking.setLegacyAlertsEnabled(rule.productCode(), rule.id(), enabled);
-                    case "reminder" -> reminders.setEnabled(rule.id(), enabled);
                     default -> throw invalid("Unsupported alert rule.");
                 }
             }
@@ -580,13 +591,19 @@ public class AskShoppingTools {
                 var interval = coalesce(input.intervalDays(), rule.intervalDays());
                 switch (rule.type()) {
                     case "watch" -> {
-                        if (repeat == null) watches.save(rule.productCode(), rule.id(), target, interval);
-                        else watches.save(rule.productCode(), rule.id(), target, date, repeat);
+                        if (rule.quantity() != null) {
+                            watches.updateMigratedTimeRule(rule.productCode(), rule.id(), interval,
+                                    coalesce(change.quantity(), rule.quantity()),
+                                    change.retailer() == null ? rule.retailer() : normalizedRetailer(change.retailer()));
+                        } else if (repeat == null) {
+                            watches.save(rule.productCode(), rule.id(), target, interval);
+                        } else {
+                            saveScheduledRule(rule.productCode(), rule.id(), target, date, repeat,
+                                    coalesce(input.priceKind(), rule.priceKind()));
+                        }
                     }
                     case "target" -> targets.setTarget(rule.productCode(), target);
                     case "retailer" -> tracking.configureTarget(rule.id(), target);
-                    case "reminder" -> reminders.update(rule.id(), coalesce(change.quantity(), rule.quantity()), interval,
-                            change.retailer() == null ? rule.retailer() : normalizedRetailer(change.retailer()));
                     default -> throw invalid("Unsupported alert rule.");
                 }
             }
@@ -594,18 +611,26 @@ public class AskShoppingTools {
         }
     }
 
+    private void saveScheduledRule(String code, Long id, BigDecimal target, LocalDateTime date, String repeat,
+                                   WatchPriceKind kind) {
+        if (kind == WatchPriceKind.TARGET) watches.save(code, id, target, date, repeat);
+        else watches.save(code, id, target, date, repeat, kind);
+    }
+
     private List<RuleRow> configuredRules(Locale locale) {
         var rows = new ArrayList<RuleRow>();
         for (var rule : watches.allRules()) {
-            String detail = rule.repeat() == null ? describeTarget(locale, rule.target())
+            String detail = rule.cartQuantity() != null ? ui(locale, "packs", rule.cartQuantity()) + " · "
+                    + ui(locale, "days", rule.intervalDays())
+                    : rule.repeat() == null ? describeTarget(locale, rule.target())
                     + (rule.intervalDays() == null ? "" : " · " + ui(locale, "days", rule.intervalDays()))
-                    : description(locale, rule.target(), rule.startAt(), rule.repeat());
+                    : description(locale, rule.target(), rule.startAt(), rule.repeat(), rule.priceKind());
             if (rule.nextDueAt() != null) detail += " · " + ui(locale, "due", localTime(rule.nextDueAt()));
             if (rule.waitingForLive()) detail += " · " + ui(locale, "waiting");
             if (rule.completed()) detail += " · " + ui(locale, "completed");
             rows.add(new RuleRow("watch:" + rule.id(), rule.productCode(), label(rule.productCode(), locale),
                     status(locale, detail, rule.enabled()), "watch", rule.id(), rule.target(), rule.startAt(),
-                    rule.repeat(), rule.intervalDays(), null, null, rule.enabled(), rule));
+                    rule.repeat(), rule.intervalDays(), rule.cartQuantity(), rule.cartRetailer(), rule.enabled(), rule));
         }
         for (var rule : targets.rules()) {
             rows.add(new RuleRow("target:" + rule.productCode(), rule.productCode(), label(rule.productCode(), locale),
@@ -620,14 +645,6 @@ public class AskShoppingTools {
                     status(locale, detail, rule.alertsEnabled()), "retailer", rule.id(), rule.targetPrice(), null,
                     null, null, null, rule.retailerCode(), rule.alertsEnabled(), rule));
         }
-        for (var rule : reminders.overview().reminders()) {
-            String detail = ui(locale, "packs", rule.quantity()) + " · " + ui(locale, "days", rule.intervalDays())
-                    + " · " + ui(locale, "due", localTime(rule.effectiveDueAt()));
-            if (rule.selectedRetailerCode() != null) detail += " · " + rule.selectedRetailerCode();
-            rows.add(new RuleRow("reminder:" + rule.id(), rule.productCode(), label(rule.productCode(), locale),
-                    status(locale, detail, rule.enabled()), "reminder", rule.id(), null, null, null, rule.intervalDays(),
-                    rule.quantity(), rule.selectedRetailerCode(), rule.enabled(), rule));
-        }
         return List.copyOf(rows);
     }
 
@@ -641,18 +658,18 @@ public class AskShoppingTools {
             events.add(event(locale, event.productCode(), detail, event.createdAt()));
         }
         for (var event : targets.events(now)) {
-            String detail = event.target() == null ? ui(locale, "timeReminder") : describeTarget(locale, event.target());
+            String detail = event.target() == null ? ui(locale, "timeReminder")
+                    : describePriceCondition(locale, event.target(), event.priceKind());
+            if (event.cartQuantity() != null) detail += " · " + ui(locale, "packs", event.cartQuantity());
             if (!event.retailers().isEmpty()) {
-                var observed = event.retailers().stream().map(price -> price.retailerCode() + " " + money(price.price()))
+                var observed = event.retailers().stream().map(price -> price.retailerCode() + " "
+                                + (price.previousPrice() == null ? "" : money(price.previousPrice()) + " → ")
+                                + money(price.price()))
                         .toList();
                 detail += " · " + String.join(", ", observed);
             }
             if (event.retrievedAt() != null) detail += " · " + ui(locale, "retrieved", localTime(event.retrievedAt()));
             events.add(event(locale, event.productCode(), detail, event.createdAt()));
-        }
-        for (var event : reminders.occurrences(now)) {
-            events.add(event(locale, event.productCode(), ui(locale, "timeReminder")
-                    + " · " + ui(locale, "packs", event.quantity()), event.createdAt()));
         }
         return events.stream().filter(event -> requestedCode == null || requestedCode.equals(event.productCode()))
                 .sorted(Comparator.comparing(EventRow::createdAt).reversed()).limit(MAX_ROWS).toList();
@@ -676,6 +693,7 @@ public class AskShoppingTools {
         details.put("type", rule.type());
         details.put("enabled", rule.enabled());
         details.put("target", rule.target());
+        details.put("price_kind", rule.target() == null ? null : rule.priceKind());
         details.put("start_at", stringDate(rule.startAt()));
         details.put("repeat", rule.repeat());
         details.put("interval_days", rule.intervalDays());
@@ -783,12 +801,18 @@ public class AskShoppingTools {
         return brand.isBlank() ? name : brand + " · " + name;
     }
 
-    private String description(Locale locale, BigDecimal target, LocalDateTime start, String repeat) {
+    private String description(Locale locale, BigDecimal target, LocalDateTime start, String repeat, WatchPriceKind kind) {
         var parts = new ArrayList<String>();
-        if (target != null) parts.add(describeTarget(locale, target));
+        if (target != null) parts.add(describePriceCondition(locale, target, kind));
         if (start != null) parts.add(ui(locale, "starts", printableDate(start)));
         if (repeat != null) parts.add(messages.getMessage("watchEditor.repeat." + repeat, null, repeat, locale));
         return String.join(" · ", parts);
+    }
+
+    private String describePriceCondition(Locale locale, BigDecimal amount, WatchPriceKind kind) {
+        if (kind == WatchPriceKind.TARGET) return describeTarget(locale, amount);
+        String value = kind == WatchPriceKind.DROP_PERCENT ? amount.stripTrailingZeros().toPlainString() : money(amount);
+        return messages.getMessage("watchPrice.kind." + kind, new Object[]{value}, locale);
     }
 
     private String describeTarget(Locale locale, BigDecimal price) {
@@ -847,14 +871,17 @@ public class AskShoppingTools {
         if (field == null || field.isNull()) return null;
         String value = field.isNumber() ? field.asText() : arg(args, "target", 40);
         if (value == null) return null;
-        if (!value.matches("[0-9]{1,15}(\\.[0-9]{1,12})?")) throw invalid("Use a valid target amount in HKD.");
+        if (!value.matches("[0-9]{1,15}(\\.[0-9]{1,12})?")) throw invalid("Use a valid decimal threshold.");
         try {
-            var price = new BigDecimal(value).setScale(4, RoundingMode.UNNECESSARY);
-            if (price.compareTo(MAX_PRICE) > 0) throw invalid("Use a valid target amount in HKD.");
-            return price;
+            return new BigDecimal(value).setScale(4, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException ignored) {
             throw invalid("Use at most four decimal places for the target.");
         }
+    }
+
+    private static WatchPriceKind optionalPriceKind(JsonNode args) {
+        String value = arg(args, "price_kind", 16);
+        return value == null ? null : WatchPriceKind.parse(value);
     }
 
     private static LocalDateTime optionalDate(JsonNode args) {
@@ -939,7 +966,8 @@ public class AskShoppingTools {
         return result;
     }
 
-    public record Draft(String productCode, String condition, BigDecimal target, LocalDateTime startAt, String repeat) {}
+    public record Draft(String productCode, String condition, BigDecimal target, LocalDateTime startAt, String repeat,
+                        WatchPriceKind priceKind) {}
 
     public record Card(String kind, String title, String detail, List<Row> rows, Long listId) {
         public Card { rows = List.copyOf(rows); }
@@ -984,7 +1012,12 @@ public class AskShoppingTools {
         }
     }
 
-    private record AlertChange(BigDecimal target, LocalDateTime startAt, String repeat, Integer intervalDays, Boolean enabled) {}
+    private record AlertChange(BigDecimal target, LocalDateTime startAt, String repeat, Integer intervalDays,
+                               Boolean enabled, WatchPriceKind priceKind) {
+        private AlertChange(BigDecimal target, LocalDateTime startAt, String repeat, Integer intervalDays, Boolean enabled) {
+            this(target, startAt, repeat, intervalDays, enabled, null);
+        }
+    }
     private record CartRef(Long id, String name) {}
     private record CartRow(String productCode, String label, int quantity, String retailer, String selectedRetailer,
                            BigDecimal unitPrice, BigDecimal total, boolean checked) {}
@@ -994,7 +1027,11 @@ public class AskShoppingTools {
     private record EventRow(String productCode, String label, String detail, Instant createdAt) {}
     private record RuleRow(String ruleId, String productCode, String label, String detail, String type, Long id,
                            BigDecimal target, LocalDateTime startAt, String repeat, Integer intervalDays,
-                           Integer quantity, String retailer, boolean enabled, Object preferenceSnapshot) {}
+                           Integer quantity, String retailer, boolean enabled, Object preferenceSnapshot) {
+        WatchPriceKind priceKind() {
+            return preferenceSnapshot instanceof WatchRuleView watch ? watch.priceKind() : WatchPriceKind.TARGET;
+        }
+    }
     private record SavedItem(String productCode, int quantity, String retailer, boolean checked) {}
     private record ListSnapshot(String name, List<SavedItem> items) {}
     private record CartSnapshot(String name, SavedItem item) {}

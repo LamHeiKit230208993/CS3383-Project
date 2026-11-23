@@ -42,7 +42,7 @@ public class LocalRequestGuard extends OncePerRequestFilter {
                     && request.getServerName().equalsIgnoreCase(origin.getHost())
                     && request.getServerPort() == port
                     && origin.getUserInfo() == null
-                    && (origin.getPath() == null || origin.getPath().isEmpty());
+                    && origin.getPath().isEmpty();
         } catch (IllegalArgumentException exception) {
             return false;
         }

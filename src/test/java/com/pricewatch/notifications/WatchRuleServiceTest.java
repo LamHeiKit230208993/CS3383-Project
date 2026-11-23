@@ -68,6 +68,41 @@ class WatchRuleServiceTest {
     }
 
     @Test
+    void liveDropsRespectExactThresholdsAndKeepEvidencePerRetailer() {
+        rules.save(PACK, null, new BigDecimal("3"), null, null, WatchPriceKind.DROP_AMOUNT);
+        rules.save(PACK, null, new BigDecimal("25"), null, null, WatchPriceKind.DROP_PERCENT);
+        assertTrue(rules.rules(PACK).stream().allMatch(rule -> "DAILY".equals(rule.repeat())));
+        accept("LIVE", "12", "8");
+        assertTrue(alerts.events(now).isEmpty());
+        accept("LIVE", "9", "6");
+        var events = alerts.events(now);
+        assertEquals(2, events.size());
+        var percent = events.stream().filter(event -> event.priceKind() == WatchPriceKind.DROP_PERCENT)
+                .findFirst().orElseThrow();
+        assertEquals(List.of("STORE-A", "STORE-B"), percent.retailers().stream().map(p -> p.retailerCode()).toList());
+        assertEquals(new BigDecimal("12.0000"), percent.retailers().getFirst().previousPrice());
+        assertEquals(new BigDecimal("9.0000"), percent.retailers().getFirst().price());
+        assertTrue(rules.rules(PACK).stream().allMatch(WatchRuleView::enabled));
+    }
+
+    @Test
+    void dropRulesRequireConsecutiveLiveListingsAndValidateTheThreshold() {
+        assertThrows(IllegalArgumentException.class, () -> rules.save(PACK, null, BigDecimal.ZERO,
+                null, null, WatchPriceKind.DROP_AMOUNT));
+        assertThrows(IllegalArgumentException.class, () -> rules.save(PACK, null, new BigDecimal("101"),
+                null, null, WatchPriceKind.DROP_PERCENT));
+        rules.save(PACK, null, BigDecimal.TEN, null, "ONCE", WatchPriceKind.DROP_PERCENT);
+        accept("LIVE", "0", null);
+        accept("LIVE", "0", "3");
+        accept("SAMPLE", "10", "10");
+        accept("LIVE", "1", null);
+        assertTrue(alerts.events(now).isEmpty());
+        accept("LIVE", "0.90", "1");
+        assertEquals(1, alerts.events(now).size());
+        assertTrue(rules.rules(PACK).getFirst().completed());
+    }
+
+    @Test
     void independentTargetsKeepTheirOwnArmingAndHistoricEvidence() {
         var ten = addRule("10", null);
         var fifteen = addRule("15", null);
@@ -248,11 +283,11 @@ class WatchRuleServiceTest {
         assertEquals(1, alerts.events(now).size());
         assertNull(rule(id).nextDueAt());
 
-        now = START.plusSeconds(86_399);
+        now = WatchRepeat.nextHongKongDay(START).minusSeconds(1);
         accept("LIVE", "20", null);
         accept("LIVE", "9", "7");
         assertEquals(1, alerts.events(now).size());
-        now = START.plus(1, ChronoUnit.DAYS);
+        now = WatchRepeat.nextHongKongDay(START);
         accept("SAMPLE", "2", "3");
         rules.checkDue();
         assertEquals(1, alerts.events(now).size());
@@ -328,6 +363,20 @@ class WatchRuleServiceTest {
         long fortnightly = rules.rules(PACK).getLast().id();
         rules.checkDue();
         assertEquals(Instant.parse("2027-05-15T02:00:00Z"), rule(fortnightly).nextDueAt());
+    }
+
+    @Test
+    void scheduledCombinedTargetWaitsForFreshLiveDataEvenWhenCachedPricesQualify() {
+        var start = LocalDateTime.parse("2026-11-20T12:00");
+        rules.save(PACK, null, BigDecimal.TEN, start, "ONCE");
+        accept("LIVE", "8", "9");
+        now = WatchRepeat.inHongKong(start);
+        rules.checkDue();
+        assertTrue(alerts.events(now).isEmpty());
+        assertTrue(rules.rules(PACK).getFirst().waitingForLive());
+        accept("LIVE", "8", "9");
+        assertEquals(1, alerts.events(now).size());
+        assertTrue(rules.rules(PACK).getFirst().completed());
     }
 
     @Test
@@ -442,6 +491,66 @@ class WatchRuleServiceTest {
         return new SpringApplicationBuilder(PricewatchApplication.class).web(WebApplicationType.NONE)
                 .run("--spring.datasource.url=" + url, "--spring.jpa.hibernate.ddl-auto=update",
                         "--spring.main.banner-mode=off", "--pricewatch.jobs.enabled=false");
+    }
+
+    @Test
+    void editingADueCalendarTargetUsesTheNewThresholdOnTheNextLiveRefresh() {
+        now = START.plus(1, ChronoUnit.HOURS);
+        accept("LIVE", "9", "12");
+        Instant due = START.plus(1, ChronoUnit.DAYS);
+        LocalDateTime startAt = LocalDateTime.ofInstant(due, java.time.ZoneId.of("Asia/Hong_Kong"));
+        rules.save(PACK, null, new BigDecimal("10"), startAt, "WEEKLY");
+        var original = rules.rules(PACK).getLast();
+        assertTrue(alerts.events(now).isEmpty());
+
+        now = due;
+        rules.save(PACK, original.id(), new BigDecimal("8"), startAt, "WEEKLY");
+        assertTrue(alerts.events(now).isEmpty());
+        accept("LIVE", "9", "12");
+        assertTrue(alerts.events(now).isEmpty());
+        accept("LIVE", "8", "12");
+
+        var event = alerts.events(now).getFirst();
+        assertEquals(original.id(), event.ruleId());
+        assertEquals(due, event.scheduledDueAt());
+        assertEquals(0, new BigDecimal("8").compareTo(event.target()));
+        assertEquals(List.of("STORE-A"),
+                event.retailers().stream().map(price -> price.retailerCode()).toList());
+        assertEquals(0, new BigDecimal("8").compareTo(rule(original.id()).target()));
+        assertEquals(due.plus(7, ChronoUnit.DAYS), rule(original.id()).nextDueAt());
+    }
+
+    @Test
+    void aTimeOnlyRuleForAnUnwishlistedProductCannotBeChangedIntoAPriceTarget() {
+        LocalDateTime startAt = LocalDateTime.ofInstant(START.plus(1, ChronoUnit.DAYS),
+                java.time.ZoneId.of("Asia/Hong_Kong"));
+        rules.save(OTHER_PACK, null, null, startAt, "ONCE");
+        var timeOnly = rules.rules(OTHER_PACK).getLast();
+        assertThrows(IllegalArgumentException.class,
+                () -> rules.save(OTHER_PACK, timeOnly.id(), BigDecimal.TEN, startAt, "ONCE"));
+        assertEquals(timeOnly, rules.rules(OTHER_PACK).getLast());
+        rules.save(PACK, null, BigDecimal.TEN, null, null);
+        assertEquals("DAILY", rules.rules(PACK).getLast().repeat());
+    }
+
+    @Test
+    void acceptedRefreshSkipsPausedTargetsAndTimeOnlyRules() {
+        var target = addRule("10", null);
+        LocalDateTime startAt = LocalDateTime.ofInstant(START.plus(1, ChronoUnit.DAYS),
+                java.time.ZoneId.of("Asia/Hong_Kong"));
+        rules.save(PACK, null, null, startAt, "ONCE");
+        var timeOnly = rules.rules(PACK).getLast();
+        rules.setEnabled(PACK, target.id(), false);
+
+        now = START.plus(1, ChronoUnit.HOURS);
+        accept("LIVE", "9", "12");
+        assertTrue(alerts.events(now).isEmpty());
+        assertEquals(timeOnly.nextDueAt(), rule(timeOnly.id()).nextDueAt());
+
+        rules.setEnabled(PACK, target.id(), true);
+        now = now.plus(1, ChronoUnit.HOURS);
+        accept("LIVE", "9", "12");
+        assertEquals(List.of(target.id()), alerts.events(now).stream().map(ProductTargetEventView::ruleId).toList());
     }
 
     private WatchRuleView addRule(String target, Integer intervalDays) {

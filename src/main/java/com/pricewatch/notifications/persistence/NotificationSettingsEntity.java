@@ -35,9 +35,4 @@ public class NotificationSettingsEntity {
     public LocalTime getQuietEnd() { return quietEnd; }
     public LocalTime getSummaryTime() { return summaryTime; }
 
-    public void setTimes(LocalTime quietStart, LocalTime quietEnd, LocalTime summaryTime) {
-        this.quietStart = quietStart;
-        this.quietEnd = quietEnd;
-        this.summaryTime = summaryTime;
-    }
 }

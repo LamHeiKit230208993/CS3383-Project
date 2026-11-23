@@ -91,14 +91,18 @@ First run downloads all dependencies (can take a few minutes). When you see `Sta
 http://localhost:8080
 ```
 
-You should see **Market Desk**. Open **Data** and choose **Load checked sample**
+You should see **Market Desk**. Open **Settings → Price data** and choose **Load checked sample**
 to try the first flow without a network connection. This imports the unchanged
 two-product excerpt checked on 17 October 2026. It is historical sample data,
 not current prices. Search for milk or bread, open one exact product, and add it
-to **My list**. Quantity and checked state now survive app restart.
+to **Cart**. Quantity and checked state survive app restart.
 
-Choose **Refresh live prices** to download the current provider response.
-Startup does not fetch prices. A failed refresh keeps the last accepted data.
+The app attempts one automatic live refresh on first use each Hong Kong day.
+Opening the app or visiting a normal page starts the refresh in the background.
+A Sample or Demo catalogue stays in place until you choose **Refresh live prices**.
+A successful manual refresh satisfies that day's automatic check. A failed
+refresh keeps the last accepted catalogue. Check its result in **Price data**
+and use **Refresh live prices** to retry.
 After any catalogue has been accepted, replacing it with the two-product sample
 requires the explicit sample-replacement confirmation on Data.
 The source date stays unknown when the source does not provide one. A retrieval
@@ -108,34 +112,34 @@ Running the app needs no separate frontend build, React, Node runtime, or fronte
 dependency. The optional browser regression checks below use Node and Playwright. Maven supplies Spring Data JPA and H2 with the other Java libraries.
 Use Wishlist for tracked products and Alerts for price alerts.
 Open Ask for the price assistant described below.
-See the [baseline guide](implementation-baseline-j01-j04.md) and
-[extension guide](implementation-j05-j08.md) for behaviour and limits.
+See [Alerts and refresh implementation](implementation-alerts.md) for rule
+behaviour and upgrade details.
 
-### Try the J05–J08 flow
+### Try Wishlist, Alerts, and Budget
 
 1. Open a product comparison and choose **Save to wishlist**. The app starts
    watching all retailers for the exact pack. New retailers are picked up on
    accepted live refreshes. Use the actions on the Wishlist row or select
    several products to add one pack of each missing item to the default Cart.
    Removing a product stops new price tracking and keeps its recorded history.
-2. Select **Set rules** on the pack. Use **Add rule** to choose a price
-   condition or a calendar time in Hong Kong time. A price condition checks
-   accepted live refreshes and lists the retailers that meet the target.
-   Choose one time, daily, weekly, every two weeks, or monthly. One-time
-   rules turn off after they fire. A repeating price rule needs a new
-   qualifying live refresh in a later repeat period.
+2. Select **Set rules** on the pack. Add a price condition, a calendar time,
+   or both. Price conditions support a target, a drop by an HKD amount, and
+   a drop by a percentage. The drop uses the previous accepted live price
+   for the same retailer and pack. New price rules repeat daily by default.
+   Select **One time** explicitly to turn a rule off after it fires.
 3. Open **Settings → Personal data**, choose Weekly or Monthly in the Budget
    card, and save a planned limit. It is
-   compared with the current My list estimate, including checked items. An
+   compared with the current Cart estimate, including checked items. An
    explicit retailer choice stays selected when its price becomes unknown.
 4. Open **Alerts → History** to see what fired. Open a history row's rule
    editor to make a change. Each **Current rules** card shows the product,
-   condition, and On or Off switch. Switches also work on earlier retailer
-   rules and quantity-based reminders. Removing a rule keeps its history.
+   condition, and On or Off switch. Earlier retailer rules and migrated
+   reminders are available from the same Alerts area. Removing a rule keeps
+   its history.
 
-The running app checks due rules each minute and when Alerts opens. Its
-scheduled work can be disabled for isolated checks with
-`--pricewatch.jobs.enabled=false`. Page opening still checks due reminders.
+The running app checks due rules each minute and when Alerts opens. For
+isolated runs, `--pricewatch.jobs.enabled=false` disables automatic refresh
+and the scheduler. Manual refresh and due checks when Alerts opens still work.
 Alert and price records show Hong Kong time. Quiet hours and scheduled
 summaries are retired. Old settings and summary records remain exportable.
 
@@ -175,8 +179,8 @@ The product comparison page lets you choose the destination before adding.
 list. **Import list** creates a separate editable copy from a JSON file.
 The file keeps each pack, quantity, checked state, and retailer choice.
 The receiving app gets prices from its own catalogue. Missing products or
-retailer prices appear as **Unknown**. Quick-add and reminders use the default
-list. Discover and the budget settings summary use the main Cart. The Cart
+retailer prices appear as **Unknown**. Quick-add and migrated reminder actions
+use the default list. Discover and the budget settings summary use the main Cart. The Cart
 page compares the open list with the same saved limit. Switch lists to check
 another estimate. A list with missing prices shows an incomplete total.
 
@@ -275,7 +279,7 @@ by the app from its accepted catalogue.
 Ask can also show your carts, Wishlist, alert rules and recent alerts. Try
 “Show my cart”, “Add one 236 mL milk to Weekend groceries”, or “What is 20%
 of HK$85?”. An unspecified destination means the main Cart. To set an alert,
-request a price target or reminder. Ask will collect the exact product and
+request a target, a drop amount or percentage, or a reminder. Ask will collect the exact product and
 schedule, then show a preview. Confirm removals and alert changes in chat.
 Open a linked item and use **Back to Ask** to return to its conversation.
 Ask requires a working DeepSeek connection. If a reply fails, the question

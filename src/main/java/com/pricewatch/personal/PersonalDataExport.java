@@ -1,5 +1,7 @@
 package com.pricewatch.personal;
 
+import com.pricewatch.notifications.WatchPriceKind;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -49,15 +51,16 @@ public record PersonalDataExport(
 
     public record WatchRule(long id, String productCode, BigDecimal target, Integer intervalDays,
                             Instant nextDueAt, boolean armed, boolean waitingForLive, boolean enabled,
-                            String repeat, LocalDateTime startAt, boolean completed) {}
+                            String repeat, LocalDateTime startAt, boolean completed, WatchPriceKind priceKind) {}
 
     public record ProductPriceAlert(long id, String productCode, BigDecimal target,
                                     Instant retrievedAt, Instant createdAt, List<RetailerPrice> retailers,
-                                    Instant readAt, Instant snoozedUntil, Long ruleId, Instant scheduledDueAt) {}
+                                    Instant readAt, Instant snoozedUntil, Long ruleId, Instant scheduledDueAt,
+                                    WatchPriceKind priceKind) {}
 
-    public record RetailerPrice(String retailerCode, BigDecimal price) {}
+    public record RetailerPrice(String retailerCode, BigDecimal price, BigDecimal previousPrice) {}
 
-    public record TimeAlert(long id, long reminderId, String productCode, int quantity, String retailerCode,
+    public record TimeAlert(long id, Long reminderId, String productCode, Integer quantity, String retailerCode,
                             Instant dueAt, Instant createdAt, Instant readAt, Instant snoozedUntil) {}
 
     public record Budget(String period, BigDecimal limitAmount) {}

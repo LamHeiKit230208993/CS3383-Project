@@ -80,11 +80,11 @@ public class CatalogJsonParser {
     }
 
     private ImportedCatalog.ImportedProduct parseProduct(String code, JsonNode node) {
-        LocalizedText brand = localized(node, "brand", MAX_LABEL_LENGTH, true);
-        LocalizedText name = localized(node, "name", MAX_LABEL_LENGTH, true);
-        LocalizedText category1 = localized(node, "cat1Name", MAX_LABEL_LENGTH, true);
-        LocalizedText category2 = localized(node, "cat2Name", MAX_LABEL_LENGTH, true);
-        LocalizedText category3 = localized(node, "cat3Name", MAX_LABEL_LENGTH, true);
+        LocalizedText brand = requiredLabel(node, "brand");
+        LocalizedText name = requiredLabel(node, "name");
+        LocalizedText category1 = requiredLabel(node, "cat1Name");
+        LocalizedText category2 = requiredLabel(node, "cat2Name");
+        LocalizedText category3 = requiredLabel(node, "cat3Name");
 
         Map<String, BigDecimal> prices = parsePrices(node.get("prices"), code);
         Map<String, List<LocalizedText>> offers = parseOffers(node.get("offers"), code);
@@ -173,15 +173,12 @@ public class CatalogJsonParser {
         }
     }
 
-    private LocalizedText localized(JsonNode parent, String field, int maxLength, boolean required) {
+    private LocalizedText requiredLabel(JsonNode parent, String field) {
         JsonNode label = parent.get(field);
         if (label == null || !label.isObject()) {
-            if (!required && (label == null || label.isNull())) {
-                return new LocalizedText("", "", "");
-            }
             throw new CatalogImportException("The " + field + " labels must be an object.");
         }
-        return localizedValues(label, field, maxLength, required);
+        return localizedValues(label, field, MAX_LABEL_LENGTH, true);
     }
 
     private LocalizedText localizedValues(JsonNode label, String field, int maxLength, boolean required) {

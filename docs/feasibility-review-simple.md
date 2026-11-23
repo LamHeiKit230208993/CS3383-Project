@@ -19,7 +19,7 @@ and no cloud saving. Budgets are part of the current J05–J08 implementation.
 Separate-copy list transfer, full UI translation, and offline reopening remain
 later work. Each selected feature still needs its own acceptance checks.
 
-Spring Boot is chosen. Normal storage must survive restart. First alerts/reminders appear inside the active app; first offline use is read-only saved-list review with live price refresh and remote chat disabled.
+Spring Boot and local file storage provide a single-user app. Alerts and reminders appear inside the active app. The offline Cart checklist works without a server connection.
 
 Conditional features need specific evidence. Price history requires dated records. Actual savings require purchases and a stated comparison price. Future-price advice needs a tested method.
 
@@ -81,11 +81,11 @@ These corrections explain technical limits. They do not change the team's Build,
 | Dates | Separate source date from retrieval time | Downloading an old file today must not create a new price observation |
 | Updates | Keep the last good data when an import fails | A failed or empty response must not erase valid listings |
 | Chat | Use checked results and handle unknowns | Every amount in the answer matches a source record; an unclear product triggers clarification |
-| Tracked items | Keep wishlist and explicit retailer tracking separate | Saving alone does not track; stopping retains history; re-enabling starts a new period |
+| Tracked items | Keep exact-pack retailer history separate from Cart | Saving starts tracking; removing a pack retains history; saving again starts new periods |
 | List sharing | Export and import a separate local copy | Preserve items, quantities, and checked state; reject invalid input; leave existing lists unchanged; later edits do not sync |
 | Local storage | Preserve saved records across app restarts | Save a list and settings, restart the normal app, and read them again |
-| Active-app jobs | Run scheduled checks only while the local app runs | D05 keeps price imports manual. In-app summary checks run every minute and on the Alerts page; no collection or delivery is claimed while closed |
-| Offline use | Read a previously saved list on the viewing device; show saved-data age | Disconnect and reopen the saved list; price refresh and remote chat remain off |
+| Active-app jobs | Refresh on first use each Hong Kong day and check due rules while the app runs | Open after a date change and verify a single refresh. Disconnect and verify that a failed refresh retains the latest accepted catalogue |
+| Offline use | Download a Cart with saved prices and retrieval time | Stop the app, disconnect the network, and open the HTML checklist |
 
 These are acceptance checks, not results from completed tests. Made-up data may test a rule, but it does not verify live data access.
 
@@ -100,14 +100,14 @@ decisions and evidence. Grouping jobs does not approve conditional features.
 
 | Topic | Agreed milestone rule or remaining question | Related scope |
 |---|---|---|
-| Tracking | Revised D01 permits one retailer or all retailers for an exact product. LIVE imports enroll new retailers in all-retailer mode. D02 retains history when stopped and starts a new period on re-enable. | R10, R14, R21–R22, R35, R39 |
-| History and dates | Agreed D02–D03: retain 90 days of changed LIVE observations and unknown gaps. A current LIVE catalogue can seed tracking; SAMPLE imports cannot. Retrieval time stays separate from the unknown source date. Historical downloads/charts remain later work. | R10, R14, R44 |
-| Alert rules | Agreed D04: target uses a known price at or below the limit, then rearms only above it; a drop uses adjacent known observations in one period. No comparisons across gaps. Configurable change thresholds and buy/wait advice remain outside this batch. | R21–R24 |
-| Morning summary | Agreed D05: Hong Kong time; defaults quiet 22:00–08:00 and summary 08:00; snooze 24 hours. Persist eligibility/repeat state and catch up once at an eligible active-app check. | R23, R26 |
+| Tracking | Saving to Wishlist tracks the exact pack across retailers. Live imports enroll newly listed retailers. Collection stops on removal and retains history. | R10, R14, R21–R22, R35, R39 |
+| History and dates | Retain 90 days of changed live observations and unknown gaps. The chart shows recorded dates. Retrieval time stays separate from the source price date, when known. | R10, R14, R44 |
+| Alert rules | A price-drop watch rule compares consecutive accepted live prices for the same pack and retailer. A gap supplies no drop evidence. Buy/wait advice remains conditional. | R21–R24 |
+| Timing | Use Hong Kong time. Refresh on first use each day. Scheduled summaries and quiet hours are retired, and previous summaries remain exportable. | R23, R26 |
 | Spending | Agreed D06: current-list estimate versus a weekly/monthly planning limit, with known category subtotals. Purchases, accumulated spending, rollover and actual savings are not implemented. | R18, R30–R31, R43 |
-| Saved-list viewing | How is the list/page saved on the viewing device? First offline use is read-only, with no live price refresh or remote chat. | R48 |
+| Saved-list viewing | Open the standalone Cart checklist on the viewing device. Edits apply to the opened file. | R48 |
 | Advice and offers | What measured rule supports conditional advice or price comparisons? What happens without enough records? | R11, R16, R20, R35 |
-| Reminders | Agreed D07: user-set interval in days and quantity. Initial due is creation plus interval; clear starts a new interval from the action; snooze delays the effective due by 24 hours. Adding to My list does not clear it or record a purchase. | R34, R36–R37 |
+| Reminders | Set time rules in Alerts. Upgrading earlier interval reminders retains due time, quantity, and retailer choice. Adding to Cart does not mark a reminder handled or record a purchase. | R34, R36–R37 |
 | Project limits | Course marking guide, deadline, team availability, and operating budget. Spring Boot is chosen; other frameworks are backups. | All planned work |
 
 ## 6. Evidence needed before stronger claims
@@ -122,7 +122,7 @@ The first baseline runs locally. Measure local storage and AI-call costs; hostin
 
 - [Team feature decisions](project-scope.md)
 - [Product description and user-needs links](product-description.md)
-- [Build options](architecture-options.md)
+- [Current system design](guide/system-guide.html)
 - [Official dataset page](https://data.gov.hk/en-data/dataset/cc-pricewatch-pricewatch)
 - [JSON resource](https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch.json): downloaded and inspected on 17 October 2026; see the [sample check](Plan/data-sample-review.md).
 - [English CSV](https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch_en.csv): alternative resource; contents not checked in this update.

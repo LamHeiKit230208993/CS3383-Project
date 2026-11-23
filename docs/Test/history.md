@@ -4,6 +4,72 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Issue 27 Alerts and daily refresh retest — 23 November 2026
+
+All 341 Maven tests passed, including H2 upgrade, rollback, price drop,
+daily refresh, and Ask confirmation checks. The H2 migration fixture
+covers absent, empty, and populated legacy tables. A separate file database
+created by the previous packaged app also upgraded and kept the same
+snoozed reminder occurrence across restart.
+
+| JaCoCo measure | Demo history retest | Issue 27 retest |
+|---|---:|---:|
+| Java tests passed | 339 | 341 |
+| Java source lines | 3,705/3,939 (94.06%) | 3,731/3,982 (93.70%) |
+| Java branch outcomes | 1,769/2,097 (84.36%) | 1,849/2,193 (84.31%) |
+
+JaCoCo 0.8.14 measured all 165 application classes without exclusions.
+Ask shopping tools and watch-rule handling have the largest remaining
+branch gaps. The 100% target remains open.
+
+Chrome passed 22 shopper and 14 milestone scenarios. The milestone run
+opened the rule editor by keyboard, saved both drop types, and verified
+retailer evidence at desktop and phone widths in all three languages.
+The isolated H2 restart and J01–J08 upgrade checks passed. The automatic
+refresh tests used a controlled feed and clock.
+
+See [price drops](cases/TC-ALERT-005.md), [daily refresh](cases/TC-DATA-006.md),
+and [legacy reminder upgrade](cases/TC-REMINDER-001.md).
+
+## Demo history review retest — 23 November 2026
+
+Two regressions from PR #24 failed before the fix and passed after it.
+Wishlist now shows all three demo products immediately, with their history
+links. The AEON milk series runs from 21 days ago to one day ago, and the
+latest stored price and timestamp match the last observation.
+
+All 339 Maven tests passed. JaCoCo measured 3,705/3,939 Java lines (94.06%)
+and 1,769/2,097 branch outcomes (84.36%). See the
+[demo history case](cases/TC-DATA-005.md) for the inputs and expected results.
+Chrome passed 22 shopper and 13 milestone scenarios. The H2 file restart
+and J01–J08 upgrade checks also passed on this build.
+
+## Full Java coverage run — 22 November 2026
+
+JaCoCo 0.8.14 measured all 168 application classes in a clean build. The
+baseline below uses the previous tests. The new run includes additional JUnit
+unit and integration tests and removes three unreachable checks without
+changing application behaviour. The report uses no class exclusions.
+
+| Measure | Previous run | Full run |
+|---|---:|---:|
+| Maven tests passed | 164 | 339 |
+| Java source lines | 3,236/3,943 (82.07%) | 3,703/3,938 (94.03%) |
+| Java branch outcomes | 1,336/2,107 (63.41%) | 1,769/2,097 (84.36%) |
+| Java instructions | — | 21,997/23,810 (92.39%) |
+| Java methods | — | 1,003/1,079 (92.96%) |
+| Java classes with executed code | — | 159/168 (94.64%) |
+
+The [Java coverage case](cases/TC-JAVA-COVERAGE-001.md) lists the test
+inputs and sources. The 100% line and branch target remains open. The
+largest measured branch gap is Ask shopping tools (128 missed outcomes
+including its nested turn class). The Ask and main web controllers and
+the watch-rule service also have untested outcomes.
+
+Chrome passed 22 shopper and 13 milestone scenarios against the updated
+application. The H2 checks passed for file restart and for upgrade from the
+J01–J08 database, including retailer choices and tracked prices.
+
 ## Coverage follow up — 22 November 2026
 
 The comparison uses the same production Java source before and after the

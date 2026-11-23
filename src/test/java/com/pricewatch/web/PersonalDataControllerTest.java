@@ -6,11 +6,12 @@ import com.pricewatch.budget.BudgetService;
 import com.pricewatch.catalog.CatalogService;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.notifications.AlertService;
-import com.pricewatch.notifications.NotificationPolicy;
 import com.pricewatch.notifications.persistence.AlertEventEntity;
+import com.pricewatch.notifications.persistence.NotificationSettingsEntity;
 import com.pricewatch.notifications.repository.AlertEventRepository;
+import com.pricewatch.notifications.repository.NotificationSettingsRepository;
 import com.pricewatch.preferences.DisplayPreferencesService;
-import com.pricewatch.reminder.ReminderService;
+import com.pricewatch.notifications.WatchRuleService;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.tracking.TrackingService;
 import com.pricewatch.tracking.persistence.PriceObservationEntity;
@@ -29,7 +30,9 @@ import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -61,9 +64,9 @@ class PersonalDataControllerTest {
     @Autowired TrackingRepository periods;
     @Autowired PriceObservationRepository observations;
     @Autowired AlertEventRepository alerts;
-    @Autowired ReminderService reminders;
+    @Autowired WatchRuleService watchRules;
     @Autowired BudgetService budget;
-    @Autowired NotificationPolicy notificationPolicy;
+    @Autowired NotificationSettingsRepository notificationSettings;
     @Autowired DisplayPreferencesService display;
     @Autowired ProductRepository products;
     @MockitoBean DeepSeekChatClient chatProvider;
@@ -88,10 +91,10 @@ class PersonalDataControllerTest {
                 accepted.checksum()));
         alerts.save(new AlertEventEntity(period, observation.getId(), AlertService.TARGET, price, now,
                 null, null, now, now));
-        reminders.create(MILK, 2, 7, "JASONS");
+        watchRules.save(MILK, null, null, LocalDateTime.ofInstant(now, ZoneId.of("Asia/Hong_Kong")).plusDays(7), "WEEKLY");
         budget.save("weekly", "200");
         display.update("en", true);
-        notificationPolicy.update(LocalTime.of(23, 0), LocalTime.of(7, 0), LocalTime.of(9, 0));
+        notificationSettings.save(new NotificationSettingsEntity(LocalTime.of(23, 0), LocalTime.of(7, 0), LocalTime.of(9, 0)));
 
         var activeSession = new MockHttpSession();
         var otherSession = new MockHttpSession();
@@ -125,7 +128,7 @@ class PersonalDataControllerTest {
                 .andExpect(jsonPath("$.tracking[0].productCode").value(MILK))
                 .andExpect(jsonPath("$.observations[0].price").value(12.5))
                 .andExpect(jsonPath("$.alerts[0].type").value(AlertService.TARGET))
-                .andExpect(jsonPath("$.reminders[0].intervalDays").value(7))
+                .andExpect(jsonPath("$.watchRules[0].repeat").value("WEEKLY"))
                 .andExpect(jsonPath("$.budgets[0].period").value("WEEKLY"))
                 .andExpect(jsonPath("$.preferences.display.highContrast").value(true))
                 .andExpect(jsonPath("$.preferences.notifications.summaryTime").value("09:00:00"))

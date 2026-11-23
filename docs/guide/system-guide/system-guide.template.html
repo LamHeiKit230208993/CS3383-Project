@@ -1,0 +1,2874 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="An interactive field guide to Market Desk: a local-first Spring Boot shopping price helper. Architecture, components, domain model, UML workflows and the AI tool loop.">
+<title>Market Desk · System Field Guide</title>
+<style>
+/* ============================================================
+   Market Desk field guide
+   A paper-and-ink system document with a night-market mode.
+   ============================================================ */
+
+:root {
+  --paper: #f5f1e6;
+  --paper-2: #ede7d7;
+  --card: #fffdf6;
+  --card-2: #faf6ea;
+  --ink: #16241e;
+  --ink-2: #40534a;
+  --muted: #718077;
+  --line: #d8d1bf;
+  --line-strong: #b9b19c;
+  --green: #0c6b53;
+  --green-2: #084d3c;
+  --green-soft: #e2efe8;
+  --green-wash: #eef6f1;
+  --amber: #b97210;
+  --amber-soft: #f7ead0;
+  --coral: #ad452d;
+  --coral-soft: #f6dfd7;
+  --blue: #2f5f8a;
+  --blue-soft: #e4edf5;
+  --plate: #fdfaf1;
+  --shadow: 0 1px 0 rgba(22, 36, 30, .05), 0 18px 44px -26px rgba(22, 36, 30, .38);
+  --shadow-soft: 0 1px 0 rgba(22, 36, 30, .04), 0 10px 24px -18px rgba(22, 36, 30, .3);
+  --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --sans: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Code", "SF Mono", "Consolas", "Liberation Mono", monospace;
+  --sidebar: 274px;
+  --content: 1080px;
+  --radius: 3px;
+}
+
+html[data-theme="night"] {
+  --paper: #0c1613;
+  --paper-2: #101d18;
+  --card: #14231d;
+  --card-2: #172a22;
+  --ink: #eef3ec;
+  --ink-2: #c2d1c7;
+  --muted: #92a69a;
+  --line: #2a3d33;
+  --line-strong: #3c5446;
+  --green: #7ac7a9;
+  --green-2: #a0ddc4;
+  --green-soft: #1a3027;
+  --green-wash: #12241d;
+  --amber: #e2a64c;
+  --amber-soft: #2c2417;
+  --coral: #e58d74;
+  --coral-soft: #2e1d18;
+  --blue: #8bb8dc;
+  --blue-soft: #182a37;
+  --plate: #fdfaf1;
+  --shadow: 0 1px 0 rgba(0, 0, 0, .2), 0 22px 50px -28px rgba(0, 0, 0, .8);
+  --shadow-soft: 0 1px 0 rgba(0, 0, 0, .18), 0 10px 26px -18px rgba(0, 0, 0, .7);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 32px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.68;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .42;
+  background-image: radial-gradient(rgba(22, 36, 30, .16) .55px, transparent .55px);
+  background-size: 5px 5px;
+}
+html[data-theme="night"] body::before {
+  opacity: .16;
+  background-image: radial-gradient(rgba(238, 243, 236, .2) .5px, transparent .5px);
+}
+
+::selection { background: var(--green); color: #fffdf6; }
+
+a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--green-2); }
+
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -.025em;
+  margin: 0;
+  color: var(--ink);
+}
+
+p { margin: 0 0 1.1em; }
+ul, ol { margin: 0 0 1.1em; padding-left: 1.25em; }
+li { margin: .35em 0; }
+strong { font-weight: 650; color: var(--ink); }
+em { font-style: italic; }
+code, kbd, samp {
+  font-family: var(--mono);
+  font-size: .86em;
+  background: var(--green-wash);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: .1em .35em;
+  color: var(--ink);
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 2rem 0; }
+
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background: var(--green);
+  color: #fff;
+  padding: 10px 16px;
+  transform: translateY(-160%);
+  transition: transform .2s ease;
+  font: 600 12px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.skip-link:focus { transform: none; color: #fff; }
+
+/* ---------- reading progress ---------- */
+.progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: 120;
+  background: transparent;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--green), var(--amber));
+  transition: width .08s linear;
+}
+
+/* ---------- sidebar ---------- */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px 22px;
+  background: var(--paper-2);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+.sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0; right: -1px;
+  width: 1px; height: 92px;
+  background: var(--green);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--ink);
+  text-decoration: none;
+  margin-bottom: 30px;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px; height: 38px;
+  background: var(--green);
+  color: #fffdf6;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-style: italic;
+  line-height: 1;
+  padding-bottom: 4px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.05; }
+.brand-text strong {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+.brand-text small {
+  font: 600 8.5px/1.4 var(--mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.nav-label {
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px 10px;
+}
+.side-nav { display: flex; flex-direction: column; gap: 1px; }
+.side-nav a {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: baseline;
+  gap: 7px;
+  padding: 8px 10px;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  font-size: 13.5px;
+  line-height: 1.35;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.side-nav a:hover { background: var(--green-wash); color: var(--ink); }
+.side-nav a.is-active {
+  border-left-color: var(--green);
+  background: var(--green-wash);
+  color: var(--green);
+  font-weight: 600;
+}
+.side-nav .n {
+  font: 500 10px/1 var(--mono);
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+.side-nav a.is-active .n { color: var(--green); }
+.side-foot { margin-top: auto; padding-top: 26px; display: flex; flex-direction: column; gap: 12px; }
+.side-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 500 9.5px/1.3 var(--mono);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 7px 9px;
+  border-radius: 2px;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex: 0 0 auto; }
+.dot.amber { background: var(--amber); }
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  font: 600 10px/1 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background .15s ease, border-color .15s ease;
+}
+.theme-toggle:hover { background: var(--card); border-color: var(--line-strong); }
+.theme-toggle .switch {
+  position: relative;
+  width: 30px; height: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--card);
+}
+.theme-toggle .switch::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  transition: transform .2s ease;
+}
+html[data-theme="night"] .theme-toggle .switch::after { transform: translateX(14px); }
+
+/* ---------- main / layout ---------- */
+.main {
+  position: relative;
+  z-index: 1;
+  margin-left: var(--sidebar);
+  min-height: 100vh;
+}
+.wrap {
+  width: min(var(--content), calc(100vw - var(--sidebar) - 96px));
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+.section { padding: 86px 0 24px; border-top: 1px solid var(--line); }
+.section:first-of-type { border-top: 0; }
+
+.eyebrow {
+  font: 600 10px/1.4 var(--mono);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin: 0 0 14px;
+}
+.section-head {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 34px;
+}
+.section-num {
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .08em;
+  color: var(--amber);
+  padding-top: 10px;
+  border-top: 1px solid var(--amber);
+}
+.section-head h2 {
+  font-size: clamp(32px, 4.2vw, 46px);
+  margin-bottom: 12px;
+}
+.lede {
+  font-size: 18.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  max-width: 72ch;
+  margin: 0;
+}
+.section-head .lede { margin-top: 0; }
+.prose { max-width: 70ch; }
+.prose p:last-child { margin-bottom: 0; }
+
+/* ---------- hero ---------- */
+.hero {
+  position: relative;
+  padding: 74px 0 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, .88fr);
+  gap: 54px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.hero::after {
+  content: "m.";
+  position: absolute;
+  right: -2%;
+  bottom: -28px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 300px;
+  line-height: 1;
+  color: var(--green);
+  opacity: .055;
+  pointer-events: none;
+  z-index: -1;
+}
+.hero h1 {
+  font-size: clamp(48px, 6.6vw, 82px);
+  line-height: .96;
+  letter-spacing: -.045em;
+  margin: 0 0 24px;
+}
+.hero h1 em { font-style: italic; color: var(--green); }
+.hero-deck {
+  font-size: 19px;
+  line-height: 1.62;
+  color: var(--ink-2);
+  max-width: 60ch;
+  margin: 0 0 26px;
+}
+.chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 30px; }
+.chip {
+  font: 600 9.5px/1 var(--mono);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 7px 9px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.chip.green { color: var(--green); border-color: var(--green); background: var(--green-wash); }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-top: 8px;
+}
+.stat { padding: 16px 14px 15px 0; border-right: 1px solid var(--line); }
+.stat:last-child { border-right: 0; padding-right: 0; }
+.stat b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -.03em;
+  color: var(--green);
+  margin-bottom: 5px;
+}
+.stat span {
+  font: 600 8.5px/1.35 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* hero plate */
+.hero-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  padding: 22px 22px 20px;
+  transform: rotate(.6deg);
+}
+.hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid var(--line);
+  pointer-events: none;
+}
+.hero-card-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  padding: 0 0 12px;
+  margin-bottom: 18px;
+}
+.hero-card-label b { color: var(--green); font-weight: 600; }
+.mini-stack { display: flex; flex-direction: column; gap: 0; position: relative; z-index: 1; }
+.mini-node {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--card-2);
+  padding: 9px 10px;
+  font-size: 12.5px;
+}
+.mini-node + .mini-node { margin-top: 5px; }
+.mini-node .k {
+  font: 600 9px/1 var(--mono);
+  color: var(--muted);
+  letter-spacing: .06em;
+}
+.mini-node strong { font-family: var(--serif); font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.mini-node .tag {
+  font: 500 8px/1 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mini-node.accent { border-left: 3px solid var(--green); background: var(--green-wash); }
+.mini-node.accent .tag { color: var(--green); }
+.mini-arrow { height: 12px; display: grid; place-items: center; color: var(--line-strong); font: 10px/1 var(--mono); }
+.mini-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+.mini-side span {
+  font: 500 8.5px/1.35 var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px dashed var(--line-strong);
+  padding: 6px 7px;
+  text-align: center;
+}
+.hero-note {
+  margin: 16px 0 0;
+  font: 500 10px/1.5 var(--mono);
+  color: var(--muted);
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- generic blocks ---------- */
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.grid-2 > *, .grid-3 > *, .split-list > *, .layer-layout > *, .workflow > *, .comp-grid > * { min-width: 0; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 22px;
+  box-shadow: var(--shadow-soft);
+}
+.card h3 { font-size: 21px; margin-bottom: 9px; }
+.card p:last-child { margin-bottom: 0; }
+.card-kicker {
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+.principle { position: relative; padding-top: 20px; }
+.principle::before {
+  content: attr(data-n);
+  position: absolute;
+  top: 0; left: 0;
+  font: 500 10px/1 var(--mono);
+  color: var(--amber);
+  letter-spacing: .08em;
+}
+.principle h3 { font-size: 20px; }
+.principle p { color: var(--ink-2); font-size: 14.5px; line-height: 1.62; }
+
+.callout {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--amber);
+  background: var(--amber-soft);
+  padding: 16px 18px;
+  margin: 24px 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.callout.green { border-left-color: var(--green); background: var(--green-wash); }
+.callout.coral { border-left-color: var(--coral); background: var(--coral-soft); }
+.callout b { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; display: block; margin-bottom: 5px; }
+.callout p:last-child { margin-bottom: 0; }
+
+.split-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.split-list h4 { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px; }
+.split-list ul { list-style: none; padding: 0; margin: 0; }
+.split-list li { position: relative; padding-left: 20px; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); }
+.split-list li::before { position: absolute; left: 0; top: 0; font-family: var(--mono); font-size: 12px; }
+.split-list .is li::before { content: "+"; color: var(--green); }
+.split-list .not li::before { content: "−"; color: var(--coral); }
+
+/* ---------- layer stack ---------- */
+.layer-layout { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 22px; align-items: start; margin-top: 8px; }
+.layer-stack { display: flex; flex-direction: column; gap: 0; }
+.layer-btn {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.layer-btn + .layer-btn { border-top: 0; }
+.layer-btn:hover { background: var(--green-wash); }
+.layer-btn.is-active { background: var(--green-wash); border-color: var(--green); z-index: 1; }
+.layer-btn.is-active::before {
+  content: "";
+  position: absolute;
+  left: -1px; top: -1px; bottom: -1px;
+  width: 4px;
+  background: var(--green);
+}
+.layer-btn .idx { font: 500 10px/1 var(--mono); color: var(--muted); letter-spacing: .06em; }
+.layer-btn strong { display: block; font-family: var(--serif); font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.layer-btn small { display: block; font: 500 10px/1.35 var(--mono); color: var(--muted); margin-top: 3px; letter-spacing: .02em; }
+.layer-btn .side-tag { font: 600 8px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.layer-btn.is-active .side-tag { color: var(--green); }
+.layer-arrow { height: 15px; display: grid; place-items: center; color: var(--line-strong); font: 11px/1 var(--mono); }
+.layer-detail {
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 24px 26px;
+  min-height: 100%;
+  box-shadow: var(--shadow-soft);
+}
+.layer-detail[hidden] { display: none; }
+.layer-detail .kicker { font: 600 9px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--amber); margin-bottom: 9px; }
+.layer-detail h3 { font-size: 27px; margin-bottom: 10px; }
+.layer-detail p { font-size: 14.5px; color: var(--ink-2); }
+.layer-detail h4 { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; margin: 18px 0 8px; color: var(--muted); }
+.layer-detail ul { padding-left: 1.1em; font-size: 14px; color: var(--ink-2); }
+.layer-detail li { margin: .25em 0; }
+.detail-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.detail-chips span { font: 500 9.5px/1.2 var(--mono); border: 1px solid var(--line); background: var(--card-2); padding: 5px 6px; color: var(--ink-2); }
+
+/* ---------- diagram plates ---------- */
+.plate {
+  margin: 26px 0;
+  background: var(--plate);
+  border: 1px solid #cfc6b0;
+  box-shadow: var(--shadow);
+  color: #1c2b24;
+  position: relative;
+}
+.plate::before, .plate::after {
+  content: "";
+  position: absolute;
+  width: 14px; height: 14px;
+  border-color: var(--green);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 2;
+}
+.plate::before { top: 5px; left: 5px; border-width: 1px 0 0 1px; }
+.plate::after { bottom: 5px; right: 5px; border-width: 0 1px 1px 0; }
+.plate-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 17px 20px 14px;
+  border-bottom: 1px solid #ddd5c3;
+  background: #fbf7ec;
+}
+.plate-kicker { font: 600 8.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: #8a6a2a; margin-bottom: 6px; }
+.plate-head h3 { font-size: 22px; line-height: 1.1; margin: 0; color: #16241e; }
+.plate-head .plate-sub { font: 500 10.5px/1.4 var(--mono); color: #6d7a70; margin-top: 5px; }
+.plate-tools { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; padding-top: 2px; }
+.plate-tools button {
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #33473c;
+  background: #fffdf6;
+  border: 1px solid #cfc6b0;
+  padding: 7px 8px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.plate-tools button:hover { background: #eef6f1; border-color: #7fa694; color: #0c6b53; }
+.plate-tools .zoom-label { min-width: 42px; text-align: center; font: 500 9px/1 var(--mono); color: #6d7a70; }
+.plate-tools .close-plate { display: none; }
+.plate-stage {
+  overflow: auto;
+  background: #fdfaf1;
+  border-bottom: 1px solid #ddd5c3;
+  cursor: grab;
+  overscroll-behavior: contain;
+  max-height: 640px;
+}
+.plate-stage.is-dragging { cursor: grabbing; user-select: none; }
+.plate-stage:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
+.plate-canvas { width: max-content; min-width: 100%; padding: 18px; }
+.plate-canvas img { display: block; max-width: none; height: auto; margin: 0 auto; }
+.plate-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 11px 20px;
+  font: 500 9.5px/1.5 var(--mono);
+  color: #6d7a70;
+  background: #fbf7ec;
+}
+.plate-foot .hint { text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+.plate.is-expanded {
+  position: fixed;
+  inset: 14px;
+  z-index: 300;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 0 100vmax rgba(8, 18, 14, .74), 0 30px 80px rgba(0, 0, 0, .4);
+}
+.plate.is-expanded .plate-stage { flex: 1; max-height: none; }
+.plate.is-expanded .close-plate { display: inline-block; }
+body.plate-open { overflow: hidden; }
+
+.source {
+  border-top: 1px solid #ddd5c3;
+  background: #fbf7ec;
+}
+.source summary {
+  cursor: pointer;
+  padding: 10px 20px;
+  font: 600 9px/1.4 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #6d7a70;
+  list-style: none;
+}
+.source summary::-webkit-details-marker { display: none; }
+.source summary::before { content: "＋ "; color: #8a6a2a; }
+.source[open] summary::before { content: "− "; }
+.source pre {
+  margin: 0;
+  padding: 0 20px 18px;
+  overflow: auto;
+  max-height: 320px;
+  font: 11px/1.55 var(--mono);
+  color: #33473c;
+  background: #fdfaf1;
+}
+.source code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+
+/* ---------- tabs ---------- */
+.tabs { margin-top: 10px; }
+.tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+.tablist button {
+  position: relative;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: 600 10px/1.3 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 13px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tablist button:hover { color: var(--ink); background: var(--green-wash); }
+.tablist button[aria-selected="true"] { color: var(--green); border-bottom-color: var(--green); }
+.tab-panel[hidden] { display: none; }
+.tab-panel { animation: fadein .22s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+/* ---------- workflow layout ---------- */
+.workflow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+.workflow .plate { margin-top: 0; }
+.notes-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 20px 22px;
+  position: static;
+  box-shadow: var(--shadow-soft);
+}
+.notes-card h3 { font-size: 19px; margin-bottom: 12px; }
+.notes-card ol {
+  columns: 2;
+  column-gap: 30px;
+  padding-left: 1.15em;
+  margin: 0;
+}
+.notes-card li { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); margin: .65em 0; break-inside: avoid; }
+.notes-card li b { color: var(--ink); }
+.notes-card .mini-note { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--line); font: 500 9.5px/1.55 var(--mono); color: var(--muted); }
+
+/* ---------- component explorer ---------- */
+.explorer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 16px;
+}
+.search-wrap { position: relative; flex: 1 1 260px; max-width: 380px; }
+.search-wrap input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font: 500 12px/1 var(--mono);
+  padding: 11px 34px 11px 12px;
+  border-radius: 2px;
+}
+.search-wrap input::placeholder { color: var(--muted); }
+.search-wrap::after {
+  content: "⌕";
+  position: absolute;
+  right: 11px; top: 50%;
+  transform: translateY(-52%);
+  color: var(--muted);
+  font-size: 15px;
+  pointer-events: none;
+}
+.filter-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.filter-btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 8px 9px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.filter-btn:hover { border-color: var(--line-strong); color: var(--ink); }
+.filter-btn.is-active { background: var(--green); border-color: var(--green); color: #fffdf6; }
+.explorer-count { font: 500 9.5px/1 var(--mono); color: var(--muted); letter-spacing: .04em; margin: 0 0 14px; }
+.comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.comp {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+.comp[hidden] { display: none; }
+.comp-head {
+  display: grid;
+  grid-template-columns: 28px 1fr auto 20px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 14px 15px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--sans);
+}
+.comp-head:hover { background: var(--green-wash); }
+.comp-head .num { font: 500 9px/1 var(--mono); color: var(--muted); letter-spacing: .04em; }
+.comp-head .name { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.comp-head .name code { align-self: flex-start; font-size: 10px; padding: 2px 5px; margin-bottom: 4px; color: var(--green); background: var(--green-wash); border-color: var(--green-soft); }
+.comp-head .name strong { font-family: var(--serif); font-size: 16.5px; font-weight: 600; letter-spacing: -.01em; }
+.comp-head .meta { font: 500 8.5px/1.3 var(--mono); color: var(--muted); text-align: right; letter-spacing: .02em; }
+.comp-head .plus { font: 400 17px/1 var(--mono); color: var(--green); text-align: center; transition: transform .18s ease; }
+.comp-head[aria-expanded="true"] .plus { transform: rotate(45deg); }
+.comp-body { padding: 0 15px 16px 53px; border-top: 1px solid var(--line); }
+.comp-body[hidden] { display: none; }
+.comp-body > p { font-size: 13.5px; line-height: 1.58; color: var(--ink-2); margin: 12px 0; }
+.comp-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.comp-cols h4 { font-family: var(--mono); font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 10px 0 7px; }
+.comp-cols ul { padding-left: 1.05em; margin: 0; }
+.comp-cols li { font-size: 12.5px; line-height: 1.5; color: var(--ink-2); margin: .3em 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chips span { font: 500 8.5px/1.2 var(--mono); border: 1px solid var(--line); background: var(--card-2); padding: 4px 5px; color: var(--ink-2); }
+.route-line { font: 500 9.5px/1.5 var(--mono); color: var(--muted); margin: 6px 0 0; }
+.empty-state { border: 1px dashed var(--line-strong); padding: 30px; text-align: center; color: var(--muted); font: 500 11px/1.5 var(--mono); grid-column: 1 / -1; }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--card); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.45; }
+thead th {
+  text-align: left;
+  font: 600 8.5px/1.3 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--card-2);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+tbody td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-2); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--green-wash); }
+td code { font-size: .88em; white-space: nowrap; }
+.table-title { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 8px; }
+details.disclosure { margin-top: 18px; border: 1px solid var(--line); background: var(--card); }
+details.disclosure > summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  font: 600 10px/1.4 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--green);
+  list-style: none;
+}
+details.disclosure > summary::-webkit-details-marker { display: none; }
+details.disclosure > summary::before { content: "＋ "; color: var(--amber); }
+details.disclosure[open] > summary::before { content: "− "; }
+details.disclosure .disclosure-body { padding: 0 16px 16px; }
+.route-search { margin: 0 0 12px; max-width: 340px; }
+.route-group { margin-top: 16px; }
+.route-group h4 { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.route-group tr[hidden] { display: none; }
+.route-group.is-empty { display: none; }
+
+/* ---------- AI section ---------- */
+.toolbar-note { font: 500 9.5px/1.5 var(--mono); color: var(--muted); }
+.tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tool {
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 13px 14px;
+  position: relative;
+}
+.tool[hidden] { display: none; }
+.tool .kind {
+  display: inline-block;
+  font: 600 7.5px/1 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 4px 5px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--card-2);
+}
+.tool .kind.read { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
+.tool .kind.propose { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
+.tool h4 { font-family: var(--mono); font-size: 11.5px; letter-spacing: -.01em; font-weight: 600; margin: 0 0 5px; color: var(--ink); }
+.tool p { font-size: 12px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+.confirm-table td:first-child { font-family: var(--mono); font-size: 10px; }
+.badge { display: inline-block; font: 600 8px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 4px 5px; border: 1px solid; }
+.badge.now { color: var(--green); border-color: var(--green); background: var(--green-wash); }
+.badge.confirm { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
+.state-strip { display: flex; align-items: stretch; gap: 0; margin: 18px 0 6px; flex-wrap: wrap; }
+.state {
+  flex: 1 1 0;
+  min-width: 130px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 12px 13px;
+  position: relative;
+}
+.state + .state { border-left: 0; }
+.state b { display: block; font: 600 9px/1 var(--mono); letter-spacing: .12em; color: var(--green); margin-bottom: 5px; }
+.state span { font-size: 11.5px; line-height: 1.45; color: var(--ink-2); }
+.state small { display: block; font: 500 8px/1.4 var(--mono); color: var(--muted); margin-top: 4px; }
+
+/* ---------- runtime ---------- */
+.tick {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.tick:last-child { border-bottom: 0; }
+.tick-time { font: 600 10px/1.4 var(--mono); letter-spacing: .08em; color: var(--amber); }
+.tick-time b { display: block; font-family: var(--serif); font-size: 24px; letter-spacing: -.02em; color: var(--green); font-weight: 600; }
+.tick-body h4 { font-family: var(--serif); font-size: 18px; margin-bottom: 5px; }
+.tick-body p { font-size: 14px; color: var(--ink-2); margin: 0; }
+.rule-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rule { background: var(--card); border: 1px solid var(--line); padding: 16px; }
+.rule .k { font: 600 8.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; }
+.rule h4 { font-size: 17px; margin-bottom: 6px; }
+.rule p { font-size: 13px; line-height: 1.55; color: var(--ink-2); margin: 0; }
+
+/* ---------- code / run ---------- */
+.cmd {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--ink);
+  color: #eaf1e8;
+  border: 1px solid var(--ink);
+  padding: 13px 14px;
+  margin: 8px 0;
+  border-radius: 2px;
+}
+html[data-theme="night"] .cmd { background: #0a120f; border-color: #24382e; }
+.cmd code { background: none; border: 0; color: inherit; font-size: 12px; padding: 0; white-space: pre-wrap; word-break: break-word; }
+.copy-btn {
+  border: 1px solid #4a5f54;
+  background: transparent;
+  color: #b9c9bf;
+  font: 600 8px/1 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 6px 7px;
+  cursor: pointer;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.copy-btn:hover { border-color: #8fb3a0; color: #fff; }
+.copy-btn.is-copied { background: #1c6b53; border-color: #1c6b53; color: #fff; }
+.config-table td:first-child { font-family: var(--mono); font-size: 10.5px; white-space: nowrap; }
+
+/* ---------- sources / footer ---------- */
+.source-list { display: grid; grid-template-columns: 1fr; gap: 0; padding: 0; list-style: none; margin: 0; }
+.source-list li { border-bottom: 1px solid var(--line); padding: 9px 0; font-size: 13.5px; min-width: 0; }
+.source-list a { text-decoration: none; display: block; overflow-wrap: anywhere; }
+.source-list a:hover { text-decoration: underline; }
+.source-list span { display: block; font: 500 8.5px/1.4 var(--mono); color: var(--muted); margin-bottom: 1px; }
+.footer {
+  border-top: 1px solid var(--line);
+  margin-top: 70px;
+  padding: 28px 0 40px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  font: 500 9.5px/1.6 var(--mono);
+  color: var(--muted);
+  letter-spacing: .02em;
+}
+.footer b { color: var(--ink); font-weight: 600; }
+.footer .m { font-family: var(--serif); font-style: italic; font-size: 22px; color: var(--green); }
+
+/* ---------- reveal ---------- */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .55s ease; }
+.reveal.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1180px) {
+  .hero { gap: 34px; }
+  .hero h1 { font-size: clamp(44px, 6vw, 68px); }
+  .comp-grid { grid-template-columns: 1fr; }
+  .tool-grid { grid-template-columns: 1fr 1fr; }
+  .rule-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 1180px) {
+  :root { --sidebar: 0px; }
+  .sidebar {
+    position: sticky;
+    inset: auto;
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow: visible;
+    z-index: 110;
+  }
+  .sidebar::after { display: none; }
+  .brand { margin: 0; flex: 0 0 auto; }
+  .brand-mark { width: 30px; height: 30px; font-size: 22px; }
+  .brand-text strong { font-size: 15px; }
+  .brand-text small { display: none; }
+  .nav-label, .side-foot { display: none; }
+  .side-nav { flex-direction: row; overflow-x: auto; gap: 2px; scrollbar-width: none; flex: 1 1 auto; }
+  .side-nav::-webkit-scrollbar { display: none; }
+  .side-nav a { grid-template-columns: auto; padding: 7px 9px; border-left: 0; border-bottom: 2px solid transparent; font-size: 11px; white-space: nowrap; }
+  .side-nav a.is-active { border-bottom-color: var(--green); border-left-color: transparent; }
+  .side-nav .n { display: none; }
+  .main { margin-left: 0; }
+  .wrap { width: min(100% - 40px, 920px); }
+  .hero { grid-template-columns: 1fr; padding: 52px 0 44px; }
+  .hero::after { display: none; }
+  .hero-card { max-width: 480px; transform: none; }
+  .layer-layout { grid-template-columns: 1fr; }
+  .workflow { grid-template-columns: 1fr; }
+  .notes-card { position: static; }
+  .section { padding-top: 62px; }
+}
+@media (max-width: 700px) {
+  body { font-size: 15px; }
+  .wrap { width: calc(100% - 28px); }
+  .section-head { grid-template-columns: 34px 1fr; gap: 10px; }
+  .section-num { font-size: 10px; }
+  .hero h1 { font-size: clamp(40px, 13vw, 58px); }
+  .hero-deck { font-size: 16.5px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stat:nth-child(2) { border-right: 0; }
+  .stat:nth-child(3), .stat:nth-child(4) { border-top: 1px solid var(--line); }
+  .stat:nth-child(3) { padding-left: 0; }
+  .grid-2, .grid-3, .split-list, .tool-grid, .rule-grid, .source-list { grid-template-columns: 1fr; }
+  .notes-card ol { columns: 1; }
+  .comp-cols { grid-template-columns: 1fr; }
+  .comp-body { padding-left: 15px; }
+  .plate-head { flex-direction: column; gap: 10px; }
+  .plate-tools { flex-wrap: wrap; }
+  .plate-stage { max-height: 460px; }
+  .state { border-left: 1px solid var(--line); }
+  .state + .state { border-left: 1px solid var(--line); border-top: 0; }
+  .tick { grid-template-columns: 72px 1fr; }
+  .footer { flex-direction: column; }
+}
+@media print {
+  .sidebar, .progress, .plate-tools, .source, .explorer-bar, .theme-toggle { display: none !important; }
+  .main { margin: 0; }
+  .wrap { width: 100%; }
+  .plate-stage { max-height: none; overflow: visible; }
+  .plate-canvas img { width: 100% !important; }
+  body::before { display: none; }
+  .section { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the guide</a>
+<div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+<aside class="sidebar" aria-label="Guide contents">
+  <a class="brand" href="#top" aria-label="Market Desk field guide, back to top">
+    <span class="brand-mark" aria-hidden="true">m.</span>
+    <span class="brand-text"><strong>market desk</strong><small>System field guide</small></span>
+  </a>
+  <p class="nav-label">Contents</p>
+  <nav class="side-nav" id="side-nav">
+    <a href="#overview"><span class="n">01</span><span>The short version</span></a>
+    <a href="#architecture"><span class="n">02</span><span>Architecture</span></a>
+    <a href="#components"><span class="n">03</span><span>Components</span></a>
+    <a href="#domain"><span class="n">04</span><span>Domain model</span></a>
+    <a href="#workflows"><span class="n">05</span><span>Workflows</span></a>
+    <a href="#ai"><span class="n">06</span><span>The AI layer</span></a>
+    <a href="#runtime"><span class="n">07</span><span>Runtime rules</span></a>
+    <a href="#run"><span class="n">08</span><span>Run &amp; verify</span></a>
+    <a href="#sources"><span class="n">09</span><span>Sources</span></a>
+  </nav>
+  <div class="side-foot">
+    <span class="side-chip"><span class="dot"></span>Spring Boot 3.4.5</span>
+    <span class="side-chip"><span class="dot amber"></span>Single local user</span>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-pressed="false">
+      <span id="theme-label">Night market</span>
+      <span class="switch" aria-hidden="true"></span>
+    </button>
+  </div>
+</aside>
+
+<main class="main" id="main">
+<div class="wrap" id="top">
+
+<header class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">CS3383 · AI in software engineering · system field guide</p>
+    <h1>Market Desk,<br><em>explained.</em></h1>
+    <p class="hero-deck">A local-first shopping price helper built with Spring Boot. It imports Hong Kong grocery prices, compares exact packs, keeps named carts, tracks retailer prices, and lets a tool-calling assistant work on the same data — with confirmation before anything important changes.</p>
+    <div class="chip-row" aria-label="Technology stack">
+      <span class="chip green">Spring Boot 3.4.5</span>
+      <span class="chip">Java 21</span>
+      <span class="chip">Thymeleaf</span>
+      <span class="chip">Spring Data JPA</span>
+      <span class="chip">H2 file DB</span>
+      <span class="chip">localhost:8080</span>
+    </div>
+    <div class="stats" aria-label="System at a glance">
+      <div class="stat"><b>9</b><span>feature packages</span></div>
+      <div class="stat"><b>18</b><span>persisted entities</span></div>
+      <div class="stat"><b>11</b><span>AI tools</span></div>
+      <div class="stat"><b>70+</b><span>route mappings</span></div>
+    </div>
+  </div>
+  <div class="hero-card" aria-label="One-sentence architecture">
+    <div class="hero-card-label"><span>The one-sentence architecture</span><b>one process</b></div>
+    <div class="mini-stack">
+      <div class="mini-node"><span class="k">01</span><strong>Browser</strong><span class="tag">Thymeleaf + JS</span></div>
+      <div class="mini-arrow">↓ form post / fetch</div>
+      <div class="mini-node accent"><span class="k">02</span><strong>Web layer</strong><span class="tag">controllers</span></div>
+      <div class="mini-arrow">↓</div>
+      <div class="mini-node"><span class="k">03</span><strong>Domain services</strong><span class="tag">9 packages</span></div>
+      <div class="mini-arrow">↓</div>
+      <div class="mini-node"><span class="k">04</span><strong>Repositories</strong><span class="tag">Spring Data</span></div>
+      <div class="mini-arrow">↓</div>
+      <div class="mini-node"><span class="k">05</span><strong>H2 file</strong><span class="tag">./data</span></div>
+    </div>
+    <div class="mini-side">
+      <span>Consumer Council feed → import</span>
+      <span>CityU DeepSeek ← Ask tools</span>
+    </div>
+    <p class="hero-note">No accounts · no cloud sync · no separate API tier</p>
+  </div>
+</header>
+
+<section class="section" id="overview">
+  <div class="section-head reveal">
+    <div class="section-num">01</div>
+    <div>
+      <p class="eyebrow">The short version</p>
+      <h2>A price helper that stays on your machine.</h2>
+      <p class="lede">Market Desk is a single Spring Boot process with one local shopper, one H2 file and two external services. It turns a public price feed into exact-pack comparisons, then layers carts, budgets, wishlist tracking, alerts, reminders and a tool-calling assistant on top of the same records.</p>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <article class="card principle reveal" data-n="PRINCIPLE 01">
+      <h3>One local shopper</h3>
+      <p>There is no account table, no login and no sync. The server binds <code>127.0.0.1</code>, and <code>LocalRequestGuard</code> rejects non-local hostnames plus cross-site browser writes. Every record belongs to the same invisible user.</p>
+    </article>
+    <article class="card principle reveal" data-n="PRINCIPLE 02">
+      <h3>The catalogue is a snapshot</h3>
+      <p>Prices enter through a <b>LIVE</b>, <b>SAMPLE</b> or <b>DEMO</b> import. A live import can run manually or on first use each Hong Kong day. One <code>accepted_import</code> row describes what is on screen. Missing products are deactivated, never deleted, so old carts and history keep valid references.</p>
+    </article>
+    <article class="card principle reveal" data-n="PRINCIPLE 03">
+      <h3>The assistant proposes; the app decides</h3>
+      <p>Ask tools read checked rows and return proposals. Adding to a cart, creating a list and adding a wishlist item can apply immediately. Removals, deletes and every alert change wait for a <b>Confirm</b> click, and stale proposals are re-proposed rather than forced.</p>
+    </article>
+  </div>
+
+  <div class="card reveal" style="margin-top:18px">
+    <div class="split-list">
+      <div class="is">
+        <h4>What it is</h4>
+        <ul>
+          <li>A local price comparison and shopping planner for Hong Kong groceries.</li>
+          <li>Exact-pack search across retailer listings, with unknown prices kept unknown.</li>
+          <li>Named carts, a weekly or monthly budget, and a versioned list transfer format.</li>
+          <li>Wishlist tracking, price history, watch rules, alerts and time reminders.</li>
+          <li>A grounded AI assistant that can read local data and prepare changes.</li>
+          <li>An offline HTML checklist that needs no server connection to review.</li>
+        </ul>
+      </div>
+      <div class="not">
+        <h4>What it is not</h4>
+        <ul>
+          <li>A multi-user service: no accounts, roles, sharing or live co-editing.</li>
+          <li>A checkout or purchase ledger: it never buys anything.</li>
+          <li>A stock, branch, district or delivery checker.</li>
+          <li>A background scraper: imports happen only when the shopper asks.</li>
+          <li>An open-ended agent: the model gets 11 bounded tools, not the database.</li>
+          <li>A cloud app: nothing leaves the machine except the price fetch and the chat request.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout green reveal">
+    <b>The constraint that explains most of the code</b>
+    <p>One local user, one process, one file database. That removes authentication, tenancy and distributed consistency from the design. The hard problems that remain are data replacement, deduplication and idempotence: an import must not duplicate alerts, a 60-second tick must not duplicate reminders, and a stale AI proposal must not overwrite a newer cart.</p>
+  </div>
+</section>
+
+<section class="section" id="architecture">
+  <div class="section-head reveal">
+    <div class="section-num">02</div>
+    <div>
+      <p class="eyebrow">Architecture</p>
+      <h2>One process, four layers, three edges.</h2>
+      <p class="lede">The application is a conventional Spring MVC monolith, deliberately. Controllers stay thin, feature services own transactions, and every feature package maps its own entities into the same H2 file. Three edge components do the asynchronous or external work: the catalogue importer, the Ask tool loop and the 60-second scheduler.</p>
+    </div>
+  </div>
+
+  <div class="layer-layout reveal">
+    <div class="layer-stack" aria-label="Choose an architecture layer">
+      <button class="layer-btn is-active" type="button" data-layer="browser" aria-pressed="true">
+        <span class="idx">01</span>
+        <span><strong>Browser</strong><small>Thymeleaf pages · vanilla JS · progressive enhancement</small></span>
+        <span class="side-tag">client</span>
+      </button>
+      <div class="layer-arrow" aria-hidden="true">↓ HTTP</div>
+      <button class="layer-btn" type="button" data-layer="web" aria-pressed="false">
+        <span class="idx">02</span>
+        <span><strong>Web layer</strong><small>controllers · guard · locale · flash messages</small></span>
+        <span class="side-tag">HTTP</span>
+      </button>
+      <div class="layer-arrow" aria-hidden="true">↓ method calls</div>
+      <button class="layer-btn" type="button" data-layer="domain" aria-pressed="false">
+        <span class="idx">03</span>
+        <span><strong>Domain services</strong><small>catalog · shopping · tracking · notifications · budget · preferences · personal</small></span>
+        <span class="side-tag">rules</span>
+      </button>
+      <div class="layer-arrow" aria-hidden="true">↓ repositories</div>
+      <button class="layer-btn" type="button" data-layer="persistence" aria-pressed="false">
+        <span class="idx">04</span>
+        <span><strong>Persistence</strong><small>Spring Data JPA · transactions · H2 file</small></span>
+        <span class="side-tag">storage</span>
+      </button>
+      <div class="layer-arrow" aria-hidden="true">↕</div>
+      <button class="layer-btn" type="button" data-layer="edges" aria-pressed="false">
+        <span class="idx">05</span>
+        <span><strong>Edges &amp; clockwork</strong><small>price feed · LLM API · 60-second scheduler</small></span>
+        <span class="side-tag">adapters</span>
+      </button>
+    </div>
+
+    <div class="layer-details">
+      <div class="layer-detail" data-detail="browser">
+        <p class="kicker">Layer 01 · the client</p>
+        <h3>Server-rendered pages, lightly enhanced.</h3>
+        <p>Thymeleaf renders every page from the same <code>market-desk.html</code> shell. There is no SPA framework and no client-side router. Small vanilla modules add only the behaviour that benefits from it: the chat transcript, inline check-off, alert rule editing, the price chart and display settings.</p>
+        <h4>What lives here</h4>
+        <div class="detail-chips"><span>discover</span><span>compare</span><span>cart</span><span>wishlist</span><span>alerts</span><span>ask</span><span>settings</span></div>
+        <h4>Boundary behaviour</h4>
+        <ul>
+          <li>Normal links and form posts work without JavaScript.</li>
+          <li><code>fetch</code> is used for the Ask reply loop and inline cart check-off.</li>
+          <li>Language and high-contrast mode are applied by the server on the next render.</li>
+          <li>The offline checklist is a separate, self-contained HTML download.</li>
+        </ul>
+      </div>
+
+      <div class="layer-detail" data-detail="web" hidden>
+        <p class="kicker">Layer 02 · HTTP entry points</p>
+        <h3>Thin controllers, explicit redirects.</h3>
+        <p>Controllers bind request parameters, reject invalid shapes, call a feature service and then choose a view or a redirect. They do not own pricing, alert or reminder rules. Flash messages carry success and error feedback across the post-redirect-get boundary.</p>
+        <h4>What lives here</h4>
+        <div class="detail-chips"><span>HelloController</span><span>AskController</span><span>AlertCenterController</span><span>TrackingController</span><span>PersonalDataController</span><span>LocalRequestGuard</span></div>
+        <h4>Boundary behaviour</h4>
+        <ul>
+          <li><code>LocalRequestGuard</code> rejects non-local hosts and cross-site writes before a controller runs.</li>
+          <li><code>DisplayLocaleResolver</code> reads the saved language preference for every request.</li>
+          <li>Validation failures become flash errors and a safe redirect, not a stack trace page.</li>
+          <li>Ask is the one controller with a session state machine.</li>
+        </ul>
+      </div>
+
+      <div class="layer-detail" data-detail="domain" hidden>
+        <p class="kicker">Layer 03 · the rules</p>
+        <h3>Feature services own their transactions.</h3>
+        <p>Each package owns a slice of the database and the rules that protect it. Services are the only place where multi-row invariants are enforced: one item per product per list, one enabled tracking period per product and retailer, one watch event per due occurrence, one accepted import row.</p>
+        <h4>Feature packages</h4>
+        <div class="detail-chips"><span>catalog</span><span>shopping</span><span>tracking</span><span>notifications</span><span>budget</span><span>preferences</span><span>personal</span></div>
+        <h4>Deliberate coupling</h4>
+        <ul>
+          <li>A LIVE import calls tracking, legacy targets and watch rules inside the replacement transaction.</li>
+          <li>Adding a reminder to the cart calls the shopping service rather than writing items itself.</li>
+          <li>Budget reads the shopping summary; it never stores a second copy of the cart.</li>
+          <li>Personal data reaches across packages only to delete or export, never to change rules.</li>
+        </ul>
+      </div>
+
+      <div class="layer-detail" data-detail="persistence" hidden>
+        <p class="kicker">Layer 04 · stored state</p>
+        <h3>One file, eighteen entities, explicit keys.</h3>
+        <p>Spring Data JPA repositories sit behind every service. The database is an H2 file at <code>./data/pricewatch</code>; schema updates use <code>ddl-auto=update</code>. Open-session-in-view is off, so each service method must load what it needs inside its transaction.</p>
+        <h4>Storage rules</h4>
+        <div class="detail-chips"><span>DECIMAL(19,4)</span><span>90-day observations</span><span>singleton settings</span><span>unique constraints</span><span>no FK for some references</span></div>
+        <h4>Why it matters</h4>
+        <ul>
+          <li>Prices and limits use fixed-point decimals, never floating point.</li>
+          <li>Alert and reminder history can outlive the rule that created it.</li>
+          <li>Selected retailer codes and rule product codes are deliberately not foreign keys.</li>
+          <li>Deleting the file is a full reset; the Personal data page is a selective reset.</li>
+        </ul>
+      </div>
+
+      <div class="layer-detail" data-detail="edges" hidden>
+        <p class="kicker">Layer 05 · outside the request</p>
+        <h3>Three edges, each with a hard boundary.</h3>
+        <p>Nothing runs continuously except the scheduler. The feed is fetched only on a LIVE import, the LLM is called only during an Ask turn, and the scheduler runs a fixed-delay tick every 60 seconds while the web application is active.</p>
+        <h4>Edge components</h4>
+        <div class="detail-chips"><span>ConsumerCouncilSourceClient</span><span>DeepSeekChatClient</span><span>NotificationScheduler</span></div>
+        <h4>Boundary behaviour</h4>
+        <ul>
+          <li>Feed fetch: 30-second timeout, 10 MB cap, parsed and validated before replacement.</li>
+          <li>LLM call: optional API key, 30-second turn budget, 3 tool rounds and 8 tool calls.</li>
+          <li>Scheduler: disabled with <code>pricewatch.jobs.enabled=false</code>; times use <code>Asia/Hong_Kong</code>.</li>
+          <li>Offline mode is a downloaded file, not a service worker or a second runtime.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <figure class="plate reveal" data-diagram="component" data-natural-w="814" data-natural-h="671">
+    <div class="plate-head">
+      <div>
+        <p class="plate-kicker">UML · component diagram</p>
+        <h3>Runtime components</h3>
+        <p class="plate-sub">One Spring Boot process, two external services and a file database.</p>
+      </div>
+      <div class="plate-tools">
+        <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+        <span class="zoom-label" data-zoom-label>100%</span>
+        <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+        <button type="button" data-fit>Fit</button>
+        <button type="button" data-actual>100%</button>
+        <button type="button" data-expand>Expand</button>
+        <button type="button" class="close-plate" data-close>Close</button>
+      </div>
+    </div>
+    <div class="plate-stage" tabindex="0" aria-label="Runtime component diagram, scrollable">
+      <div class="plate-canvas">{{DIAGRAM:component}}</div>
+    </div>
+    <figcaption class="plate-foot"><span>The browser is outside the process; H2 is a file, not a server.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+    <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:component}}</code></pre></details>
+  </figure>
+
+  <div class="callout reveal">
+    <b>The one cross-feature transaction to remember</b>
+    <p><code>CatalogReplacementService.replace()</code> is <code>@Transactional</code>. For a LIVE import it calls <code>TrackingService.recordLiveImport()</code>, then the legacy target evaluator and then <code>WatchRuleService.evaluateLive()</code> before saving the accepted-import row. A single refresh can therefore append observations, create retailer alerts, fire watch rules and update the catalogue as one atomic unit.</p>
+  </div>
+
+  <div class="card reveal">
+    <p class="card-kicker">A normal write, end to end</p>
+    <div class="state-strip" aria-label="Request lifecycle">
+      <div class="state"><b>01 · POST</b><span><code>/list/items</code> with product, quantity and retailer.</span><small>browser</small></div>
+      <div class="state"><b>02 · GUARD</b><span>Host and origin checks run before Spring MVC.</span><small>LocalRequestGuard</small></div>
+      <div class="state"><b>03 · BIND</b><span>The controller reads parameters and calls one service.</span><small>HelloController</small></div>
+      <div class="state"><b>04 · COMMIT</b><span>The service validates and upserts inside a transaction.</span><small>ShoppingService</small></div>
+      <div class="state"><b>05 · REDIRECT</b><span>303 back to <code>/list</code>; the next GET renders the new state.</span><small>Thymeleaf</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="components">
+  <div class="section-head reveal">
+    <div class="section-num">03</div>
+    <div>
+      <p class="eyebrow">Components</p>
+      <h2>Nine packages, each owning a slice.</h2>
+      <p class="lede">The package boundary is the real component boundary. Each feature package contains its services, its entities and its repositories; the web package contains every HTTP entry point. Search or filter the map, then open a card for responsibilities, key classes and representative routes.</p>
+    </div>
+  </div>
+
+  <div class="explorer-bar reveal">
+    <div class="search-wrap">
+      <label for="comp-search" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search components</label>
+      <input id="comp-search" type="search" placeholder="Search packages, classes, rules…" autocomplete="off">
+    </div>
+    <div class="filter-row" role="group" aria-label="Filter components by area">
+      <button class="filter-btn is-active" type="button" data-filter="all">All</button>
+      <button class="filter-btn" type="button" data-filter="discover">Discover</button>
+      <button class="filter-btn" type="button" data-filter="plan">Plan</button>
+      <button class="filter-btn" type="button" data-filter="track">Track</button>
+      <button class="filter-btn" type="button" data-filter="ask">Ask</button>
+      <button class="filter-btn" type="button" data-filter="system">System</button>
+    </div>
+  </div>
+  <p class="explorer-count" id="comp-count" aria-live="polite">10 components</p>
+
+  <div class="comp-grid" id="comp-grid">
+    <article class="comp" data-tags="system ask" data-search="web controllers http routes guard locale flash hello ask alert tracking reminder personal preferences price history offline">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-web">
+        <span class="num">01</span>
+        <span class="name"><code>com.pricewatch.web</code><strong>HTTP entry points</strong></span>
+        <span class="meta">Pages and forms</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-web" hidden>
+        <p>Every page and form post. Controllers bind input, call one or two services, and choose a view or a redirect. Business rules stay out of this package.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Route pages and form posts; validate request shapes.</li>
+              <li>Assemble model data: import status, labels, budget, timeline.</li>
+              <li>Carry success and error feedback through flash attributes.</li>
+              <li>Reject non-local hosts and cross-site writes.</li>
+              <li>Resolve language and high-contrast preferences.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>HelloController</span><span>AskController</span><span>AlertCenterController</span><span>TrackingController</span><span>LocalRequestGuard</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/ · /list · /saved · /alerts · /ask · /settings</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="discover" data-search="catalog import product search rank parser consumer council live sample demo checksum accepted import listings offers">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-catalog">
+        <span class="num">02</span>
+        <span class="name"><code>catalog</code><strong>Catalogue &amp; import</strong></span>
+        <span class="meta">Import and search</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-catalog" hidden>
+        <p>Read-mostly catalogue data. Search ranks exact packs; an accepted import replaces listings and deactivates anything missing.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Normalize and rank search across labels, codes and retailers.</li>
+              <li>Parse and validate up to 10 MB of feed JSON.</li>
+              <li>Checksum the source and replace listings atomically.</li>
+              <li>Deactivate missing products instead of deleting them.</li>
+              <li>Trigger LIVE tracking and rule evaluation.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>CatalogService</span><span>CatalogJsonParser</span><span>CatalogReplacementService</span><span>ConsumerCouncilSourceClient</span><span>ProductEntity</span><span>AcceptedImportEntity</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/ · /products/{code} · /data · /data/{sample|refresh|demo}</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="plan" data-search="shopping cart list budget retailer quantity subtotal json transfer import export offline checklist">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-shopping">
+        <span class="num">03</span>
+        <span class="name"><code>shopping</code><strong>Named carts &amp; transfer</strong></span>
+        <span class="meta">Lists and entries</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-shopping" hidden>
+        <p>Named lists with one row per product, an automatic or explicit retailer choice, and a versioned JSON format for moving a list between devices.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Create, rename and delete named lists; protect the main Cart.</li>
+              <li>Enforce quantity 1–999 and one row per product.</li>
+              <li>Choose the lowest known price or a validated retailer.</li>
+              <li>Export and import list version 1 (1 MB, 1,000 rows).</li>
+              <li>Exclude unknown prices from the known subtotal.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>ShoppingService</span><span>ListTransfer</span><span>Summary</span><span>ItemView</span><span>ShoppingListEntity</span><span>ShoppingListItemEntity</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/list · /list/export · /list/import · /list/offline</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="track discover" data-search="tracking wishlist saved price history observation retailer 90 day retention demo history">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-tracking">
+        <span class="num">04</span>
+        <span class="name"><code>tracking</code><strong>Wishlist &amp; price history</strong></span>
+        <span class="meta">Retained prices</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-tracking" hidden>
+        <p>Wishlist entries and per-retailer tracking periods. Observations are appended only when a LIVE price actually changes.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Save and remove wishlist products.</li>
+              <li>Open and stop tracking periods per product and retailer.</li>
+              <li>Record changed prices with source URL and checksum.</li>
+              <li>Retain observations for 90 days; keep dedup state across pruning.</li>
+              <li>Build per-retailer history and synthetic demo history.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>TrackingService</span><span>DemoHistoryService</span><span>SavedProductEntity</span><span>TrackingEntity</span><span>PriceObservationEntity</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/saved · /tracking/start · /products/{code}/history</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="track" data-search="notifications alerts watch rules target drop scheduler price calendar combined migration">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-notifications">
+        <span class="num">05</span>
+        <span class="name"><code>notifications</code><strong>Alerts &amp; watch rules</strong></span>
+        <span class="meta">Rule and event storage</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-notifications" hidden>
+        <p>Three alert mechanisms coexist: legacy retailer target/drop rules, per-product targets, and the unified watch rule with price, calendar or combined conditions.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Evaluate target and drop rules per tracking period.</li>
+              <li>Evaluate target, amount-drop, percentage-drop, calendar and combined rules.</li>
+              <li>Deduplicate events by observation and type.</li>
+              <li>Show watch events and earlier price alerts in one timeline.</li>
+              <li>Run due checks every 60 seconds. Keep earlier summaries in history.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>WatchRuleService</span><span>ProductTargetService</span><span>AlertService</span><span>NotificationScheduler</span><span>WatchRuleEntity</span><span>AlertEventEntity</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/alerts · /alerts/rules · /alerts/watch-rules/save</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="plan" data-search="budget weekly monthly limit planned spend category totals remaining over">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-budget">
+        <span class="num">07</span>
+        <span class="name"><code>budget</code><strong>Planned spend</strong></span>
+        <span class="meta">Estimate checks</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-budget" hidden>
+        <p>A single weekly or monthly limit compared with the known cart subtotal. It never stores a second copy of the cart.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Persist one budget settings row.</li>
+              <li>Compare the limit with the known subtotal.</li>
+              <li>Group known spend by category.</li>
+              <li>Report remaining or over-budget state.</li>
+              <li>Leave unknown prices out of both sides of the comparison.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>BudgetService</span><span>BudgetSettingsEntity</span><span>BudgetView</span><span>CategoryTotal</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/budget · /personal-data/budget</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="system" data-search="preferences display language traditional simplified chinese high contrast locale">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-preferences">
+        <span class="num">08</span>
+        <span class="name"><code>preferences</code><strong>Display settings</strong></span>
+        <span class="meta">Locale and contrast</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-preferences" hidden>
+        <p>Language and contrast for the one local shopper. The default is English with normal contrast.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Persist <code>en</code>, <code>zh-Hant</code> or <code>zh-Hans</code>.</li>
+              <li>Persist the high-contrast flag.</li>
+              <li>Resolve the locale for every request.</li>
+              <li>Reset to defaults during personal-data reset.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>DisplayPreferencesService</span><span>DisplayPreferencesEntity</span><span>DisplayLocaleResolver</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/preferences</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="system" data-search="personal data export reset privacy delete counts json">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-personal">
+        <span class="num">09</span>
+        <span class="name"><code>personal</code><strong>Data ownership</strong></span>
+        <span class="meta">Export and reset</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-personal" hidden>
+        <p>One JSON export and one confirmed reset. The export covers every personal record; the reset keeps the accepted catalogue.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Count lists, entries, wishlist, tracking, alerts and reminders.</li>
+              <li>Export personal records as one JSON document.</li>
+              <li>Include chat transcripts passed from the HTTP session.</li>
+              <li>Delete personal data but keep catalogue products and listings.</li>
+              <li>Remove inactive products that only existed for imported list references.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>PersonalDataService</span><span>PersonalDataExport</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/personal-data · /personal-data/export · /personal-data/reset</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="comp" data-tags="ask system" data-search="ask ai deepseek tools chat session tool calls proposals confirm stale prompt llm">
+      <button class="comp-head" type="button" aria-expanded="false" aria-controls="comp-ask">
+        <span class="num">10</span>
+        <span class="name"><code>web · ask slice</code><strong>The AI layer</strong></span>
+        <span class="meta">Assistant tools</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="comp-body" id="comp-ask" hidden>
+        <p>Not a separate package: the Ask classes live in <code>com.pricewatch.web</code>. They form a bounded tool loop over the same services the pages use.</p>
+        <div class="comp-cols">
+          <div>
+            <h4>Responsibilities</h4>
+            <ul>
+              <li>Keep up to 12 conversations in the HTTP session.</li>
+              <li>Run at most 3 tool rounds, 8 calls and 30 seconds per turn.</li>
+              <li>Expose 11 read and propose tools; never raw SQL.</li>
+              <li>Apply direct changes; ask for confirmation on important ones.</li>
+              <li>Re-propose a stale action instead of overwriting newer data.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Key classes</h4>
+            <div class="chips"><span>AskController</span><span>AskCatalogueTools</span><span>AskShoppingTools</span><span>DeepSeekChatClient</span><span>AskArithmetic</span><span>AskReturnLinks</span></div>
+            <h4>Routes</h4>
+            <p class="route-line">/ask · /ask/send · /ask/reply · /ask/action · /ask/choose</p>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <details class="disclosure reveal">
+    <summary>Route atlas · representative routes by controller</summary>
+    <div class="disclosure-body">
+      <p class="toolbar-note">Aliases and legacy paths are omitted. Every route below is a real mapping in the current source.</p>
+      <div class="search-wrap route-search">
+        <label for="route-search" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search routes</label>
+        <input id="route-search" type="search" placeholder="Filter routes…" autocomplete="off">
+      </div>
+
+      <div class="route-group">
+        <h4>HelloController · pages, carts, import</h4>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td><code>/</code></td><td>Discover search and comparison</td></tr>
+            <tr><td>GET</td><td><code>/products/{code}</code></td><td>Product detail with retailer listings</td></tr>
+            <tr><td>GET</td><td><code>/list</code></td><td>Named cart, totals and budget</td></tr>
+            <tr><td>POST</td><td><code>/list/new</code></td><td>Create a named list</td></tr>
+            <tr><td>POST</td><td><code>/list/rename</code></td><td>Rename a non-main list</td></tr>
+            <tr><td>POST</td><td><code>/list/delete</code></td><td>Delete a confirmed non-main list</td></tr>
+            <tr><td>GET</td><td><code>/list/export</code></td><td>Download ListTransfer JSON</td></tr>
+            <tr><td>POST</td><td><code>/list/import</code></td><td>Upload and validate a list file</td></tr>
+            <tr><td>GET</td><td><code>/list/offline</code></td><td>Download the standalone HTML checklist</td></tr>
+            <tr><td>POST</td><td><code>/list/items</code></td><td>Add a product to a list</td></tr>
+            <tr><td>POST</td><td><code>/list/items/{code}/update</code></td><td>Change quantity, checked state or retailer</td></tr>
+            <tr><td>POST</td><td><code>/list/items/check</code></td><td>Inline or full-page check-off</td></tr>
+            <tr><td>POST</td><td><code>/list/items/{code}/remove</code></td><td>Remove one item</td></tr>
+            <tr><td>GET</td><td><code>/data</code></td><td>Price data and import status</td></tr>
+            <tr><td>POST</td><td><code>/data/{sample|refresh|demo}</code></td><td>Import SAMPLE, LIVE or DEMO data</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="route-group">
+        <h4>AskController · the assistant</h4>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>GET / POST</td><td><code>/ask</code></td><td>Show a chat or ask and reply in one request</td></tr>
+            <tr><td>POST</td><td><code>/ask/send</code></td><td>Accept a question, then redirect to the pending turn</td></tr>
+            <tr><td>POST</td><td><code>/ask/reply</code></td><td>Claim a waiting turn and call the model</td></tr>
+            <tr><td>POST</td><td><code>/ask/retry</code></td><td>Retry a failed or slow reply</td></tr>
+            <tr><td>POST</td><td><code>/ask/action</code></td><td>Confirm or cancel a prepared change</td></tr>
+            <tr><td>POST</td><td><code>/ask/choose</code></td><td>Resolve an ambiguous pack picker</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="route-group">
+        <h4>AlertCenterController · timeline and rules</h4>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td><code>/alerts</code></td><td>Merged alert and reminder timeline</td></tr>
+            <tr><td>GET</td><td><code>/alerts/rules</code></td><td>Rule editor for one product</td></tr>
+            <tr><td>POST</td><td><code>/alerts/watch-rules/save</code></td><td>Create or edit a price, calendar or combined rule</td></tr>
+            <tr><td>POST</td><td><code>/alerts/watch-rules/enabled</code></td><td>Pause or resume a watch rule</td></tr>
+            <tr><td>POST</td><td><code>/alerts/watch-rules/delete</code></td><td>Delete a watch rule</td></tr>
+            <tr><td>POST</td><td><code>/alerts/product-target</code></td><td>Legacy per-product target</td></tr>
+            <tr><td>POST</td><td><code>/alerts/retailer-rule/enabled</code></td><td>Legacy retailer rule toggle</td></tr>
+            <tr><td>POST</td><td><code>/alerts/product-events/{id}/read</code></td><td>Mark a watch event read</td></tr>
+            <tr><td>POST</td><td><code>/alerts/product-events/{id}/snooze</code></td><td>Snooze a watch event</td></tr>
+            <tr><td>POST</td><td><code>/alerts/product-events/{id}/add</code></td><td>Add a migrated reminder item to Cart</td></tr>
+            <tr><td>GET</td><td><code>/reminders</code></td><td>Redirect an earlier bookmark to Alerts</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="route-group">
+        <h4>TrackingController · wishlist and retailer alerts</h4>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td><code>/saved</code></td><td>Wishlist and tracked retailers</td></tr>
+            <tr><td>POST</td><td><code>/saved/save</code></td><td>Add a product to the wishlist</td></tr>
+            <tr><td>POST</td><td><code>/saved/remove</code></td><td>Remove a wishlist product</td></tr>
+            <tr><td>POST</td><td><code>/saved/cart</code></td><td>Add a saved product to the cart</td></tr>
+            <tr><td>POST</td><td><code>/tracking/start</code></td><td>Start tracking one retailer</td></tr>
+            <tr><td>POST</td><td><code>/tracking/start-all</code></td><td>Track every retailer for a product</td></tr>
+            <tr><td>POST</td><td><code>/tracking/stop</code></td><td>Stop one tracking period</td></tr>
+            <tr><td>POST</td><td><code>/tracking/history/delete</code></td><td>Delete recorded history for a period</td></tr>
+            <tr><td>POST</td><td><code>/alerts/target</code></td><td>Set a legacy target price</td></tr>
+            <tr><td>POST</td><td><code>/alerts/drop</code></td><td>Enable or disable drop alerts</td></tr>
+            <tr><td>POST</td><td><code>/alerts/events/{id}/read</code></td><td>Mark a retailer alert read</td></tr>
+            <tr><td>POST</td><td><code>/alerts/events/{id}/snooze</code></td><td>Snooze a retailer alert</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="route-group">
+        <h4>PersonalDataController, preferences, history, offline</h4>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>GET</td><td><code>/settings</code></td><td>Settings hub</td></tr>
+            <tr><td>GET</td><td><code>/personal-data</code></td><td>Data overview and reset controls</td></tr>
+            <tr><td>GET</td><td><code>/personal-data/export</code></td><td>Download all personal data as JSON</td></tr>
+            <tr><td>GET / POST</td><td><code>/personal-data/reset</code></td><td>Confirm and reset personal data</td></tr>
+            <tr><td>GET / POST</td><td><code>/budget</code></td><td>View or save the budget limit</td></tr>
+            <tr><td>GET / POST</td><td><code>/preferences</code></td><td>Language and high contrast</td></tr>
+            <tr><td>GET</td><td><code>/products/{code}/history</code></td><td>Recorded price history and chart</td></tr>
+            <tr><td>GET</td><td><code>/list/offline</code></td><td>Offline checklist download</td></tr>
+            <tr><td>GET / POST</td><td><code>/offline</code></td><td>Legacy offline entry point</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </details>
+</section>
+
+<section class="section" id="domain">
+  <div class="section-head reveal">
+    <div class="section-num">04</div>
+    <div>
+      <p class="eyebrow">Domain model · UML</p>
+      <h2>What the system knows.</h2>
+      <p class="lede">Scope first, then schema. The use-case diagram shows the single actor and the three external participants. The class diagrams split the persistent model in two because the catalogue side and the tracking side change for different reasons — and because fitting eighteen entities on one plate would explain nothing.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 reveal" style="align-items:start;margin-bottom:8px">
+    <div>
+      <p class="card-kicker">Reading the model</p>
+      <h3 style="font-size:26px;margin-bottom:10px">Keys are the story.</h3>
+      <p style="color:var(--ink-2);font-size:14.5px">The catalogue is keyed by the public product code. A cart row is unique on <code>(list, product)</code>. A tracking period is unique on <code>(product, retailer, enabled)</code>. Calendar rules advance their stored due time after firing. Catalogue replacement and alert recording commit together.</p>
+      <p style="color:var(--ink-2);font-size:14.5px">Some references are deliberately soft. <code>WatchRuleEntity.productCode</code>, <code>ProductTargetEventEntity.ruleId</code> and <code>AlertEventEntity.observationId</code> are plain values, not foreign keys, so history survives deletion of the row that produced it.</p>
+    </div>
+    <div>
+      <p class="card-kicker">Model inventory</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Cluster</th><th>Entities</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>Catalogue</td><td>4</td><td><code>catalog</code></td></tr>
+          <tr><td>Shopping</td><td>2</td><td><code>shopping</code></td></tr>
+          <tr><td>Tracking</td><td>3</td><td><code>tracking</code></td></tr>
+          <tr><td>Alerts &amp; rules</td><td>4</td><td><code>notifications</code></td></tr>
+          <tr><td>Daily refresh</td><td>1</td><td><code>catalog</code></td></tr>
+          <tr><td>Budget &amp; settings</td><td>4</td><td><code>budget</code>, <code>preferences</code>, <code>notifications</code></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <figure class="plate reveal" data-diagram="use-case">
+    <div class="plate-head">
+      <div>
+        <p class="plate-kicker">UML · use-case diagram</p>
+        <h3>Actors and scope</h3>
+        <p class="plate-sub">One human actor, three external or system participants, ten use cases.</p>
+      </div>
+      <div class="plate-tools">
+        <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+        <span class="zoom-label" data-zoom-label>100%</span>
+        <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+        <button type="button" data-fit>Fit</button>
+        <button type="button" data-actual>100%</button>
+        <button type="button" data-expand>Expand</button>
+        <button type="button" class="close-plate" data-close>Close</button>
+      </div>
+    </div>
+    <div class="plate-stage" tabindex="0" aria-label="Use-case diagram, scrollable">
+      <div class="plate-canvas">{{DIAGRAM:use-case}}</div>
+    </div>
+    <figcaption class="plate-foot"><span>The scheduler is drawn as an actor because it initiates work without a request.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+    <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:use-case}}</code></pre></details>
+  </figure>
+
+  <div class="tabs reveal" data-tabs>
+    <div class="tablist" role="tablist" aria-label="Domain model diagrams">
+      <button type="button" role="tab" id="tab-domain-catalog" aria-controls="panel-domain-catalog" aria-selected="true">Catalogue, carts &amp; wishlist</button>
+      <button type="button" role="tab" id="tab-domain-tracking" aria-controls="panel-domain-tracking" aria-selected="false" tabindex="-1">Tracking, alerts &amp; settings</button>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-domain-catalog" aria-labelledby="tab-domain-catalog">
+      <figure class="plate" data-diagram="domain-catalog">
+        <div class="plate-head">
+          <div>
+            <p class="plate-kicker">UML · class diagram</p>
+            <h3>Catalogue, carts and wishlist</h3>
+            <p class="plate-sub">Eight classes. Products embed five localised labels; listings carry offers.</p>
+          </div>
+          <div class="plate-tools">
+            <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+            <span class="zoom-label" data-zoom-label>100%</span>
+            <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+            <button type="button" data-fit>Fit</button>
+            <button type="button" data-actual>100%</button>
+            <button type="button" data-expand>Expand</button>
+            <button type="button" class="close-plate" data-close>Close</button>
+          </div>
+        </div>
+        <div class="plate-stage" tabindex="0" aria-label="Catalogue domain class diagram, scrollable">
+          <div class="plate-canvas">{{DIAGRAM:domain-catalog}}</div>
+        </div>
+        <figcaption class="plate-foot"><span><code>RetailerListingEntity</code> is one retailer's price for one product; <code>OfferEntity</code> is the promotion text attached to it.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+        <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:domain-catalog}}</code></pre></details>
+      </figure>
+
+      <div class="grid-3" style="margin-top:4px">
+        <div class="card"><p class="card-kicker">Invariant 01</p><h3>One row per product per list</h3><p style="font-size:13.5px;color:var(--ink-2)">Adding the same product again updates quantity and retailer instead of appending a duplicate. Quantity is clamped to 1–999.</p></div>
+        <div class="card"><p class="card-kicker">Invariant 02</p><h3>Unknown is not zero</h3><p style="font-size:13.5px;color:var(--ink-2)">A listing with no price contributes to the <em>unknown</em> count. It is excluded from the known subtotal and from any automatic-lowest decision.</p></div>
+        <div class="card"><p class="card-kicker">Invariant 03</p><h3>Deactivate, never delete</h3><p style="font-size:13.5px;color:var(--ink-2)">A product missing from the latest accepted import becomes <code>active = false</code>. Cart rows, observations and alert history keep their references.</p></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-domain-tracking" aria-labelledby="tab-domain-tracking" hidden>
+      <figure class="plate" data-diagram="domain-tracking">
+        <div class="plate-head">
+          <div>
+            <p class="plate-kicker">UML · class diagram</p>
+            <h3>Tracking, alerts, reminders and settings</h3>
+            <p class="plate-sub">The historical side of the model, including legacy rules that still feed the timeline.</p>
+          </div>
+          <div class="plate-tools">
+            <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+            <span class="zoom-label" data-zoom-label>100%</span>
+            <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+            <button type="button" data-fit>Fit</button>
+            <button type="button" data-actual>100%</button>
+            <button type="button" data-expand>Expand</button>
+            <button type="button" class="close-plate" data-close>Close</button>
+          </div>
+        </div>
+        <div class="plate-stage" tabindex="0" aria-label="Tracking domain class diagram, scrollable">
+          <div class="plate-canvas">{{DIAGRAM:domain-tracking}}</div>
+        </div>
+        <figcaption class="plate-foot"><span>Dashed arrows are soft references by code or id, drawn that way on purpose.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+        <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:domain-tracking}}</code></pre></details>
+      </figure>
+
+      <div class="callout reveal">
+        <b>Unified alert history</b>
+        <p><code>AlertEventEntity</code> holds legacy retailer target/drop/summary alerts tied to a tracking period. <code>ProductTargetEventEntity</code> holds events from per-product targets and unified watch rules. Migrated reminder occurrences share that event table. <code>AlertCenterController</code> shows the combined timeline by date.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card"><p class="card-kicker">Watch rule</p><h3>Price, calendar or both</h3><p style="font-size:13.5px;color:var(--ink-2)">One table covers price, calendar and combined rules. Price conditions require a saved pack. New price rules default to Daily. One-time rules complete after firing.</p></div>
+        <div class="card"><p class="card-kicker">Retention</p><h3>90 days of observations</h3><p style="font-size:13.5px;color:var(--ink-2)">Old observations are pruned, but dedup state is kept so a re-import cannot recreate an alert that was already shown.</p></div>
+        <div class="card"><p class="card-kicker">Settings</p><h3>Singletons with id = 1</h3><p style="font-size:13.5px;color:var(--ink-2)">Budget and display preferences use singleton settings. Personal-data reset clears them and earlier notification settings. Catalogues and refresh state stay available.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="workflows">
+  <div class="section-head reveal">
+    <div class="section-num">05</div>
+    <div>
+      <p class="eyebrow">Workflows · UML sequence diagrams</p>
+      <h2>Four paths through the system.</h2>
+      <p class="lede">Each diagram is a real code path, not an aspirational sketch. Read them in order: how prices arrive, how a cart is priced and moved, how the clock produces alerts, and how one assistant turn is bounded and confirmed.</p>
+    </div>
+  </div>
+
+  <div class="tabs reveal" data-tabs>
+    <div class="tablist" role="tablist" aria-label="Workflow sequence diagrams">
+      <button type="button" role="tab" id="tab-flow-import" aria-controls="panel-flow-import" aria-selected="true">01 · Import</button>
+      <button type="button" role="tab" id="tab-flow-cart" aria-controls="panel-flow-cart" aria-selected="false" tabindex="-1">02 · Cart &amp; transfer</button>
+      <button type="button" role="tab" id="tab-flow-alerts" aria-controls="panel-flow-alerts" aria-selected="false" tabindex="-1">03 · Alerts &amp; clock</button>
+      <button type="button" role="tab" id="tab-flow-ask" aria-controls="panel-flow-ask" aria-selected="false" tabindex="-1">04 · Ask turn</button>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-flow-import" aria-labelledby="tab-flow-import">
+      <div class="workflow">
+        <figure class="plate" data-diagram="sequence-import">
+          <div class="plate-head">
+            <div>
+              <p class="plate-kicker">UML · sequence diagram</p>
+              <h3>LIVE catalogue refresh</h3>
+              <p class="plate-sub">Fetch, parse, replace, record, evaluate — one transaction.</p>
+            </div>
+            <div class="plate-tools">
+              <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+              <span class="zoom-label" data-zoom-label>100%</span>
+              <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+              <button type="button" data-fit>Fit</button>
+              <button type="button" data-actual>100%</button>
+              <button type="button" data-expand>Expand</button>
+              <button type="button" class="close-plate" data-close>Close</button>
+            </div>
+          </div>
+          <div class="plate-stage" tabindex="0" aria-label="LIVE import sequence diagram, scrollable">
+            <div class="plate-canvas">{{DIAGRAM:sequence-import}}</div>
+          </div>
+          <figcaption class="plate-foot"><span>A failed fetch or parse leaves the previous accepted import untouched.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+          <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:sequence-import}}</code></pre></details>
+        </figure>
+
+        <aside class="notes-card">
+          <h3>What to notice</h3>
+          <ol>
+            <li><b>Fetch is outside the transaction.</b> The 30-second HTTP call and the 10 MB validation happen before <code>replace()</code> starts, so a slow network never holds database locks.</li>
+            <li><b>Replacement is destructive first.</b> Offers and listings are deleted and products deactivated before the new snapshot is inserted. The accepted-import row is saved last, so it never describes a half-written catalogue.</li>
+            <li><b>LIVE has side effects.</b> Only LIVE calls <code>recordLiveImport()</code> and <code>evaluateLive()</code>. SAMPLE and DEMO load data without inventing price movement.</li>
+            <li><b>Dedup happens downstream.</b> Unchanged prices add no tracking observation. Watch events use accepted import and rule state to prevent repeats.</li>
+            <li><b>Checksum is provenance, not identity.</b> It records what was fetched; the import is not skipped merely because the checksum matches.</li>
+          </ol>
+          <p class="mini-note">An accepted Sample or Demo pauses automatic refresh. Choose Refresh live prices to resume it.</p>
+        </aside>
+      </div>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-flow-cart" aria-labelledby="tab-flow-cart" hidden>
+      <div class="workflow">
+        <figure class="plate" data-diagram="sequence-cart">
+          <div class="plate-head">
+            <div>
+              <p class="plate-kicker">UML · sequence diagram</p>
+              <h3>Cart, transfer and offline checklist</h3>
+              <p class="plate-sub">Four related paths: add, price, move as JSON, download as HTML.</p>
+            </div>
+            <div class="plate-tools">
+              <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+              <span class="zoom-label" data-zoom-label>100%</span>
+              <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+              <button type="button" data-fit>Fit</button>
+              <button type="button" data-actual>100%</button>
+              <button type="button" data-expand>Expand</button>
+              <button type="button" class="close-plate" data-close>Close</button>
+            </div>
+          </div>
+          <div class="plate-stage" tabindex="0" aria-label="Cart sequence diagram, scrollable">
+            <div class="plate-canvas">{{DIAGRAM:sequence-cart}}</div>
+          </div>
+          <figcaption class="plate-foot"><span>Budget reads the same summary the cart page shows; it never stores a duplicate cart.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+          <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:sequence-cart}}</code></pre></details>
+        </figure>
+
+        <aside class="notes-card">
+          <h3>What to notice</h3>
+          <ol>
+            <li><b>Retailer choice is explicit or automatic.</b> A supplied retailer must have a known price for that product; otherwise the add is rejected. A null retailer resolves to the lowest known price at render time.</li>
+            <li><b>Upsert, not append.</b> The unique <code>(list, product)</code> row means adding again changes quantity. The main list is named “My list” and cannot be renamed or deleted.</li>
+            <li><b>Transfer is versioned and bounded.</b> JSON version 1, at most 1 MB and 1,000 rows. The whole file is validated before anything is written.</li>
+            <li><b>Unresolved codes are preserved.</b> An imported row whose product is not in the catalogue is kept as an unresolved reference rather than silently dropped.</li>
+            <li><b>Offline is a render, not a sync.</b> The checklist is generated once with inline CSS and no live calls; reopening it cannot change the cart.</li>
+          </ol>
+          <p class="mini-note">Known subtotal = sum of known price × quantity. Unknown rows are counted separately and never treated as free.</p>
+        </aside>
+      </div>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-flow-alerts" aria-labelledby="tab-flow-alerts" hidden>
+      <div class="workflow">
+        <figure class="plate" data-diagram="sequence-alerts">
+          <div class="plate-head">
+            <div>
+              <p class="plate-kicker">UML · sequence diagram</p>
+              <h3>Tracking, alerts and the 60-second tick</h3>
+              <p class="plate-sub">Event-time evaluation plus a fixed-delay scheduler that must be safe to repeat.</p>
+            </div>
+            <div class="plate-tools">
+              <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+              <span class="zoom-label" data-zoom-label>100%</span>
+              <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+              <button type="button" data-fit>Fit</button>
+              <button type="button" data-actual>100%</button>
+              <button type="button" data-expand>Expand</button>
+              <button type="button" class="close-plate" data-close>Close</button>
+            </div>
+          </div>
+          <div class="plate-stage" tabindex="0" aria-label="Alerts sequence diagram, scrollable">
+            <div class="plate-canvas">{{DIAGRAM:sequence-alerts}}</div>
+          </div>
+          <figcaption class="plate-foot"><span>The scheduler checks due rules. The separate refresh coordinator downloads live prices.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+          <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:sequence-alerts}}</code></pre></details>
+        </figure>
+
+        <aside class="notes-card">
+          <h3>What to notice</h3>
+          <ol>
+            <li><b>Price alerts are import-driven.</b> Accepted live imports evaluate watch targets and drops. A drop uses the previous live price for the same retailer and pack.</li>
+            <li><b>Calendar alerts are clock-driven.</b> <code>WatchRuleService.checkDue()</code> runs every 60 seconds and advances the next due time when it fires.</li>
+            <li><b>Waiting for LIVE is a state.</b> A due combined rule stays pending until live prices qualify. Sample and Demo supply no live evidence.</li>
+            <li><b>The tick is idempotent.</b> A fired calendar rule advances its stored due time, so another tick cannot fire that occurrence again.</li>
+            <li><b>One timeline.</b> The alerts page groups earlier price alerts and watch events, including migrated occurrences.</li>
+          </ol>
+          <p class="mini-note">Historical summary records remain available for export. New events use the unified rule schedule.</p>
+        </aside>
+      </div>
+    </div>
+
+    <div class="tab-panel" role="tabpanel" id="panel-flow-ask" aria-labelledby="tab-flow-ask" hidden>
+      <div class="workflow">
+        <figure class="plate" data-diagram="sequence-ask">
+          <div class="plate-head">
+            <div>
+              <p class="plate-kicker">UML · sequence diagram</p>
+              <h3>One Ask turn</h3>
+              <p class="plate-sub">A session state machine around a bounded tool loop.</p>
+            </div>
+            <div class="plate-tools">
+              <button type="button" data-zoom-out aria-label="Zoom out">−</button>
+              <span class="zoom-label" data-zoom-label>100%</span>
+              <button type="button" data-zoom-in aria-label="Zoom in">+</button>
+              <button type="button" data-fit>Fit</button>
+              <button type="button" data-actual>100%</button>
+              <button type="button" data-expand>Expand</button>
+              <button type="button" class="close-plate" data-close>Close</button>
+            </div>
+          </div>
+          <div class="plate-stage" tabindex="0" aria-label="Ask sequence diagram, scrollable">
+            <div class="plate-canvas">{{DIAGRAM:sequence-ask}}</div>
+          </div>
+          <figcaption class="plate-foot"><span>WAITING → REPLYING → READY is the whole concurrency story: one turn is claimed once.</span><span class="hint">drag to pan · expand to zoom</span></figcaption>
+          <details class="source"><summary>PlantUML source</summary><pre><code>{{SOURCE:sequence-ask}}</code></pre></details>
+        </figure>
+
+        <aside class="notes-card">
+          <h3>What to notice</h3>
+          <ol>
+            <li><b>Send and reply are separate requests.</b> <code>/ask/send</code> appends the question and returns a redirect; the page then fetches <code>/ask/reply</code>, which claims the turn and calls the model.</li>
+            <li><b>The loop is capped.</b> At most 3 tool rounds, 8 tool calls, 30 seconds per turn and 4,096 characters of tool arguments. The client keeps the last 9 messages plus the system instructions.</li>
+            <li><b>Tools read checked data.</b> Catalogue and shopping tools call the same services as the pages; they never see SQL or raw entities.</li>
+            <li><b>Proposals, not arbitrary writes.</b> The model can request a change; the controller decides whether to apply it now or ask for confirmation.</li>
+            <li><b>Stale is a first-class outcome.</b> If the cart or list changed since the proposal, confirming it produces a fresh proposal instead of overwriting newer data.</li>
+          </ol>
+          <p class="mini-note">A missing API key or a slow/failed turn leaves the chat in a retryable state. The page polls <code>/ask/reply</code> up to 30 times at 500 ms.</p>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="ai">
+  <div class="section-head reveal">
+    <div class="section-num">06</div>
+    <div>
+      <p class="eyebrow">The AI layer</p>
+      <h2>A bounded assistant, not an agent.</h2>
+      <p class="lede">Ask is a chat surface wrapped around eleven typed tools and a session state machine. The model can read the same data the pages read and prepare the same writes the forms perform — but every write passes through a controller that decides whether it applies now or waits for a click.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 reveal" style="align-items:start">
+    <div>
+      <p class="card-kicker">The turn, as a state machine</p>
+      <div class="state-strip" aria-label="Ask turn states">
+        <div class="state"><b>READY</b><span>No reply in flight. The composer is enabled.</span><small>idle</small></div>
+        <div class="state"><b>WAITING</b><span>The question is stored; the page is about to fetch the reply.</span><small>accepted</small></div>
+        <div class="state"><b>REPLYING</b><span>One request has claimed the turn and is calling the model.</span><small>claimed once</small></div>
+      </div>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-top:12px">The transition back to <code>READY</code> happens only after the answer, cards and proposals are appended. A failed or slow turn returns to <code>WAITING</code> so <code>/ask/retry</code> can try again without duplicating the question.</p>
+    </div>
+    <div>
+      <p class="card-kicker">Hard limits per turn</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Limit</th><th>Value</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Tool rounds</td><td>3</td><td>Prevents an unbounded reason/act loop</td></tr>
+          <tr><td>Tool calls</td><td>8</td><td>Caps fan-out across products and lists</td></tr>
+          <tr><td>Turn budget</td><td>30 s</td><td>Keeps the pending-turn UI honest</td></tr>
+          <tr><td>Tool arguments</td><td>4,096 chars</td><td>Rejects pathological model output</td></tr>
+          <tr><td>Model response</td><td>65,536 chars</td><td>Bounds memory per call</td></tr>
+          <tr><td>Recent messages</td><td>9</td><td>Fits the context without replaying everything</td></tr>
+          <tr><td>Saved chats</td><td>12</td><td>Session-only history; oldest is dropped</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="explorer-bar reveal" style="margin-top:26px">
+    <div>
+      <p class="card-kicker" style="margin-bottom:4px">Tool catalogue</p>
+      <p class="toolbar-note" style="margin:0">Eleven tools, two namespaces, no raw database access.</p>
+    </div>
+    <div class="filter-row" role="group" aria-label="Filter tools">
+      <button class="filter-btn is-active" type="button" data-tool-filter="all">All 11</button>
+      <button class="filter-btn" type="button" data-tool-filter="read">Read</button>
+      <button class="filter-btn" type="button" data-tool-filter="propose">Propose</button>
+    </div>
+  </div>
+
+  <div class="tool-grid reveal" id="tool-grid">
+    <article class="tool" data-kind="read"><span class="kind read">read · catalogue</span><h4>search_products</h4><p>Find exact pack candidates in the saved catalogue using a name, code, brand or constraint. Returns compact rows, never the whole table.</p></article>
+    <article class="tool" data-kind="read"><span class="kind read">read · catalogue</span><h4>get_product_prices</h4><p>Read the saved listed prices for one exact pack, retailer by retailer, including unknown prices.</p></article>
+    <article class="tool" data-kind="read"><span class="kind read">read · catalogue</span><h4>offer_product_choices</h4><p>Show a picker when several packs could match, so the shopper disambiguates instead of the model guessing.</p></article>
+    <article class="tool" data-kind="read"><span class="kind read">read · shopping</span><h4>list_carts</h4><p>Find the main Cart and every locally saved list, with names and IDs.</p></article>
+    <article class="tool" data-kind="read"><span class="kind read">read · shopping</span><h4>get_cart</h4><p>Read one list's items, quantities, resolved prices, known subtotal, unknown count and budget state.</p></article>
+    <article class="tool" data-kind="read"><span class="kind read">read · shopping</span><h4>get_wishlist</h4><p>Read saved products and their exact codes, so a later proposal refers to the right pack.</p></article>
+    <article class="tool" data-kind="read"><span class="kind read">read · shopping</span><h4>get_alerts</h4><p>Show watch rules and recent alert history. Rule IDs must be read before any change is proposed.</p></article>
+    <article class="tool" data-kind="read"><span class="kind read">read · arithmetic</span><h4>calculate</h4><p>Decimal arithmetic with <code>+ − × ÷</code>, parentheses and percentages — used instead of mental maths in prose.</p></article>
+    <article class="tool" data-kind="propose"><span class="kind propose">propose · cart</span><h4>propose_cart</h4><p>Prepare an add, remove, create, rename or delete. The preview states the exact list, product and quantity; the controller applies or confirms.</p></article>
+    <article class="tool" data-kind="propose"><span class="kind propose">propose · wishlist</span><h4>propose_wishlist</h4><p>Prepare saving or removing an exact pack. Adding applies immediately; removing needs confirmation.</p></article>
+    <article class="tool" data-kind="propose"><span class="kind propose">propose · alerts</span><h4>propose_alert</h4><p>Prepare a watch-rule create, update, toggle or delete — or keep an incomplete draft and report the missing fields.</p></article>
+  </div>
+
+  <div class="grid-2 reveal" style="margin-top:22px;align-items:start">
+    <div>
+      <p class="card-kicker">Who decides what</p>
+      <div class="table-wrap confirm-table"><table>
+        <thead><tr><th>Operation</th><th>Behaviour</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>ADD_CART</td><td><span class="badge now">applies</span></td><td>Additive, reversible by removing the row</td></tr>
+          <tr><td>CREATE_LIST</td><td><span class="badge now">applies</span></td><td>New namespace; touches nothing existing</td></tr>
+          <tr><td>RENAME_LIST</td><td><span class="badge now">applies</span></td><td>Label only; the list ID is stable</td></tr>
+          <tr><td>ADD_WISHLIST</td><td><span class="badge now">applies</span></td><td>Additive and easy to undo</td></tr>
+          <tr><td>REMOVE_CART</td><td><span class="badge confirm">confirm</span></td><td>Destroys a chosen quantity or row</td></tr>
+          <tr><td>DELETE_LIST</td><td><span class="badge confirm">confirm</span></td><td>Destroys a whole named list</td></tr>
+          <tr><td>REMOVE_WISHLIST</td><td><span class="badge confirm">confirm</span></td><td>Stops tracking and hides history context</td></tr>
+          <tr><td>CREATE / UPDATE / TOGGLE / DELETE_ALERT</td><td><span class="badge confirm">confirm</span></td><td>Changes future notifications and schedules</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:10px">“Applies” still means the controller validates the operation against current data first. A stale add is re-resolved, not trusted.</p>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:18px 20px 14px;border-bottom:1px solid var(--line)">
+        <p class="card-kicker" style="margin-bottom:4px">A worked turn</p>
+        <h3 style="font-size:20px">“Add two oat milks to my weekend list.”</h3>
+      </div>
+      <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+        <div style="align-self:flex-start;max-width:88%;background:var(--card-2);border:1px solid var(--line);padding:10px 12px;font-size:13.5px">Add two oat milks to my weekend list.</div>
+        <div style="align-self:flex-end;max-width:92%;background:var(--green-wash);border:1px solid var(--green-soft);padding:10px 12px;font-size:13.5px">
+          <b style="display:block;font:600 8px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:6px">tool · list_carts</b>
+          Found “Weekend shop” (list_id 4).
+        </div>
+        <div style="align-self:flex-end;max-width:92%;background:var(--green-wash);border:1px solid var(--green-soft);padding:10px 12px;font-size:13.5px">
+          <b style="display:block;font:600 8px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:6px">tool · search_products</b>
+          Two exact packs match. The assistant asks which one before proposing.
+        </div>
+        <div style="border:1px solid var(--amber);background:var(--amber-soft);padding:10px 12px;font-size:13px">
+          <b style="display:block;font:600 8px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:5px">proposal · applied</b>
+          Added 2 × Oat Milk 1 L to Weekend shop at the lowest known price.
+        </div>
+      </div>
+      <div style="padding:11px 20px;border-top:1px solid var(--line);font:500 9px/1.5 var(--mono);color:var(--muted)">The model never sees a list ID it did not read, and never writes one it did not validate.</div>
+    </div>
+  </div>
+
+  <div class="callout coral reveal">
+    <b>The failure modes are designed, not accidental</b>
+    <p>No API key → the Ask page explains the missing configuration and the rest of the app still works. Model timeout → the turn returns to <code>WAITING</code> with a retry link. Malformed tool call → rejected before execution. Stale proposal → re-proposed against current data. The assistant is optional; the shopping app is not.</p>
+  </div>
+
+  <div class="card reveal">
+    <p class="card-kicker">Provider configuration</p>
+    <div class="table-wrap config-table"><table>
+      <thead><tr><th>Property</th><th>Default</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>pricewatch.chat.base-url</td><td><code>https://llm.cs.cityu.edu.hk/v1</code></td><td>OpenAI-compatible chat completions endpoint</td></tr>
+        <tr><td>pricewatch.chat.model</td><td><code>CS3383/DeepSeek-V4-Flash</code></td><td>Course-hosted model</td></tr>
+        <tr><td>DEEPSEEK_API_KEY_SKU</td><td>—</td><td>Environment variable; absent means Ask is unavailable</td></tr>
+        <tr><td>max_tokens</td><td><code>768</code></td><td>Short answers; cards carry the structured detail</td></tr>
+        <tr><td>thinking</td><td>disabled</td><td>Latency over deliberation for a shopping turn</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="section" id="runtime">
+  <div class="section-head reveal">
+    <div class="section-num">07</div>
+    <div>
+      <p class="eyebrow">Runtime rules</p>
+      <h2>The clock, the imports and the invariants.</h2>
+      <p class="lede">Most of the system's character is in its rules: what an import may change, what the 60-second tick may create, and what “reset” actually deletes. These are the details that decide whether the app is trustworthy after a month of use.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 reveal" style="align-items:start">
+    <div>
+      <p class="card-kicker">One tick, every 60 seconds</p>
+      <div class="tick">
+        <div class="tick-time"><b>+0 s</b>same tick</div>
+        <div class="tick-body"><h4>Evaluate watch rules</h4><p><code>watchRules.checkDue()</code> reads due rules and the latest accepted LIVE prices. Calendar rules fire without a price; price rules without an accepted LIVE price call <code>waitForLive()</code>.</p></div>
+      </div>
+      <div class="tick">
+        <div class="tick-time"><b>+60 s</b>next run</div>
+        <div class="tick-body"><h4>Wait for the next fixed delay</h4><p>The delay is measured after the previous run finishes, not on wall-clock boundaries. Disable it with <code>pricewatch.jobs.enabled=false</code>.</p></div>
+      </div>
+      <div class="tick">
+        <div class="tick-time"><b>Daily</b>first use</div>
+        <div class="tick-body"><h4>Check for a live refresh</h4><p>Startup and the first normal page visit on a new Hong Kong date queue a refresh if due. Automatic and manual requests share the download. Sample and Demo stay selected until a manual live import succeeds.</p></div>
+      </div>
+    </div>
+
+    <div>
+      <p class="card-kicker">Import modes</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Mode</th><th>Source</th><th>Side effects</th></tr></thead>
+        <tbody>
+          <tr><td><b>LIVE</b></td><td>Consumer Council feed over HTTPS</td><td>Replaces the catalogue; appends changed observations; evaluates target, drop and watch rules</td></tr>
+          <tr><td><b>SAMPLE</b></td><td>Bundled sample JSON</td><td>Replaces the catalogue only; no observations or rule events</td></tr>
+          <tr><td><b>DEMO</b></td><td>Synthetic catalogue + 8 observations over 21 days</td><td>Replaces the catalogue, seeds history, sets a demo target, opens Wishlist</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:10px">SAMPLE and DEMO ask for confirmation when a catalogue already exists. All three replace listings atomically; a failure leaves the previous accepted import in place.</p>
+
+      <p class="card-kicker" style="margin-top:24px">Storage facts</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Concern</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td>Database</td><td>H2 file at <code>./data/pricewatch</code></td></tr>
+          <tr><td>Schema</td><td>Hibernate schema updates and a startup upgrade for legacy reminders</td></tr>
+          <tr><td>Money</td><td><code>DECIMAL(19,4)</code>; never floating point</td></tr>
+          <tr><td>Price history</td><td>90-day retention, dedup state kept</td></tr>
+          <tr><td>Alert timeline</td><td>Recent price and watch events, including migrated reminder history</td></tr>
+          <tr><td>Chat</td><td>Session only; up to 12 chats, 24 messages each</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="rule-grid reveal" style="margin-top:26px">
+    <div class="rule"><p class="k">Cart rule</p><h4>Quantity 1–999</h4><p>Invalid quantities are clamped or rejected before the write. The main list cannot be renamed or deleted, and one product appears once per list.</p></div>
+    <div class="rule"><p class="k">Price rule</p><h4>Unknown ≠ free</h4><p>Unknown prices are excluded from the known subtotal, shown as a separate count, and never chosen as the automatic lowest price.</p></div>
+    <div class="rule"><p class="k">Tracking rule</p><h4>One enabled period</h4><p>A product and retailer pair has at most one enabled tracking period. Starting again reuses or reopens it rather than stacking duplicates.</p></div>
+    <div class="rule"><p class="k">Watch rule</p><h4>Price needs wishlist</h4><p>A price condition requires the product on the Wishlist. A calendar-only rule does not. One-time rules complete; repeating rules re-arm.</p></div>
+    <div class="rule"><p class="k">Reminder rule</p><h4>One occurrence per due time</h4><p>Dismissal advances a migrated interval reminder. Snooze delays its occurrence. History can outlive the rule.</p></div>
+    <div class="rule"><p class="k">Privacy rule</p><h4>Reset keeps the catalogue</h4><p><code>PersonalDataService.reset()</code> deletes personal tables and preferences, but keeps products and listings. Deleting the H2 file is the full reset.</p></div>
+  </div>
+
+  <div class="grid-2 reveal" style="margin-top:22px;align-items:start">
+    <div class="card">
+      <p class="card-kicker">Local security</p>
+      <h3>Trust is a network boundary.</h3>
+      <p style="font-size:14px;color:var(--ink-2)"><code>LocalRequestGuard</code> rejects requests whose host is not local and rejects cross-site browser writes. The server binds <code>127.0.0.1</code>. There is no login because there is no remote user to authenticate — but the guard still blocks a malicious page from posting to the local app.</p>
+      <div class="detail-chips" style="margin-top:12px"><span>127.0.0.1 only</span><span>host allow-list</span><span>origin / referer check</span><span>no accounts</span></div>
+    </div>
+    <div class="card">
+      <p class="card-kicker">Personal data</p>
+      <h3>Export everything, reset selectively.</h3>
+      <p style="font-size:14px;color:var(--ink-2)">One JSON export covers lists, items, wishlist, tracking, observations, alerts, reminders, budget, preferences and the chat transcripts passed from the session. Reset removes those rows, recreates defaults lazily, and prunes inactive products that only existed to satisfy imported list references.</p>
+      <div class="detail-chips" style="margin-top:12px"><span>JSON export</span><span>confirmed reset</span><span>catalogue retained</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="run">
+  <div class="section-head reveal">
+    <div class="section-num">08</div>
+    <div>
+      <p class="eyebrow">Run &amp; verify</p>
+      <h2>From clone to first import.</h2>
+      <p class="lede">The app needs Java 21 and Maven. It starts on <code>127.0.0.1:8080</code> with an empty file database; the first useful step is a SAMPLE or DEMO import. Ask additionally needs a course API key.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 reveal" style="align-items:start">
+    <div>
+      <p class="card-kicker">Start the app</p>
+      <div class="cmd"><code>mvn spring-boot:run</code><button class="copy-btn" type="button" data-copy="mvn spring-boot:run">Copy</button></div>
+      <div class="cmd"><code>$env:DEEPSEEK_API_KEY_SKU = "…"</code><button class="copy-btn" type="button" data-copy='$env:DEEPSEEK_API_KEY_SKU = "…"'>Copy</button></div>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:8px">Set the key in the same shell before starting if you want Ask. The rest of the app works without it.</p>
+
+      <p class="card-kicker" style="margin-top:22px">Run the checks</p>
+      <div class="cmd"><code>mvn test</code><button class="copy-btn" type="button" data-copy="mvn test">Copy</button></div>
+      <div class="cmd"><code>npm ci &amp;&amp; npx playwright install chromium</code><button class="copy-btn" type="button" data-copy="npm ci &amp;&amp; npx playwright install chromium">Copy</button></div>
+      <div class="cmd"><code>npm run test:browser</code><button class="copy-btn" type="button" data-copy="npm run test:browser">Copy</button></div>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:8px">Package the Java app first. The Playwright suite starts its own loopback server, isolated H2 database, and fixture feed. See the <a href="../SETUP.md">setup guide</a> for the additional milestone and restart checks.</p>
+    </div>
+
+    <div>
+      <p class="card-kicker">First-run checklist</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Step</th><th>What to verify</th></tr></thead>
+        <tbody>
+          <tr><td>01 · Open <code>/</code></td><td>The empty state explains that a catalogue is needed; no stack trace.</td></tr>
+          <tr><td>02 · Import SAMPLE</td><td>Counts appear on <code>/data</code>; search returns exact packs.</td></tr>
+          <tr><td>03 · Add to cart</td><td>The row appears once; quantity updates instead of duplicating.</td></tr>
+          <tr><td>04 · Set a budget</td><td>Known subtotal, unknown count and remaining amount agree.</td></tr>
+          <tr><td>05 · Save + track</td><td>The wishlist entry appears; tracking opens one period per retailer.</td></tr>
+          <tr><td>06 · Import LIVE</td><td>New observations appear only for changed prices.</td></tr>
+          <tr><td>07 · Create a rule</td><td>A calendar rule fires without a wishlist; a price rule requires one.</td></tr>
+          <tr><td>08 · Wait one tick</td><td>Due reminders appear once, not once per tick.</td></tr>
+          <tr><td>09 · Export / reset</td><td>The JSON download contains personal data; reset keeps the catalogue.</td></tr>
+          <tr><td>10 · Ask (optional)</td><td>Without a key, a clear configuration message; with a key, a grounded answer.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="callout green reveal">
+    <b>Where the time goes</b>
+    <p>The slowest paths are the LIVE fetch (network, 30-second cap) and one Ask turn (model latency, 30-second budget). Everything else is a local H2 read or write. If a page feels slow, check whether it is waiting on one of those two edges before optimizing the database.</p>
+  </div>
+</section>
+
+<section class="section" id="sources">
+  <div class="section-head reveal">
+    <div class="section-num">09</div>
+    <div>
+      <p class="eyebrow">Sources</p>
+      <h2>Where this guide comes from.</h2>
+      <p class="lede">The guide is generated from the current source tree and the eight PlantUML diagrams beside it. File links are relative, so they work when the repository is opened locally.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 reveal" style="align-items:start">
+    <div>
+      <p class="card-kicker">Code</p>
+      <ul class="source-list">
+        <li><a href="../../src/main/java/com/pricewatch/web/HelloController.java"><span>web · pages, carts, import</span>HelloController.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/web/AskController.java"><span>web · chat state machine</span>AskController.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/web/AskShoppingTools.java"><span>web · 8 shopping tools</span>AskShoppingTools.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/web/DeepSeekChatClient.java"><span>web · bounded tool loop</span>DeepSeekChatClient.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/catalog/importer/CatalogReplacementService.java"><span>catalog · atomic replace</span>CatalogReplacementService.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/notifications/WatchRuleService.java"><span>notifications · rules</span>WatchRuleService.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/web/AlertCenterController.java"><span>web · merged timeline</span>AlertCenterController.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/shopping/ListTransfer.java"><span>shopping · JSON v1</span>ListTransfer.java</a></li>
+        <li><a href="../../src/main/java/com/pricewatch/personal/PersonalDataService.java"><span>personal · export/reset</span>PersonalDataService.java</a></li>
+        <li><a href="../../src/main/resources/application.properties"><span>runtime configuration</span>application.properties</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="card-kicker">Diagrams &amp; docs</p>
+      <ul class="source-list">
+        <li><a href="system-guide/diagrams/use-case.puml"><span>PlantUML · use case</span>use-case.puml</a></li>
+        <li><a href="system-guide/diagrams/component.puml"><span>PlantUML · component</span>component.puml</a></li>
+        <li><a href="system-guide/diagrams/domain-catalog.puml"><span>PlantUML · class</span>domain-catalog.puml</a></li>
+        <li><a href="system-guide/diagrams/domain-tracking.puml"><span>PlantUML · class</span>domain-tracking.puml</a></li>
+        <li><a href="system-guide/diagrams/sequence-import.puml"><span>PlantUML · sequence</span>sequence-import.puml</a></li>
+        <li><a href="system-guide/diagrams/sequence-cart.puml"><span>PlantUML · sequence</span>sequence-cart.puml</a></li>
+        <li><a href="system-guide/diagrams/sequence-alerts.puml"><span>PlantUML · sequence</span>sequence-alerts.puml</a></li>
+        <li><a href="system-guide/diagrams/sequence-ask.puml"><span>PlantUML · sequence</span>sequence-ask.puml</a></li>
+        <li><a href="../diagrams/README.md"><span>diagram conventions</span>docs/diagrams/README.md</a></li>
+        <li><a href="../../README.md"><span>project overview</span>README.md</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout reveal">
+    <b>How to rebuild this page</b>
+    <p>Edit the template and diagram sources under <code>docs/guide/system-guide/</code>, re-render the SVGs, then run <code>node docs/guide/system-guide/build.mjs</code>. The script inlines every diagram and every PlantUML source into one self-contained <code>docs/guide/system-guide.html</code>.</p>
+  </div>
+
+  <footer class="footer">
+    <div><span class="m">m.</span><br><b>Market Desk · system field guide</b><br>Generated from the current source tree.</div>
+    <div>Spring Boot 3.4.5 · Java 21 · H2 file DB<br>Eight UML diagrams · one local user<br><a href="#top">Back to top ↑</a></div>
+  </footer>
+</section>
+
+<script>
+/* ============================================================
+   Interactions. No dependencies, no network calls.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var doc = document.documentElement;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById('theme-toggle');
+  var themeLabel = document.getElementById('theme-label');
+  function setTheme(name) {
+    doc.setAttribute('data-theme', name);
+    if (themeLabel) themeLabel.textContent = name === 'night' ? 'Paper mode' : 'Night market';
+    if (themeBtn) themeBtn.setAttribute('aria-pressed', String(name === 'night'));
+    try { localStorage.setItem('md-guide-theme', name); } catch (e) {}
+  }
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('md-guide-theme'); } catch (e) {}
+  setTheme(savedTheme === 'night' ? 'night' : 'paper');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      setTheme(doc.getAttribute('data-theme') === 'night' ? 'paper' : 'night');
+    });
+  }
+
+  /* ---------- reading progress ---------- */
+  var bar = document.getElementById('progress-bar');
+  function onScroll() {
+    if (!bar) return;
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0) + '%';
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* ---------- section nav ---------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('#side-nav a'));
+  var sections = navLinks.map(function (a) { return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  if ('IntersectionObserver' in window) {
+    var navObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach(function (a) {
+          a.classList.toggle('is-active', a.getAttribute('href') === '#' + entry.target.id);
+        });
+      });
+    }, { rootMargin: '-20% 0px -65% 0px', threshold: 0 });
+    sections.forEach(function (s) { navObserver.observe(s); });
+  }
+
+  /* ---------- reveal ---------- */
+  var revealItems = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  if (!reduceMotion && 'IntersectionObserver' in window) {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-in');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    revealItems.forEach(function (el) { revealObserver.observe(el); });
+  } else {
+    revealItems.forEach(function (el) { el.classList.add('is-in'); });
+  }
+
+  /* ---------- tabs ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tabs]'), function (tabs) {
+    var list = tabs.querySelector('.tablist');
+    if (!list) return;
+    var buttons = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    var panels = buttons.map(function (b) { return document.getElementById(b.getAttribute('aria-controls')); });
+
+    function activate(index, focus) {
+      buttons.forEach(function (b, i) {
+        var on = i === index;
+        b.setAttribute('aria-selected', String(on));
+        b.tabIndex = on ? 0 : -1;
+        if (panels[i]) panels[i].hidden = !on;
+      });
+      if (focus && buttons[index]) buttons[index].focus();
+      var plate = panels[index] && panels[index].querySelector('.plate');
+      if (plate) requestAnimationFrame(function () { fitPlate(plate, false); });
+    }
+
+    buttons.forEach(function (b, i) {
+      b.addEventListener('click', function () { activate(i, false); });
+      b.addEventListener('keydown', function (event) {
+        var next = null;
+        if (event.key === 'ArrowRight') next = (i + 1) % buttons.length;
+        if (event.key === 'ArrowLeft') next = (i - 1 + buttons.length) % buttons.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = buttons.length - 1;
+        if (next !== null) { event.preventDefault(); activate(next, true); }
+      });
+    });
+  });
+
+  /* ---------- layer stack ---------- */
+  var layerButtons = Array.prototype.slice.call(document.querySelectorAll('.layer-btn'));
+  var layerDetails = Array.prototype.slice.call(document.querySelectorAll('.layer-detail'));
+  layerButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.getAttribute('data-layer');
+      layerButtons.forEach(function (b) {
+        var on = b === btn;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+      layerDetails.forEach(function (d) { d.hidden = d.getAttribute('data-detail') !== key; });
+    });
+  });
+
+  /* ---------- component explorer ---------- */
+  var compGrid = document.getElementById('comp-grid');
+  var comps = compGrid ? Array.prototype.slice.call(compGrid.querySelectorAll('.comp')) : [];
+  var compSearch = document.getElementById('comp-search');
+  var compCount = document.getElementById('comp-count');
+  var filterButtons = Array.prototype.slice.call(document.querySelectorAll('[data-filter]'));
+  var activeFilter = 'all';
+  var emptyState = document.createElement('p');
+  emptyState.className = 'empty-state';
+  emptyState.textContent = 'No component matches that search.';
+  emptyState.hidden = true;
+  if (compGrid) compGrid.appendChild(emptyState);
+
+  function applyCompFilter() {
+    var query = compSearch ? compSearch.value.trim().toLowerCase() : '';
+    var shown = 0;
+    comps.forEach(function (comp) {
+      var tags = (comp.getAttribute('data-tags') || '').split(/\s+/);
+      var haystack = ((comp.getAttribute('data-search') || '') + ' ' + comp.textContent).toLowerCase();
+      var tagOk = activeFilter === 'all' || tags.indexOf(activeFilter) !== -1;
+      var textOk = !query || haystack.indexOf(query) !== -1;
+      var on = tagOk && textOk;
+      comp.hidden = !on;
+      if (on) shown++;
+    });
+    emptyState.hidden = shown !== 0;
+    if (compCount) compCount.textContent = shown + (shown === 1 ? ' component' : ' components');
+  }
+  if (compSearch) compSearch.addEventListener('input', applyCompFilter);
+  filterButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      activeFilter = btn.getAttribute('data-filter');
+      filterButtons.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+      applyCompFilter();
+    });
+  });
+
+  /* accordions */
+  Array.prototype.forEach.call(document.querySelectorAll('.comp-head'), function (head) {
+    head.addEventListener('click', function () {
+      var body = document.getElementById(head.getAttribute('aria-controls'));
+      var open = head.getAttribute('aria-expanded') === 'true';
+      head.setAttribute('aria-expanded', String(!open));
+      if (body) body.hidden = open;
+    });
+  });
+
+  /* ---------- route filter ---------- */
+  var routeSearch = document.getElementById('route-search');
+  if (routeSearch) {
+    var groups = Array.prototype.slice.call(document.querySelectorAll('.route-group'));
+    routeSearch.addEventListener('input', function () {
+      var q = routeSearch.value.trim().toLowerCase();
+      groups.forEach(function (group) {
+        var rows = Array.prototype.slice.call(group.querySelectorAll('tbody tr'));
+        var visible = 0;
+        rows.forEach(function (row) {
+          var on = !q || row.textContent.toLowerCase().indexOf(q) !== -1;
+          row.hidden = !on;
+          if (on) visible++;
+        });
+        group.classList.toggle('is-empty', visible === 0);
+      });
+    });
+  }
+
+  /* ---------- tool filter ---------- */
+  var toolButtons = Array.prototype.slice.call(document.querySelectorAll('[data-tool-filter]'));
+  var tools = Array.prototype.slice.call(document.querySelectorAll('#tool-grid .tool'));
+  toolButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var kind = btn.getAttribute('data-tool-filter');
+      toolButtons.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+      tools.forEach(function (tool) { tool.hidden = kind !== 'all' && tool.getAttribute('data-kind') !== kind; });
+    });
+  });
+
+  /* ---------- copy buttons ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var value = btn.getAttribute('data-copy');
+      function done() {
+        btn.textContent = 'Copied';
+        btn.classList.add('is-copied');
+        setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('is-copied'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(done, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = value;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = 'Select'; }
+        document.body.removeChild(ta);
+      }
+    });
+  });
+
+  /* ============================================================
+     Diagram plates: fit, zoom, pan, fullscreen.
+     ============================================================ */
+  var MIN_ZOOM = 0.25;
+  var MAX_ZOOM = 4;
+
+  function plateParts(plate) {
+    return {
+      stage: plate.querySelector('.plate-stage'),
+      canvas: plate.querySelector('.plate-canvas'),
+      img: plate.querySelector('.plate-canvas img'),
+      label: plate.querySelector('[data-zoom-label]')
+    };
+  }
+
+  function naturalSize(img) {
+    var w = img.naturalWidth || 1000;
+    var h = img.naturalHeight || 700;
+    return { w: w, h: h };
+  }
+
+  function setZoom(plate, zoom, anchorX, anchorY) {
+    var p = plateParts(plate);
+    if (!p.img || !p.stage) return;
+    var stage = p.stage;
+    var clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+    var prevW = p.img.width || 1;
+    var prevH = p.img.height || 1;
+    var nat = naturalSize(p.img);
+    var w = Math.round(nat.w * clamped);
+    var h = Math.round(nat.h * clamped);
+    p.img.width = w;
+    p.img.height = h;
+    p.img.style.width = w + 'px';
+    p.img.style.height = 'auto';
+    if (p.label) p.label.textContent = Math.round(clamped * 100) + '%';
+    plate.dataset.zoom = String(clamped);
+    if (typeof anchorX === 'number' && typeof anchorY === 'number') {
+      var ratioX = (stage.scrollLeft + anchorX) / Math.max(1, prevW);
+      var ratioY = (stage.scrollTop + anchorY) / Math.max(1, prevH);
+      stage.scrollLeft = ratioX * w - anchorX;
+      stage.scrollTop = ratioY * h - anchorY;
+    }
+  }
+
+  function currentZoom(plate) {
+    var z = parseFloat(plate.dataset.zoom || '1');
+    return isNaN(z) ? 1 : z;
+  }
+
+  function fitPlate(plate, allowGrow) {
+    var p = plateParts(plate);
+    if (!p.img || !p.stage) return;
+    var nat = naturalSize(p.img);
+    var availW = p.stage.clientWidth - 36;
+    if (availW <= 0) return;
+    /* Fit the width. SVG stays crisp when enlarged, so narrow diagrams can
+       use the plate instead of sitting in a sea of paper. Tall diagrams
+       scroll inside the stage, which keeps sequence labels readable. */
+    var zoom = Math.min(availW / nat.w, 1.5);
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+    setZoom(plate, zoom);
+    plate.dataset.manual = 'false';
+    p.stage.scrollLeft = 0;
+    p.stage.scrollTop = 0;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.plate'), function (plate) {
+    var p = plateParts(plate);
+    if (!p.img) return;
+
+    plate.querySelectorAll('[data-zoom-in]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var stage = p.stage;
+        plate.dataset.manual = 'true';
+        setZoom(plate, currentZoom(plate) * 1.25, stage.clientWidth / 2, stage.clientHeight / 2);
+      });
+    });
+    plate.querySelectorAll('[data-zoom-out]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var stage = p.stage;
+        plate.dataset.manual = 'true';
+        setZoom(plate, currentZoom(plate) / 1.25, stage.clientWidth / 2, stage.clientHeight / 2);
+      });
+    });
+    plate.querySelectorAll('[data-fit]').forEach(function (b) {
+      b.addEventListener('click', function () { fitPlate(plate, true); });
+    });
+    plate.querySelectorAll('[data-actual]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        plate.dataset.manual = 'true';
+        setZoom(plate, 1, p.stage.clientWidth / 2, p.stage.clientHeight / 2);
+      });
+    });
+    plate.querySelectorAll('[data-expand]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        plate.classList.add('is-expanded');
+        document.body.classList.add('plate-open');
+        requestAnimationFrame(function () { fitPlate(plate, true); });
+        var close = plate.querySelector('[data-close]');
+        if (close) close.focus();
+      });
+    });
+    plate.querySelectorAll('[data-close]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        plate.classList.remove('is-expanded');
+        document.body.classList.remove('plate-open');
+        fitPlate(plate, false);
+      });
+    });
+
+    /* drag to pan */
+    var dragging = false;
+    var startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    p.stage.addEventListener('pointerdown', function (event) {
+      if (event.button !== 0) return;
+      if (event.target.closest('button, a, summary')) return;
+      dragging = true;
+      startX = event.clientX;
+      startY = event.clientY;
+      startLeft = p.stage.scrollLeft;
+      startTop = p.stage.scrollTop;
+      p.stage.classList.add('is-dragging');
+      if (p.stage.setPointerCapture) p.stage.setPointerCapture(event.pointerId);
+    });
+    p.stage.addEventListener('pointermove', function (event) {
+      if (!dragging) return;
+      p.stage.scrollLeft = startLeft - (event.clientX - startX);
+      p.stage.scrollTop = startTop - (event.clientY - startY);
+    });
+    function endDrag() {
+      dragging = false;
+      p.stage.classList.remove('is-dragging');
+    }
+    p.stage.addEventListener('pointerup', endDrag);
+    p.stage.addEventListener('pointercancel', endDrag);
+    p.stage.addEventListener('pointerleave', function () { if (dragging) endDrag(); });
+
+    /* keyboard */
+    p.stage.addEventListener('keydown', function (event) {
+      var step = 42;
+      var handled = true;
+      switch (event.key) {
+        case 'ArrowLeft': p.stage.scrollLeft -= step; break;
+        case 'ArrowRight': p.stage.scrollLeft += step; break;
+        case 'ArrowUp': p.stage.scrollTop -= step; break;
+        case 'ArrowDown': p.stage.scrollTop += step; break;
+        case '+': case '=': setZoom(plate, currentZoom(plate) * 1.2, p.stage.clientWidth / 2, p.stage.clientHeight / 2); break;
+        case '-': setZoom(plate, currentZoom(plate) / 1.2, p.stage.clientWidth / 2, p.stage.clientHeight / 2); break;
+        case '0': setZoom(plate, 1); break;
+        default: handled = false;
+      }
+      if (handled) event.preventDefault();
+    });
+
+    /* initial fit after image decode */
+    function initial() {
+      plate.dataset.zoom = '1';
+      fitPlate(plate, false);
+    }
+    if (p.img.complete && p.img.naturalWidth) initial();
+    else p.img.addEventListener('load', initial, { once: true });
+  });
+
+  /* close expanded plate with Escape or backdrop click */
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    var open = document.querySelector('.plate.is-expanded');
+    if (open) {
+      open.classList.remove('is-expanded');
+      document.body.classList.remove('plate-open');
+      fitPlate(open, false);
+    }
+  });
+  document.addEventListener('click', function (event) {
+    var open = document.querySelector('.plate.is-expanded');
+    if (open && !open.contains(event.target)) {
+      open.classList.remove('is-expanded');
+      document.body.classList.remove('plate-open');
+      fitPlate(open, false);
+    }
+  });
+
+  /* re-fit on resize, but keep a user's zoom if they changed it */
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      document.querySelectorAll('.plate').forEach(function (plate) {
+        var p = plateParts(plate);
+        if (p.img && p.stage && !plate.classList.contains('is-expanded') && plate.dataset.manual !== 'true') {
+          fitPlate(plate, false);
+        }
+      });
+    }, 160);
+  });
+
+  /* keep hidden-tab plates from rendering at a stale size */
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    document.querySelectorAll('.plate').forEach(function (plate) {
+      if (!plate.closest('[hidden]') && plate.dataset.manual !== 'true') {
+        var p = plateParts(plate);
+        if (p.img && p.stage) fitPlate(plate, false);
+      }
+    });
+  });
+})();
+</script>
+</div>
+</main>
+</body>
+</html>

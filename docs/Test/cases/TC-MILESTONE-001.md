@@ -3,7 +3,7 @@
 ## Purpose
 
 Check the integrated saved-product, retailer tracking, alert, budget, and
-replenishment-reminder pages with a real browser and a local synthetic feed.
+scheduled-rule pages with a real browser and a local synthetic feed.
 
 ## Setup
 
@@ -21,10 +21,11 @@ replenishment-reminder pages with a real browser and a local synthetic feed.
 2. Seed a legacy product-wide target and a retailer-specific drop rule through
    their existing routes. Refresh with two qualifying prices.
    Alerts shows one grouped target and the existing drop evidence.
-3. Seed an existing time reminder. Verify the Current rules card shows the
-   product, interval, and type. Pause it there and verify the product editor
-   shows the same Off state. Turn it back on, then edit and delete it in the
-   item editor. Also toggle an earlier retailer rule from Current rules.
+3. Create a weekly calendar reminder. Verify the Current rules card shows the
+   product, cadence, and type. Pause it there and verify the product editor
+   shows the same Off state. Turn it back on, change the cadence to every two
+   weeks, and delete it in the item editor. Also toggle an earlier retailer
+   rule from Current rules.
    The due occurrence, snooze, dismissal and retained history have separate
    [controlled-clock checks](TC-REMINDER-001.md).
 4. Add both products to Cart and save a monthly budget in Personal data.
