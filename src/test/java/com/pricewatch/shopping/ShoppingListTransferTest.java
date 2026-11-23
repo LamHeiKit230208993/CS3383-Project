@@ -155,6 +155,45 @@ class ShoppingListTransferTest {
         assertFalse(products.existsById("MISSING"));
     }
 
+    @Test
+    void duplicateLongNameKeepsASurrogatePairIntact() {
+        String name = "x".repeat(95) + "🛒abc";
+        shopping.createList(name);
+        long copy = importJson("""
+                {"version":1,"name":"%s","items":[]}
+                """.formatted(name));
+        assertEquals("x".repeat(95) + " (2)", shopping.exportList(copy).name());
+    }
+
+    @Test
+    void listNameValidationDoesNotChangeTheStoredList() {
+        long list = shopping.createList("Weekend");
+        for (String invalid : new String[]{null, " ", "x".repeat(101), "Bad\tName", "my list"}) {
+            assertThrows(IllegalArgumentException.class, () -> shopping.renameList(list, invalid));
+            assertEquals("Weekend", shopping.exportList(list).name());
+        }
+        long second = shopping.createList("Saturday");
+        assertThrows(IllegalArgumentException.class, () -> shopping.renameList(list, "sAtUrDaY"));
+        assertEquals("Saturday", shopping.exportList(second).name());
+        shopping.renameList(list, "weekend");
+        assertEquals("weekend", shopping.exportList(list).name());
+    }
+
+    @Test
+    void inactiveCartReferenceCannotBeAddedThroughEitherCatalogueAction() {
+        long copy = importJson("""
+                {"version":1,"name":"Groceries","items":[
+                  {"productCode":"MISSING","displayName":"Shared milk","quantity":2,"checked":false}
+                ]}
+                """);
+        assertThrows(IllegalArgumentException.class, () -> shopping.add(copy, "MISSING", 1, null));
+        assertEquals(2, shopping.items(copy).getFirst().quantity());
+        var result = shopping.addMissingProducts(java.util.List.of("MISSING", "ABSENT", "MISSING"));
+        assertEquals(0, result.added());
+        assertEquals(2, result.unavailable());
+        assertTrue(shopping.items().isEmpty());
+    }
+
     private long importJson(String json) {
         return shopping.importList(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
     }

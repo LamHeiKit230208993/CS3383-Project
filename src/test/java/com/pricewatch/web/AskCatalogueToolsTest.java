@@ -9,6 +9,8 @@ import com.pricewatch.catalog.LocalizedText;
 import com.pricewatch.catalog.ProductView;
 import com.pricewatch.catalog.SearchResults;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -17,6 +19,7 @@ import java.util.Locale;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -25,6 +28,57 @@ import static org.mockito.Mockito.when;
 class AskCatalogueToolsTest {
     private final ObjectMapper json = new ObjectMapper();
     private final CatalogService catalog = mock(CatalogService.class);
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "search_products|[]|Tool arguments must be an object.",
+            "search_products|{}|Provide non-blank product search terms.",
+            "search_products|{\"query\":8}|Use a short string for query.",
+            "search_products|{\"query\":\"milk\",\"sort\":\"unknown\"}|Sort must be relevance or lowest_listed_price.",
+            "offer_product_choices|{}|Choose two to eight codes from the search results.",
+            "offer_product_choices|{\"product_codes\":[\"MILK-A\"]}|Choose two to eight codes from the search results.",
+            "get_product_prices|{}|Search for an exact pack or ask the shopper to choose from matching packs first.",
+            "unknown_tool|{}|Unknown catalogue tool."
+    }, delimiter = '|')
+    void rejectsInvalidCallsBeforeQueryingTheCatalogue(String tool, String arguments, String error) throws Exception {
+        var session = new AskCatalogueTools(catalog, Locale.ENGLISH, null, List.of());
+        assertEquals(error, execute(session, tool, arguments).path("error").asText());
+        verifyNoInteractions(catalog);
+    }
+
+    @Test
+    void exactCodeTakesPriorityAndDuplicateChoicesAreRejected() throws Exception {
+        var pack = product("MILK-A", BigDecimal.TEN);
+        var another = product("MILK-B", BigDecimal.ONE);
+        when(catalog.searchResults("MILK-A", "")).thenReturn(new SearchResults(List.of(another, pack), List.of(), List.of()));
+        var tools = new AskCatalogueTools(catalog, Locale.ENGLISH, null, List.of());
+        var search = execute(tools, "search_products", """
+                {"query":"MILK-A","sort":"relevance"}
+                """);
+        assertEquals(1, search.path("total_matches").intValue());
+        assertEquals(pack.code(), tools.exactSearchCode());
+        assertTrue(execute(tools, "offer_product_choices", "{\"product_codes\":[\"MILK-A\",\"MILK-A\"]}").has("error"));
+        assertTrue(execute(tools, "offer_product_choices", "{\"product_codes\":[\"MILK-A\",8]}").has("error"));
+        assertTrue(tools.choices().isEmpty());
+    }
+
+    @Test
+    void missingAndInactiveSelectionsReturnAnErrorWithoutAddingPriceCards() throws Exception {
+        var active = product("MILK-A", BigDecimal.TEN);
+        var inactive = new ProductView(active.code(), active.brand(), active.name(), active.category1(),
+                active.category2(), active.category3(), false, List.of(), null, List.of());
+        when(catalog.readProductSnapshot(active.code())).thenThrow(new IllegalArgumentException("Missing product"))
+                .thenReturn(new CatalogService.ProductSnapshot(inactive, null));
+        when(catalog.find(active.code())).thenReturn(active, inactive).thenThrow(new IllegalArgumentException("Missing product"));
+        var tools = new AskCatalogueTools(catalog, Locale.ENGLISH, active.code(), List.of());
+        for (int attempt = 0; attempt < 2; attempt++) {
+            assertTrue(execute(tools, "get_product_prices", "{}").has("error"));
+        }
+        assertTrue(tools.priceCards().isEmpty());
+        assertEquals(active, AskCatalogueTools.activeProduct(catalog, active.code()));
+        assertNull(AskCatalogueTools.activeProduct(catalog, active.code()));
+        assertNull(AskCatalogueTools.activeProduct(catalog, active.code()));
+    }
 
     @Test
     void sortsAllDirectMatchesByKnownPackPriceBeforeLimitingTheResults() throws Exception {

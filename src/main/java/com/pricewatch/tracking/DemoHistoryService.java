@@ -32,6 +32,7 @@ public class DemoHistoryService {
     private final TrackingRepository trackingRepository;
     private final PriceObservationRepository observationRepository;
     private final ProductRepository productRepository;
+    private final TrackingService trackingService;
     private final AlertService alertService;
     private final Clock clock;
 
@@ -39,12 +40,14 @@ public class DemoHistoryService {
                               TrackingRepository trackingRepository,
                               PriceObservationRepository observationRepository,
                               ProductRepository productRepository,
+                              TrackingService trackingService,
                               AlertService alertService,
                               Clock clock) {
         this.replacementService = replacementService;
         this.trackingRepository = trackingRepository;
         this.observationRepository = observationRepository;
         this.productRepository = productRepository;
+        this.trackingService = trackingService;
         this.alertService = alertService;
         this.clock = clock;
     }
@@ -65,14 +68,15 @@ public class DemoHistoryService {
         for (ImportedCatalog.ImportedProduct product : catalog.products()) {
             ProductEntity entity = productRepository.findWithListingsByCode(product.code()).orElse(null);
             if (entity == null) continue;
-            entity.setTrackAllRetailers(true);
             for (ImportedCatalog.ImportedListing listing : product.listings()) {
                 TrackingEntity period = trackingRepository
                         .findByProduct_CodeAndRetailerCodeAndEnabledTrue(product.code(), listing.retailerCode())
                         .orElseGet(() -> trackingRepository.saveAndFlush(new TrackingEntity(
-                                entity, listing.retailerCode(), now.minus(Duration.ofDays(21)))));
+                                entity, listing.retailerCode(), now.minus(Duration.ofDays(DEMO_DAYS.getFirst())))));
                 periods.put(product.code() + "|" + listing.retailerCode(), period);
             }
+            // Keep the backdated periods when saving the product to Wishlist.
+            trackingService.save(product.code());
         }
 
         TrackingEntity milkAtAeon = periods.get("DEMO-MILK|AEON");
@@ -84,7 +88,7 @@ public class DemoHistoryService {
             if (period == null) continue;
             PriceObservationEntity previous = null;
             for (int index = 0; index < DEMO_DAYS.size(); index++) {
-                Instant observedAt = now.minus(Duration.ofDays(21 - DEMO_DAYS.get(index)));
+                Instant observedAt = now.minus(Duration.ofDays(DEMO_DAYS.get(index)));
                 PriceObservationEntity observation = observationRepository.saveAndFlush(
                         new PriceObservationEntity(period, series.getValue().get(index), observedAt,
                                 DEMO_SOURCE, CHECKSUM));
@@ -93,7 +97,7 @@ public class DemoHistoryService {
                 recorded++;
             }
             period.recordPriceState(series.getValue().getLast(),
-                    now.minus(Duration.ofDays(21 - DEMO_DAYS.getLast())));
+                    now.minus(Duration.ofDays(DEMO_DAYS.getLast())));
         }
         return new DemoResult(catalog.products().size(), recorded);
     }

@@ -36,6 +36,12 @@ behaviour; final run results belong in the dated catalogue record.
 - Cross-origin browser writes and non-loopback hostnames are rejected before
   controllers run. Same-origin form submissions still work.
 
+The [request guard parameterized tests](../../../src/test/java/com/pricewatch/web/LocalRequestGuardTest.java)
+check accepted loopback names, rejection of a private IPv4 host, read methods,
+same-origin writes, cross-site metadata, default HTTP and HTTPS ports, and
+origin mismatches. For each case, assert the response and whether the request
+reaches the filter chain. The application default remains localhost only.
+
 Search-mode regressions load the checked sample and open `Bakery` in Related.
 The search form must not carry a hidden Related parameter into a new query.
 A new `milk` query returns Best matches. Empty and whitespace-only queries with

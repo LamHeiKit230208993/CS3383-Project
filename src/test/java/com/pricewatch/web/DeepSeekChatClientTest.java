@@ -131,6 +131,60 @@ class DeepSeekChatClientTest {
         }
     }
 
+    @Test
+    void omitsToolConfigurationForChatOnlyAndNormalizesTheEndpoint() throws Exception {
+        try (var provider = new Fixture(response("stop", Map.of("role", "assistant",
+                "content", "Hello", "tool_calls", List.of())))) {
+            var client = new DeepSeekChatClient(provider.url + "///", "fixture-key", "fixture-model");
+            assertEquals(Optional.of("Hello"), client.reply("Help shoppers.", List.of(), List.of(),
+                    (name, args) -> fail("Chat-only reply must not execute a tool")));
+            assertEquals(1, provider.requests.size());
+            JsonNode request = provider.requests.getFirst();
+            assertTrue(request.path("tools").isMissingNode());
+            assertTrue(request.path("tool_choice").isMissingNode());
+            assertEquals(1, request.path("messages").size());
+        }
+    }
+
+    @Test
+    void rejectsFilteredOversizedAndMalformedToolBatchesWithoutExecutingAnyCall() throws Exception {
+        var batch = new ArrayList<Map<String, Object>>();
+        for (int i = 0; i < 9; i++) batch.add(call("call-" + i, "search_products", "{}"));
+        try (var provider = new Fixture(
+                response("content_filter", Map.of("role", "assistant", "content", "Filtered")),
+                answer("x".repeat(65_537)),
+                response("tool_calls", Map.of("role", "assistant", "tool_calls", "invalid")),
+                response("tool_calls", Map.of("role", "assistant", "tool_calls", List.of())),
+                response("tool_calls", Map.of("role", "assistant", "tool_calls", batch)),
+                calls(Map.of("type", "function", "function", Map.of("name", "search_products", "arguments", "{}"))),
+                calls(call(" ", "search_products", "{}")),
+                calls(call("x".repeat(129), "search_products", "{}")),
+                calls(Map.of("id", "bad", "type", "other", "function", Map.of())),
+                calls(Map.of("id", "bad", "type", "function", "function", Map.of("name", 1, "arguments", "{}"))),
+                calls(Map.of("id", "bad", "type", "function", "function",
+                        Map.of("name", "search_products", "arguments", Map.of()))))) {
+            for (int i = 0; i < 11; i++) {
+                assertTrue(provider.client().reply("Find a pack.", HISTORY, TOOLS,
+                        (name, args) -> fail("Rejected batch executed a tool")).isEmpty(), "Response " + i);
+            }
+            assertEquals(11, provider.requests.size());
+        }
+    }
+
+    @Test
+    void handlesOverlongAndMalformedToolArgumentsAsRecoverableToolErrors() throws Exception {
+        try (var provider = new Fixture(
+                calls(call("long", "search_products", "x".repeat(4_097)),
+                        call("invalid", "search_products", "{")),
+                answer("Could you name the pack?"))) {
+            assertEquals(Optional.of("Could you name the pack?"), provider.client().reply(
+                    "Find a pack.", HISTORY, TOOLS, (name, args) -> fail("Invalid arguments executed a tool")));
+            JsonNode messages = provider.requests.getLast().path("messages");
+            assertResult(messages.path(5), "long", "error", "Unknown tool or invalid JSON arguments.");
+            assertResult(messages.path(6), "invalid", "error", "Unknown tool or invalid JSON arguments.");
+        }
+    }
+
     private static void assertResult(JsonNode message, String id, String field, String value) throws IOException {
         assertEquals("tool", message.path("role").asText());
         assertEquals(id, message.path("tool_call_id").asText());

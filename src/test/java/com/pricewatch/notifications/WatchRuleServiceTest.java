@@ -444,6 +444,62 @@ class WatchRuleServiceTest {
                         "--spring.main.banner-mode=off", "--pricewatch.jobs.enabled=false");
     }
 
+    @Test
+    void editingADueCalendarTargetEvaluatesItsExistingThresholdBeforeChangingIt() {
+        now = START.plus(1, ChronoUnit.HOURS);
+        accept("LIVE", "9", "12");
+        Instant due = START.plus(1, ChronoUnit.DAYS);
+        LocalDateTime startAt = LocalDateTime.ofInstant(due, java.time.ZoneId.of("Asia/Hong_Kong"));
+        rules.save(PACK, null, new BigDecimal("10"), startAt, "WEEKLY");
+        var original = rules.rules(PACK).getLast();
+        assertTrue(alerts.events(now).isEmpty());
+
+        now = due;
+        rules.save(PACK, original.id(), new BigDecimal("8"), startAt, "WEEKLY");
+
+        var event = alerts.events(now).getFirst();
+        assertEquals(original.id(), event.ruleId());
+        assertEquals(due, event.scheduledDueAt());
+        assertEquals(0, new BigDecimal("10").compareTo(event.target()));
+        assertEquals(List.of("STORE-A"),
+                event.retailers().stream().map(price -> price.retailerCode()).toList());
+        assertEquals(0, new BigDecimal("8").compareTo(rule(original.id()).target()));
+        assertEquals(due.plus(7, ChronoUnit.DAYS), rule(original.id()).nextDueAt());
+    }
+
+    @Test
+    void aTimeOnlyRuleForAnUnwishlistedProductCannotBeChangedIntoAPriceTarget() {
+        LocalDateTime startAt = LocalDateTime.ofInstant(START.plus(1, ChronoUnit.DAYS),
+                java.time.ZoneId.of("Asia/Hong_Kong"));
+        rules.save(OTHER_PACK, null, null, startAt, "ONCE");
+        var timeOnly = rules.rules(OTHER_PACK).getLast();
+        assertThrows(IllegalArgumentException.class,
+                () -> rules.save(OTHER_PACK, timeOnly.id(), BigDecimal.TEN, startAt, "ONCE"));
+        assertEquals(timeOnly, rules.rules(OTHER_PACK).getLast());
+        assertThrows(IllegalArgumentException.class,
+                () -> rules.save(PACK, null, BigDecimal.TEN, null, null));
+    }
+
+    @Test
+    void acceptedRefreshSkipsPausedTargetsAndTimeOnlyRules() {
+        var target = addRule("10", null);
+        LocalDateTime startAt = LocalDateTime.ofInstant(START.plus(1, ChronoUnit.DAYS),
+                java.time.ZoneId.of("Asia/Hong_Kong"));
+        rules.save(PACK, null, null, startAt, "ONCE");
+        var timeOnly = rules.rules(PACK).getLast();
+        rules.setEnabled(PACK, target.id(), false);
+
+        now = START.plus(1, ChronoUnit.HOURS);
+        accept("LIVE", "9", "12");
+        assertTrue(alerts.events(now).isEmpty());
+        assertEquals(timeOnly.nextDueAt(), rule(timeOnly.id()).nextDueAt());
+
+        rules.setEnabled(PACK, target.id(), true);
+        now = now.plus(1, ChronoUnit.HOURS);
+        accept("LIVE", "9", "12");
+        assertEquals(List.of(target.id()), alerts.events(now).stream().map(ProductTargetEventView::ruleId).toList());
+    }
+
     private WatchRuleView addRule(String target, Integer intervalDays) {
         rules.save(PACK, null, new BigDecimal(target), intervalDays);
         return rules.rules(PACK).getLast();

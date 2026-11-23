@@ -1,0 +1,83 @@
+@startuml
+autonumber
+hide footbox
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam arrowColor #557567
+skinparam arrowThickness 1.1
+skinparam sequenceParticipantBackgroundColor #F5FAF7
+skinparam sequenceParticipantBorderColor #7FA694
+skinparam sequenceParticipantFontColor #1C2B24
+skinparam sequenceLifeLineBorderColor #A9C4B6
+skinparam sequenceGroupBackgroundColor #FDF6E8
+skinparam sequenceGroupBorderColor #D9B56A
+skinparam sequenceGroupFontColor #8A5A12
+skinparam noteBackgroundColor #FDF6E8
+skinparam noteBorderColor #D9B56A
+
+title Market Desk · cart, list transfer and offline checklist
+
+actor Shopper
+participant "Cart page" as Web
+participant "ShoppingService" as Shopping
+participant "CatalogService" as Catalog
+participant "BudgetService" as Budget
+database "H2" as DB
+participant "OfflineListController" as Offline
+
+group Add an exact pack
+  Shopper -> Web : Add product + quantity + retailer
+  Web -> Shopping : add(listId, code, quantity, retailer)
+  Shopping -> Catalog : find product and listings
+  alt Explicit retailer
+    Shopping -> Shopping : require a known price at that retailer
+  else Automatic
+    Shopping -> Shopping : use the lowest known price
+  end
+  Shopping -> DB : upsert one row per (list, product)
+  Web --> Shopper : redirect to the named cart
+end
+
+group Price the cart
+  Web -> Shopping : items(listId)
+  Shopping -> Catalog : current listings
+  Shopping -> Budget : forSummary(summary)
+  Budget -> DB : read budget settings (id = 1)
+  Budget --> Web : known subtotal, unknown count, budget state
+end
+
+group Share a list as JSON
+  Shopper -> Web : Export list
+  Web -> Shopping : exportList(listId)
+  Shopping -> DB : read list + items
+  Shopping --> Web : ListTransfer v1
+  Web --> Shopper : JSON download
+  Shopper -> Web : Import a JSON file
+  Web -> Shopping : importList(stream)
+  Shopping -> Shopping : validate version, size and every row
+  alt Valid file
+    Shopping -> DB : save a named copy + unresolved references
+    Shopping --> Web : new list id
+  else Invalid file
+    Shopping --> Web : error; nothing is saved
+  end
+end
+
+group Download an offline checklist
+  Shopper -> Offline : GET /list/offline?listId
+  Offline -> Shopping : items + Summary
+  Offline -> Budget : forSummary(summary)
+  Offline -> Offline : render inline CSS, no live calls
+  Offline --> Shopper : shopping-checklist.html
+end
+
+note over Shopping, DB
+  Quantity is 1..999. A null retailer means
+  "automatic lowest". Unknown prices are
+  excluded from the known subtotal.
+end note
+
+@enduml

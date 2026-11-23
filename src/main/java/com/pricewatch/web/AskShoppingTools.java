@@ -41,7 +41,6 @@ public class AskShoppingTools {
     private static final int MAX_ROWS = 20;
     private static final int MAX_CHANGES = 5;
     private static final ZoneId HONG_KONG = ZoneId.of("Asia/Hong_Kong");
-    private static final BigDecimal MAX_PRICE = new BigDecimal("999999999999999.9999");
     private static final Map<String, Object> PRODUCT_CODE = string(
             "Exact product code from search or a saved list. Omit to use the already selected pack.");
     private static final Map<String, Object> LIST_ID = integer("Exact saved list ID returned by list_carts.");
@@ -849,9 +848,7 @@ public class AskShoppingTools {
         if (value == null) return null;
         if (!value.matches("[0-9]{1,15}(\\.[0-9]{1,12})?")) throw invalid("Use a valid target amount in HKD.");
         try {
-            var price = new BigDecimal(value).setScale(4, RoundingMode.UNNECESSARY);
-            if (price.compareTo(MAX_PRICE) > 0) throw invalid("Use a valid target amount in HKD.");
-            return price;
+            return new BigDecimal(value).setScale(4, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException ignored) {
             throw invalid("Use at most four decimal places for the target.");
         }

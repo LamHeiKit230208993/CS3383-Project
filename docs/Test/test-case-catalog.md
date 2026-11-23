@@ -1,5 +1,7 @@
 # Test Case Catalog
 
+[TC-JAVA-COVERAGE-001](cases/TC-JAVA-COVERAGE-001.md) links the mixed JUnit and H2 integration cases used for the Java coverage target.
+
 [TC-CHAT-002](cases/TC-CHAT-002.md) covers shopping confirmations, retries, and conversation return links.
 [TC-CHAT-003](cases/TC-CHAT-003.md) covers shopping tool validation, stale previews, saved alert drafts, and decimal arithmetic.
 
@@ -12,7 +14,7 @@ checked prices, pack choices and follow-ups, chat history, and send and reply re
 [TC-USABILITY-001](cases/TC-USABILITY-001.md) records a Cart and Settings walkthrough at desktop and phone widths, including the mobile Done control retest.
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
-[TC-DATA-005](cases/TC-DATA-005.md) checks synthetic demo tracking history, confirmation, unknown rows, and visible demo sources.
+[TC-DATA-005](cases/TC-DATA-005.md) checks demo products in Wishlist, chronological price history, latest state, confirmation, and recorded price gaps.
 
 This index describes maintained checks. Use the [test strategy](strategy.md)
 for methods and planned coverage. Detailed steps and limits belong in
@@ -20,10 +22,10 @@ for methods and planned coverage. Detailed steps and limits belong in
 
 ## Latest recorded validation
 
-The 22 November 2026 follow-up passed **164 Java tests** with **82.07% line**
-and **63.41% branch** coverage. It also passed **22 shopper and 13 milestone
-Chrome scenarios**, two browser coverage helper tests, and the H2 upgrade
-and restart check. See the [dated run record](history.md).
+The 23 November 2026 [demo history retest](history.md#demo-history-review-retest--23-november-2026)
+passed **339 Java tests** with **94.06% line** and **84.36% branch** coverage.
+It also passed **22 shopper and 13 milestone Chrome scenarios** and the H2
+restart and upgrade checks.
 
 ## J01–J04 baseline scenarios
 

@@ -1,0 +1,153 @@
+@startuml
+top to bottom direction
+!pragma layout smetana
+skinparam backgroundColor transparent
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam defaultFontColor #1C2B24
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam arrowColor #557567
+skinparam arrowThickness 1.1
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #F5FAF7
+skinparam classBorderColor #9DB9AB
+skinparam classFontColor #1C2B24
+skinparam classFontSize 12
+skinparam noteBackgroundColor #FDF6E8
+skinparam noteBorderColor #D9B56A
+skinparam noteFontSize 11
+
+title Market Desk · tracking, alerts, reminders and settings
+
+class ProductEntity <<catalog>> {
+  code: String {PK}
+  active: boolean
+}
+
+class TrackingEntity {
+  id: Long {PK}
+  retailerCode: String
+  enabled: boolean
+  startedAt, stoppedAt: Instant
+  targetPrice: BigDecimal {nullable}
+  targetArmed, dropEnabled: boolean
+  lastObservedPrice: BigDecimal
+}
+
+class PriceObservationEntity {
+  id: Long {PK}
+  price: BigDecimal {nullable}
+  observedAt: Instant
+  sourceUrl, sourceChecksum: String
+}
+
+class AlertEventEntity {
+  id: Long {PK}
+  type: TARGET | DROP | SUMMARY
+  observationId: Long {nullable, no FK}
+  price, previousPrice: BigDecimal
+  readAt, snoozedUntil: Instant
+  summaryDate: LocalDate {unique}
+}
+
+class WatchRuleEntity {
+  id: Long {PK}
+  productCode: String {no FK}
+  target: BigDecimal {nullable}
+  intervalDays: Integer {nullable}
+  startAt: LocalDateTime {nullable}
+  repeat: ONCE \| DAILY \| WEEKLY \| FORTNIGHTLY \| MONTHLY
+  nextDueAt, nextPriceAt: Instant
+  armed, waitingForLive: boolean
+  completedAt: Instant
+}
+
+class ProductTargetRuleEntity <<legacy>> {
+  productCode: String {PK, no FK}
+  target: BigDecimal
+  armed, paused: boolean
+}
+
+class ProductTargetEventEntity {
+  id: Long {PK}
+  productCode: String {no FK}
+  target: BigDecimal
+  retrievedAt, createdAt: Instant
+  ruleId: Long {nullable}
+  scheduledDueAt: Instant
+}
+
+class ProductTargetRetailerPrice <<embeddable>> {
+  retailerCode: String
+  price: BigDecimal
+}
+
+class ReminderEntity {
+  id: Long {PK}
+  quantity: int
+  intervalDays: int
+  selectedRetailerCode: String {nullable}
+  nextDueAt: Instant
+  snoozedUntil: Instant {nullable}
+  paused: Boolean
+}
+
+class ReminderOccurrenceEntity {
+  id: Long {PK}
+  reminderId: long {no FK}
+  productCode: String
+  quantity: int
+  retailerCode: String
+  dueAt: Instant {unique with reminderId}
+  readAt, snoozedUntil: Instant
+}
+
+class BudgetSettingsEntity {
+  id: 1
+  period: WEEKLY | MONTHLY
+  limitAmount: BigDecimal
+}
+
+class NotificationSettingsEntity {
+  id: 1
+  quietStart, quietEnd: LocalTime
+  summaryTime: LocalTime
+}
+
+class DisplayPreferencesEntity {
+  id: 1
+  language: en | zh-Hant | zh-Hans
+  highContrast: boolean
+}
+
+ProductEntity "1" -- "0..*" TrackingEntity : tracked at
+TrackingEntity "1" *-- "0..*" PriceObservationEntity : records
+TrackingEntity "0..1" -- "0..*" AlertEventEntity : legacy alerts
+ProductEntity "1" -- "0..*" ReminderEntity : replenish
+ReminderEntity "1" .. "0..*" ReminderOccurrenceEntity : history outlives rule
+WatchRuleEntity ..> ProductEntity : productCode, no FK
+ProductTargetRuleEntity ..> ProductEntity : productCode, no FK
+ProductTargetEventEntity ..> ProductEntity : productCode, no FK
+ProductTargetEventEntity "1" *-- "0..*" ProductTargetRetailerPrice : qualifying prices
+ReminderOccurrenceEntity ..> ReminderEntity : reminderId, no FK
+
+note right of WatchRuleEntity
+  The current unified rule. Price-only,
+  calendar-only and combined conditions
+  share one table and one evaluator.
+end note
+
+note bottom of ProductTargetRuleEntity
+  Legacy per-product target and
+  per-retailer rules still exist and
+  still appear in the alert centre.
+end note
+
+note bottom of AlertEventEntity
+  Retailer tracking alerts. Watch-rule
+  events are stored separately in
+  product_target_events.
+end note
+
+@enduml

@@ -4,14 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pricewatch.catalog.importer.CatalogJsonParser;
 import com.pricewatch.catalog.importer.ImportedCatalog;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CatalogJsonParserTest {
     private final CatalogJsonParser parser = new CatalogJsonParser(new ObjectMapper());
@@ -113,11 +118,80 @@ class CatalogJsonParserTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidDocuments")
+    void rejectsInvalidDocumentsWithASpecificReason(String json, String reason) {
+        var error = assertThrows(CatalogImportException.class,
+                () -> parser.parse(json == null ? null : json.getBytes(StandardCharsets.UTF_8)));
+        assertTrue(error.getMessage().contains(reason), error.getMessage());
+    }
+
+    static Stream<Arguments> invalidDocuments() {
+        String base = productJson("1.25");
+        return Stream.of(
+                Arguments.of(null, "empty"),
+                Arguments.of("", "empty"),
+                Arguments.of("[", "not valid JSON"),
+                Arguments.of("{}", "non-empty product array"),
+                Arguments.of("[]", "non-empty product array"),
+                Arguments.of("[false]", "Each product must be an object"),
+                Arguments.of(base.replace("\"code\":\"PACK-1L\",", ""), "product code is required"),
+                Arguments.of(base.replace("\"code\":\"PACK-1L\"", "\"code\":null"), "product code is required"),
+                Arguments.of(base.replace("PACK-1L", " "), "product code is required"),
+                Arguments.of(base.replace("PACK-1L", " PACK-1L"), "product code is invalid"),
+                Arguments.of(base.replace("PACK-1L", "x".repeat(81)), "product code is invalid"),
+                Arguments.of(base.replace("\"brand\"", "\"ignored\""), "brand labels must be an object"),
+                Arguments.of(base.replace("\"name\":{\"en\":\"Pack 1L\",\"zh-Hant\":\"一公升\",\"zh-Hans\":\"一升\"}", "\"name\":42"), "name labels must be an object"),
+                Arguments.of(base.replace("\"en\":\"Pack 1L\",", ""), "name labels are missing en"),
+                Arguments.of(base.replace("\"en\":\"Pack 1L\"", "\"en\":null"), "name labels are missing en"),
+                Arguments.of(base.replace("\"en\":\"Pack 1L\"", "\"en\":7"), "label for en must be text"),
+                Arguments.of(base.replace("Pack 1L", " "), "label for en is blank"),
+                Arguments.of(base.replace("Pack 1L", "x".repeat(256)), "label for en is too long"),
+                Arguments.of(base.replace("[{\"supermarketCode\":\"STORE\",\"price\":\"1.25\"}]", "{}"), "Prices for product"),
+                Arguments.of(base.replace("[{\"supermarketCode\":\"STORE\",\"price\":\"1.25\"}]", "[null]"), "Each price must be an object"),
+                Arguments.of(base.replace("[{\"supermarketCode\":\"STORE\",\"price\":\"1.25\"}]", "[{\"price\":1.25}]"), "retailer code is required"),
+                Arguments.of(base.replace("\"supermarketCode\":\"STORE\"", "\"supermarketCode\":9"), "retailer code is required"),
+                Arguments.of(base.replace("STORE", " "), "retailer code is required"),
+                Arguments.of(base.replace("STORE", " STORE"), "retailer code is invalid"),
+                Arguments.of(base.replace("STORE", "x".repeat(81)), "retailer code is invalid"),
+                Arguments.of(base.replace("\"price\":\"1.25\"", "\"price\":false"), "must be a decimal or blank"),
+                Arguments.of(productJson("-0.01"), "Negative prices"),
+                Arguments.of(productJson("1000000000000000.0000"), "price is too large"),
+                Arguments.of(productJson("abc"), "not a supported decimal amount"),
+                Arguments.of(base.replace("[{\"supermarketCode\":\"STORE\",\"en\":\"Offer\",\"zh-Hant\":\"優惠\",\"zh-Hans\":\"优惠\"}]", "{}"), "Offers for product"),
+                Arguments.of(base.replace("\"price\":\"1.25\"}]", "\"price\":\"1.25\"},{\"supermarketCode\":\"STORE\",\"price\":\"1.26\"}]"), "conflicting prices")
+        );
+    }
+
+    @Test
+    void missingAndNullArraysLeaveAProductWithNoListings() {
+        String body = productJson("1.25")
+                .replace("\"prices\":[{\"supermarketCode\":\"STORE\",\"price\":\"1.25\"}],", "")
+                .replace("\"offers\":[{\"supermarketCode\":\"STORE\",\"en\":\"Offer\",\"zh-Hant\":\"優惠\",\"zh-Hans\":\"优惠\"}]", "\"offers\":null");
+        var catalog = parser.parse(body.getBytes(StandardCharsets.UTF_8));
+        assertEquals(1, catalog.products().size());
+        assertEquals(0, catalog.listingCount());
+        assertEquals(0, catalog.offerCount());
+    }
+
+    @Test
+    void deduplicatesIdenticalProductsAndRetailerPricesAndKeepsPartiallyTranslatedOffers() {
+        String product = objectFromArray(productJson("1.25"))
+                .replace("\"price\":\"1.25\"}]", "\"price\":\"1.25\"},{\"supermarketCode\":\"STORE\",\"price\":\"1.2500\"}]")
+                .replace(",\"zh-Hant\":\"優惠\",\"zh-Hans\":\"优惠\"", "");
+        var catalog = parser.parse(("[" + product + "," + product + "]").getBytes(StandardCharsets.UTF_8));
+        assertEquals(1, catalog.products().size());
+        assertEquals(1, catalog.listingCount());
+        assertEquals(1, catalog.offerCount());
+        assertEquals(new LocalizedText("Offer", "", ""),
+                catalog.products().getFirst().listings().getFirst().offers().getFirst());
+    }
+
     private String objectFromArray(String json) {
         return json.substring(json.indexOf('[') + 1, json.lastIndexOf(']')).trim();
     }
 
-    private String productJson(String price) {
+    private static String productJson(String price) {
         return """
                 [{
                   "code":"PACK-1L",

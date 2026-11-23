@@ -11,28 +11,22 @@ The original idea was a price-comparison app with a chat helper. The team has si
 | Run the app or its checks | [Setup guide](docs/SETUP.md) |
 | Understand the product and requirements | [Product description](docs/product-description.md), then [project scope](docs/project-scope.md) |
 | Check agreed technical safeguards | [Baseline decisions](docs/Plan/baseline-proposal.md) |
-| Understand the application | [J01–J04 baseline](docs/implementation-baseline-j01-j04.md), [J05–J08 extension](docs/implementation-j05-j08.md), and [UML index](docs/diagrams/README.md) |
+| Understand the application | [System design guide](docs/guide/system-guide.html), [OO patterns](docs/guide/oo-patterns.html), and [UML index](docs/diagrams/README.md) |
 | Assign jobs or check dependencies | [Job plan](docs/Plan/features.md) |
 | Work on J05–J08 | [Milestone execution plan](docs/Plan/tracking-alerts-budgets-reminders-j05-j08.md); D01–D07 were agreed on 6 November 2026 |
 | Check data limits and wider design proposals | [Feasibility review](docs/feasibility-review-simple.md), [source inspection](docs/Plan/data-sample-review.md), and [architecture](docs/architecture-options.md) |
-| Review test coverage or past results | [Current catalogue](docs/Test/test-case-catalog.md) and [dated history](docs/Test/history.md) |
+| Review test coverage or past results | [Test strategy](docs/Test/strategy.md), [current catalogue](docs/Test/test-case-catalog.md), and [dated history](docs/Test/history.md) |
 
 The [original requirements archive](docs/Eric/archive/README.md) is historical
 evidence, not current implementation guidance.
 
 ## Current milestone
 
-PR #15 is merged. J01–J04 provide the local import, search, comparison, and saved-list baseline. The 25 October baseline checks passed 47 Java tests and 9 browser scenarios; see the [test history](docs/Test/history.md#pr-15-review-regressions--25-october-2026). Those results do not verify later changes.
-
-**J05–J08 are implemented locally under issue #17.** This branch adds
-Saved products and retailer tracking, in-app alerts, planned budgets, and
-replenishment reminders. Validation on 6 November passed 86 Java tests, 9 baseline
-and 11 milestone browser scenarios, and an old-to-new H2 upgrade check. The
-changes await commit/PR review and merge; the issue remains open. Use the
-[implementation guide](docs/implementation-j05-j08.md) for routes and behaviour,
-and the [test catalogue](docs/Test/test-case-catalog.md) for verification evidence.
-The milestone plan records the agreed rules; the project scope remains the
-authority for feature decisions. J09–J12 remain later work.
+J01–J12 are merged into `main`. Market Desk provides local catalogue import,
+price comparison, Cart, Wishlist, alerts, Ask, list sharing, an offline
+checklist, and display and personal data settings. See the
+[release summary](release/summary.md) and [dated test results](docs/Test/history.md).
+The [project scope](docs/project-scope.md) records agreed feature decisions.
 
 ## Share the plan with teammates
 

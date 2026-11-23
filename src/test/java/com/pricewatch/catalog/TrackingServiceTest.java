@@ -12,6 +12,8 @@ import com.pricewatch.notifications.repository.NotificationSettingsRepository;
 import com.pricewatch.shopping.repository.ShoppingListItemRepository;
 import com.pricewatch.shopping.repository.ShoppingListRepository;
 import com.pricewatch.tracking.PriceObservationView;
+import com.pricewatch.tracking.PriceHistoryEntry;
+import com.pricewatch.tracking.DemoHistoryService;
 import com.pricewatch.tracking.TrackingService;
 import com.pricewatch.tracking.TrackingView;
 import com.pricewatch.tracking.repository.PriceObservationRepository;
@@ -30,6 +32,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -61,6 +65,7 @@ class TrackingServiceTest {
     private static final java.time.Instant START = java.time.Instant.parse("2026-11-06T04:00:00Z");
     @Autowired private CatalogService catalog;
     @Autowired private TrackingService tracking;
+    @Autowired private DemoHistoryService demo;
     @Autowired private TrackingRepository trackingRepository;
     @Autowired private PriceObservationRepository observationRepository;
     @Autowired private SavedProductRepository savedRepository;
@@ -377,6 +382,108 @@ class TrackingServiceTest {
         tracking.configureTarget(period.id(), new BigDecimal("7.00"));
         assertEquals(0, alertEventRepository.findAll().stream().filter(event -> "TARGET".equals(event.getType())).count(),
                 "A target cannot use an accepted LIVE catalogue older than the retention window.");
+    }
+
+    @Test
+    void rejectsMissingInactiveProductsAndInvalidRetailersWithoutCreatingPeriods() {
+        catalog.importSample();
+        assertThrows(IllegalArgumentException.class, () -> tracking.start(null, "AEON"));
+        assertThrows(IllegalArgumentException.class, () -> tracking.start(" ", "AEON"));
+        assertThrows(IllegalArgumentException.class, () -> tracking.start("MISSING", "AEON"));
+        assertThrows(IllegalArgumentException.class, () -> tracking.start("P000000124", null));
+        assertThrows(IllegalArgumentException.class, () -> tracking.start("P000000124", " "));
+        assertThrows(IllegalArgumentException.class, () -> tracking.start("P000000124", "MISSING"));
+
+        catalog.accept(json(product("REPLACEMENT", "[]")), "SAMPLE", "fixture");
+        assertThrows(IllegalArgumentException.class, () -> tracking.startAll("P000000124"));
+        assertTrue(tracking.trackingPeriods().isEmpty());
+    }
+
+    @Test
+    void stopsRetailerPeriodsAndRejectsFurtherRuleEdits() {
+        catalog.importSample();
+        var period = tracking.start("P000000124", "AEON");
+        tracking.configureDrop(period.id(), true);
+        assertEquals(List.of(period.id()), tracking.activeLegacyRules().stream().map(TrackingView::id).toList());
+        assertThrows(IllegalArgumentException.class, () -> tracking.setLegacyAlertsEnabled("P000000229", period.id(), false));
+        tracking.setLegacyAlertsEnabled("P000000124", period.id(), false);
+        assertFalse(tracking.activeLegacyRules().getFirst().alertsEnabled());
+        tracking.deleteLegacyAlerts("P000000124", period.id());
+        assertTrue(tracking.activeLegacyRules().isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> tracking.deleteLegacyAlerts("P000000124", period.id()));
+
+        tracking.stop(period.id());
+        now.set(START.plusSeconds(1));
+        tracking.stop(period.id());
+        var stopped = tracking.trackingPeriods().getFirst();
+        assertFalse(stopped.enabled());
+        assertEquals(START, stopped.stoppedAt());
+        assertThrows(IllegalArgumentException.class, () -> tracking.configureDrop(period.id(), true));
+        assertThrows(IllegalArgumentException.class, () -> tracking.stop(-1));
+        assertThrows(IllegalArgumentException.class, () -> tracking.deleteHistory(-1));
+        assertThrows(IllegalArgumentException.class, () -> tracking.configureTarget(-1, BigDecimal.ONE));
+    }
+
+    @Test
+    void stopsEveryRetailerPeriodWithoutRemovingTheWishlistEntry() {
+        catalog.importSample();
+        tracking.save("P000000124");
+        assertEquals(4, tracking.trackingPeriods().size());
+
+        tracking.stopAll("P000000124");
+
+        assertTrue(tracking.allRetailersProducts().isEmpty());
+        assertTrue(savedRepository.existsById("P000000124"));
+        assertTrue(tracking.trackingPeriods().stream().allMatch(period -> !period.enabled()
+                && START.equals(period.stoppedAt())));
+    }
+
+    @Test
+    void validatesTargetBoundsAndAcceptsChangesWithoutAlertingWhenTheListingIsUnknown() {
+        catalog.accept(json(product("UNKNOWN", "[{\"supermarketCode\":\"STORE-A\",\"price\":null}]")),
+                "LIVE", "fixture-live");
+        var period = tracking.start("UNKNOWN", "STORE-A");
+        assertThrows(IllegalArgumentException.class, () -> tracking.configureTarget(period.id(), new BigDecimal("-0.0001")));
+        assertThrows(IllegalArgumentException.class, () -> tracking.configureTarget(period.id(), new BigDecimal("0.00001")));
+        assertThrows(IllegalArgumentException.class, () -> tracking.configureTarget(period.id(), new BigDecimal("1000000000000000")));
+        assertNull(tracking.trackingPeriods().getFirst().targetPrice());
+
+        var max = new BigDecimal("999999999999999.9999");
+        tracking.configureTarget(period.id(), max);
+        assertEquals(max, tracking.trackingPeriods().getFirst().targetPrice());
+        assertEquals(0, alertEventRepository.count());
+        tracking.configureTarget(period.id(), null);
+        assertNull(tracking.trackingPeriods().getFirst().targetPrice());
+    }
+
+    @Test
+    void demoHistoryUsesSyntheticDatesAndSourcesAndReusesExistingTrackingPeriods() {
+        assertEquals(new DemoHistoryService.DemoResult(3, 40), demo.seed());
+        assertEquals("DEMO", catalog.status().origin());
+        assertEquals(5, tracking.trackingPeriods().size());
+        assertEquals(3, tracking.allRetailersProducts().size());
+        var milk = tracking.priceHistory("DEMO-MILK").stream()
+                .filter(entry -> "AEON".equals(entry.retailerCode()))
+                .sorted(Comparator.comparing(PriceHistoryEntry::retrievedAt))
+                .toList();
+        assertEquals(List.of(21, 20, 18, 15, 14, 8, 7, 1).stream()
+                .map(days -> START.minus(Duration.ofDays(days))).toList(),
+                milk.stream().map(PriceHistoryEntry::retrievedAt).toList());
+        assertEquals(new BigDecimal("10.0000"), milk.getFirst().price());
+        assertEquals(new BigDecimal("8.9000"), milk.getLast().price());
+        var milkPeriod = trackingRepository.findById(milk.getLast().trackingId()).orElseThrow();
+        assertEquals(milk.getLast().retrievedAt(), milkPeriod.getLastObservedAt());
+        assertEquals(milk.getLast().price(), milkPeriod.getLastObservedPrice());
+        var coffee = tracking.priceHistory("DEMO-COFFEE");
+        assertEquals(16, coffee.size());
+        assertTrue(coffee.stream().allMatch(entry -> DemoHistoryService.DEMO_SOURCE.equals(entry.sourceUrl())));
+        assertTrue(coffee.stream().anyMatch(entry -> entry.price() == null && "WELLCOME".equals(entry.retailerCode())));
+        var originalIds = tracking.trackingPeriods().stream().map(TrackingView::id).sorted().toList();
+
+        now.set(START.plusSeconds(3600));
+        assertEquals(new DemoHistoryService.DemoResult(3, 40), demo.seed());
+        assertEquals(originalIds, tracking.trackingPeriods().stream().map(TrackingView::id).sorted().toList());
+        assertEquals(3, tracking.savedProducts().size());
     }
 
     private TrackingView startTogether(CountDownLatch ready, CountDownLatch start) throws Exception {

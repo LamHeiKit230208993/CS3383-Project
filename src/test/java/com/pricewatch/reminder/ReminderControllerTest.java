@@ -5,6 +5,9 @@ import com.pricewatch.catalog.repository.AcceptedImportRepository;
 import com.pricewatch.catalog.repository.OfferRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.catalog.repository.RetailerListingRepository;
+import com.pricewatch.notifications.NotificationScheduler;
+import com.pricewatch.notifications.ProductTargetService;
+import com.pricewatch.notifications.WatchRuleService;
 import com.pricewatch.reminder.repository.ReminderOccurrenceRepository;
 import com.pricewatch.reminder.repository.ReminderRepository;
 import com.pricewatch.shopping.ShoppingService;
@@ -20,6 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -58,6 +64,8 @@ class ReminderControllerTest {
     @Autowired private OfferRepository offers;
     @Autowired private RetailerListingRepository listings;
     @Autowired private ProductRepository products;
+    @Autowired private WatchRuleService watchRules;
+    @Autowired private ProductTargetService alerts;
 
     @MockitoBean private Clock clock;
 
@@ -365,5 +373,86 @@ class ReminderControllerTest {
         mvc.perform(post("/reminders/create").param("code", "P000000124").param("quantity", quantity)
                         .param("intervalDays", intervalDays).param("retailerCode", retailerCode))
                 .andExpect(redirectedUrl(RULES));
+    }
+
+    @Test
+    void invalidProductRetailerAndDateLeaveNoStoredRule() {
+        catalog.importSample();
+        for (String invalid : new String[]{null, " ", "MISSING"}) {
+            assertEquals("Choose a product from the current catalogue.", assertThrows(
+                    IllegalArgumentException.class, () -> reminders.create(invalid, 1, 1, null)).getMessage());
+        }
+        assertEquals("Choose a listed retailer for this product, or use Automatic lowest.",
+                assertThrows(IllegalArgumentException.class,
+                        () -> reminders.create("P000000124", 1, 1, "OTHER")).getMessage());
+        now.set(Instant.MAX);
+        assertEquals("That interval is outside the supported date range.", assertThrows(
+                IllegalArgumentException.class, () -> reminders.create("P000000124", 1, 1, null)).getMessage());
+        assertEquals(0, reminderRepository.count());
+    }
+
+    @Test
+    void snoozingBeforeDueDoesNotCreateHistoryAndBlocksOccurrenceActionsUntilItExpires() {
+        catalog.importSample();
+        reminders.create("P000000124", 2, 1, " AEON ");
+        var rule = reminders.overview().reminders().getFirst();
+        reminders.snooze(rule.id());
+        assertTrue(reminders.occurrences(now.get()).isEmpty());
+        now.set(reminders.overview().reminders().getFirst().effectiveDueAt());
+        reminders.recordDue();
+        var occurrence = reminders.occurrences(now.get()).getFirst();
+        reminders.snoozeOccurrence(occurrence.id());
+        assertThrows(IllegalArgumentException.class, () -> reminders.addOccurrence(occurrence.id()));
+        assertThrows(IllegalArgumentException.class, () -> reminders.snoozeOccurrence(occurrence.id()));
+        assertTrue(shopping.items().isEmpty());
+        assertFalse(reminders.occurrences(now.get()).getFirst().available());
+
+        now.set(reminders.overview().reminders().getFirst().effectiveDueAt());
+        reminders.addOccurrence(occurrence.id());
+        assertEquals(2, shopping.items().getFirst().quantity());
+        assertEquals("AEON", shopping.items().getFirst().selectedRetailerCode());
+    }
+
+    @Test
+    void ruleSnoozeUpdatesTheDueOccurrenceAndClearStartsTheNextInterval() {
+        catalog.importSample();
+        reminders.create("P000000124", 1, 1, null);
+        var rule = reminders.overview().reminders().getFirst();
+        now.set(rule.nextDueAt());
+        reminders.snooze(rule.id());
+        var snoozed = reminders.occurrences(now.get()).getFirst();
+        assertFalse(snoozed.available());
+        assertTrue(snoozed.active());
+        reminders.clear(rule.id());
+        var cleared = reminders.occurrences(now.get()).getFirst();
+        assertEquals(snoozed.id(), cleared.id());
+        assertTrue(cleared.read());
+        assertFalse(cleared.active());
+        assertEquals(now.get().plusSeconds(86_400), reminders.overview().reminders().getFirst().nextDueAt());
+    }
+
+    @Test
+    void schedulerRecordsBothFamiliesOfDueRemindersAndDoesNotRepeatThem() {
+        catalog.importSample();
+        reminders.create("P000000124", 1, 1, null);
+        Instant due = reminders.overview().reminders().getFirst().nextDueAt();
+        watchRules.save("P000000229", null, null,
+                LocalDateTime.ofInstant(due, ZoneId.of("Asia/Hong_Kong")), "ONCE");
+        var scheduler = new NotificationScheduler(reminders, watchRules);
+        try {
+            scheduler.processDueEvents();
+            assertTrue(reminders.occurrences(now.get()).isEmpty());
+            assertTrue(alerts.events(now.get()).isEmpty());
+            now.set(due);
+            scheduler.processDueEvents();
+            scheduler.processDueEvents();
+            assertEquals(java.util.List.of("P000000124"),
+                    reminders.occurrences(now.get()).stream().map(ReminderOccurrenceView::productCode).toList());
+            assertEquals(java.util.List.of("P000000229"),
+                    alerts.events(now.get()).stream().map(event -> event.productCode()).toList());
+        } finally {
+            alerts.reset();
+            watchRules.reset();
+        }
     }
 }
