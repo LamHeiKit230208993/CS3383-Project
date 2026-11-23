@@ -536,7 +536,7 @@ class HelloControllerTest {
                     .andExpect(content().string(not(containsString("chat-form"))));
         }
         mvc.perform(get("/data")).andExpect(status().isOk())
-                .andExpect(content().string(containsString("No automatic refresh runs at startup")));
+                .andExpect(content().string(containsString("Live prices refresh on first use each Hong Kong day")));
     }
     @Test void oldPlannedLinksLeadToWorkingMilestonePages() throws Exception {
         mvc.perform(get("/planned/saved")).andExpect(redirectedUrl("/saved"));
