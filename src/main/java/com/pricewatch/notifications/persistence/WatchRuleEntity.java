@@ -1,6 +1,7 @@
 package com.pricewatch.notifications.persistence;
 
 import com.pricewatch.notifications.WatchRepeat;
+import com.pricewatch.notifications.WatchPriceKind;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -28,6 +29,10 @@ public class WatchRuleEntity {
 
     @Column(precision = 19, scale = 4)
     private BigDecimal target;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "price_kind", length = 16)
+    private WatchPriceKind priceKind;
 
     @Column(name = "interval_days")
     private Integer intervalDays;
@@ -63,6 +68,18 @@ public class WatchRuleEntity {
     @Column(name = "next_price_at")
     private Instant nextPriceAt;
 
+    @Column(name = "legacy_reminder_id", unique = true)
+    private Long legacyReminderId;
+
+    @Column(name = "cart_quantity")
+    private Integer cartQuantity;
+
+    @Column(name = "cart_retailer", length = 80)
+    private String cartRetailer;
+
+    @Column(name = "snoozed_until")
+    private Instant snoozedUntil;
+
     protected WatchRuleEntity() {}
 
     public WatchRuleEntity(String productCode, BigDecimal target, Integer intervalDays, Instant now) {
@@ -78,6 +95,7 @@ public class WatchRuleEntity {
     public Long getId() { return id; }
     public String getProductCode() { return productCode; }
     public BigDecimal getTarget() { return target; }
+    public WatchPriceKind getPriceKind() { return priceKind == null ? WatchPriceKind.TARGET : priceKind; }
     public Integer getIntervalDays() { return intervalDays; }
     public Instant getNextDueAt() { return nextDueAt; }
     public boolean isArmed() { return armed; }
@@ -86,6 +104,22 @@ public class WatchRuleEntity {
     public boolean isCompleted() { return completedAt != null; }
     public WatchRepeat getRepeat() { return repeat; }
     public LocalDateTime getStartAt() { return startAt; }
+    public Integer getCartQuantity() { return cartQuantity; }
+    public String getCartRetailer() { return cartRetailer; }
+    public Instant getSnoozedUntil() { return snoozedUntil; }
+
+    public void reviseCartReminder(int interval, int quantity, String retailer, Instant now) {
+        cartQuantity = quantity;
+        cartRetailer = retailer;
+        if (!Objects.equals(intervalDays, interval)) {
+            intervalDays = interval;
+            advance(now);
+        }
+    }
+
+    public void snoozeReminder(Instant until) {
+        snoozedUntil = until;
+    }
 
     public void setEnabled(boolean enabled) {
         if (enabled && isCompleted()) {
@@ -112,7 +146,11 @@ public class WatchRuleEntity {
     }
 
     public void updateSchedule(BigDecimal target, LocalDateTime startAt, WatchRepeat repeat) {
-        boolean targetChanged = !Objects.equals(this.target, target);
+        updateSchedule(target, startAt, repeat, WatchPriceKind.TARGET);
+    }
+
+    public void updateSchedule(BigDecimal target, LocalDateTime startAt, WatchRepeat repeat, WatchPriceKind kind) {
+        boolean targetChanged = !Objects.equals(this.target, target) || getPriceKind() != kind;
         boolean restarted = !matchesSchedule(startAt, repeat) || (isCompleted() && targetChanged);
         if (restarted) {
             intervalDays = null;
@@ -126,6 +164,7 @@ public class WatchRuleEntity {
         }
         if (target == null) waitingForLive = false;
         this.target = target;
+        this.priceKind = kind;
         this.startAt = startAt;
         this.repeat = repeat;
     }
@@ -139,7 +178,8 @@ public class WatchRuleEntity {
     }
 
     public boolean isDue(Instant now) {
-        return nextDueAt != null && !nextDueAt.isAfter(now);
+        return nextDueAt != null && !nextDueAt.isAfter(now)
+                && (snoozedUntil == null || !snoozedUntil.isAfter(now));
     }
 
     public boolean canFirePrice(Instant retrievedAt) {
@@ -151,6 +191,8 @@ public class WatchRuleEntity {
         evaluatedAt = retrievedAt;
         if (repeat == WatchRepeat.ONCE) {
             completedAt = now;
+        } else if (repeat == WatchRepeat.DAILY) {
+            nextPriceAt = WatchRepeat.nextHongKongDay(retrievedAt);
         } else {
             if (priceAnchorAt == null) priceAnchorAt = now;
             nextPriceAt = repeat.nextAfter(priceAnchorAt, now);
@@ -158,6 +200,7 @@ public class WatchRuleEntity {
     }
 
     public void advance(Instant now) {
+        snoozedUntil = null;
         if (repeat == null) {
             nextDueAt = now.plus(intervalDays, ChronoUnit.DAYS);
         } else {

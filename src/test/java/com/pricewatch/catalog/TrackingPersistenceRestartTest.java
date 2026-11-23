@@ -2,7 +2,8 @@ package com.pricewatch.catalog;
 
 import com.pricewatch.PricewatchApplication;
 import com.pricewatch.notifications.AlertService;
-import com.pricewatch.notifications.NotificationPolicy;
+import com.pricewatch.notifications.persistence.NotificationSettingsEntity;
+import com.pricewatch.notifications.repository.NotificationSettingsRepository;
 import com.pricewatch.notifications.ProductTargetService;
 import com.pricewatch.notifications.persistence.AlertEventEntity;
 import com.pricewatch.notifications.repository.AlertEventRepository;
@@ -63,8 +64,8 @@ class TrackingPersistenceRestartTest {
                     .findFirst().orElseThrow().getId();
             firstRun.getBean(AlertService.class).snooze(targetEventId);
             firstRun.getBean(AlertService.class).markRead(dropEventId);
-            firstRun.getBean(NotificationPolicy.class).update(
-                    LocalTime.of(21, 30), LocalTime.of(7, 30), LocalTime.of(7, 45));
+            firstRun.getBean(NotificationSettingsRepository.class).save(new NotificationSettingsEntity(
+                    LocalTime.of(21, 30), LocalTime.of(7, 30), LocalTime.of(7, 45)));
             oldSummaryId = firstRun.getBean(AlertEventRepository.class).save(new AlertEventEntity(
                     LocalDate.of(2026, 11, 5), 2, events.getFirst().getCreatedAt().minusSeconds(86_400))).getId();
             observationCount = firstRun.getBean(PriceObservationRepository.class).count();
@@ -95,10 +96,10 @@ class TrackingPersistenceRestartTest {
             assertEquals(LocalDate.of(2026, 11, 5), oldSummary.getSummaryDate());
             assertEquals(2, oldSummary.getSummaryCount());
 
-            NotificationPolicy.Settings settings = reopened.getBean(NotificationPolicy.class).settings();
-            assertEquals(LocalTime.of(21, 30), settings.quietStart());
-            assertEquals(LocalTime.of(7, 30), settings.quietEnd());
-            assertEquals(LocalTime.of(7, 45), settings.summaryTime());
+            var settings = reopened.getBean(NotificationSettingsRepository.class).findById(1L).orElseThrow();
+            assertEquals(LocalTime.of(21, 30), settings.getQuietStart());
+            assertEquals(LocalTime.of(7, 30), settings.getQuietEnd());
+            assertEquals(LocalTime.of(7, 45), settings.getSummaryTime());
             assertNotNull(reopened.getBean(PriceObservationRepository.class)
                     .findTopByTracking_IdOrderByObservedAtDescIdDesc(trackingId).orElse(null));
             assertTrue(reopened.getBean(TrackingRepository.class).findById(trackingId).isPresent());

@@ -8,6 +8,7 @@ import com.pricewatch.catalog.importer.ImportedCatalog.ImportedListing;
 import com.pricewatch.catalog.importer.ImportedCatalog.ImportedProduct;
 import com.pricewatch.notifications.ProductTargetService;
 import com.pricewatch.notifications.WatchRuleService;
+import com.pricewatch.notifications.WatchPriceKind;
 import com.pricewatch.tracking.TrackingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -115,6 +117,20 @@ class AlertCenterControllerTest {
                 .param("from", "other"), RULES, "notice");
         assertTrue(tracking.legacyRules().isEmpty());
         action(post("/alerts/retailer-rule/delete").param("code", MILK).param("id", "99999"), RULES, "error");
+    }
+
+    @Test
+    void priceDropFormUsesDailyByDefaultAndKeepsTheSelectedKind() throws Exception {
+        action(watchForm().param("condition", "price").param("priceKind", "DROP_PERCENT")
+                .param("targetPrice", "25"), RULES, "notice");
+        var rule = watchRules.rules(MILK).getFirst();
+        assertEquals(WatchPriceKind.DROP_PERCENT, rule.priceKind());
+        assertEquals("DAILY", rule.repeat());
+        mvc.perform(get(RULES)).andExpect(status().isOk()).andExpect(content().string(
+                org.hamcrest.Matchers.containsString("Drops by 25%")));
+        action(watchForm().param("condition", "price").param("priceKind", "DROP_AMOUNT")
+                .param("id", Long.toString(rule.id())).param("targetPrice", "3"), RULES, "notice");
+        assertEquals(WatchPriceKind.DROP_AMOUNT, watchRules.rules(MILK).getFirst().priceKind());
     }
 
     @Test

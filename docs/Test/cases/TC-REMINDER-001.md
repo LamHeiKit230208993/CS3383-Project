@@ -1,39 +1,34 @@
-# TC-REMINDER-001 · Time rules and alert history
+# TC-REMINDER-001 · Legacy reminder upgrade
 
-Run `ReminderControllerTest` and `ReminderPersistenceRestartTest` with the
-checked sample catalogue, isolated H2 databases, and a controlled clock.
+Run `LegacyReminderMigrationTest` with isolated H2, a checked sample
+catalogue, and a clock fixed at 23 November 2026 at 16:30 HKT. Use tables
+that match the previous schema. The workspace checked during planning had
+0 rows in `replenishment_reminders` and 0 in `reminder_occurrences`.
+The integration test uses populated fixtures.
 
-1. Open an old reminders link with and without a product code. Verify that
-   it reaches the item rule panel or Alerts. Create a 7-day rule for three
-   packs at JASONS. Check the saved fields and first due time.
-2. Edit the quantity and retailer. Check that the due time stays the same.
-   Change the interval and check that the next due time starts from the edit.
-3. Advance the clock to the due time. Run two due checks at once and verify
-   that they record one active occurrence. Delete the rule and check that
-   the same occurrence remains in history without active actions.
-4. Snooze a due occurrence for 24 hours. Verify that it becomes unavailable
-   and returns with the same ID after the snooze. Clear it and advance to
-   the next due time. Verify that the first occurrence remains in history
-   and a new occurrence appears. An action on the first occurrence leaves
-   the new one alone. A shopper can also clear a snoozed occurrence early.
-5. Add from a due occurrence with a retailer conflict in Cart. Verify that
-   the action fails without changing the Cart or reminder. Resolve the
-   conflict and retry. Verify that the saved quantity and retailer are added
-   and the occurrence stays active. Check invalid quantities and intervals,
-   capacity failures, and missing prices on a pinned retailer.
-6. Pause a rule until its due time passes. Check that the saved schedule
-   stays and no occurrence is created. Resume it and confirm one occurrence.
-   Pause it again and check that its history stays visible while Cart,
-   clear and snooze actions are blocked. Resume it and check that the same
-   occurrence becomes active. Check redirects from Alerts and the item editor.
-7. Save a rule to a temporary H2 file and remove the empty occurrence table
-   and pause column to represent the previous schema. Reopen it when due and
-   verify that it defaults to on. Record and snooze its occurrence. Pause it
-   and reopen the app. Verify that the rule, occurrence ID, snoozed due time,
-   and pause state survive.
+1. Run the upgrade with both old tables empty, with both absent, and with
+   a J05–J08 rule whose schema predates the pause switch and history.
+   A rule without a saved pause value is enabled and keeps its due time and snooze.
+2. Seed an enabled seven-day rule for two packs at AEON and a paused rule.
+   Add an active snoozed occurrence and a dismissed occurrence whose old
+   rule is gone. Run the upgrade twice. Check the rule count, intervals,
+   due time, switch states, snooze, Cart defaults, occurrence times and
+   dismissal. Confirm that the source tables remain available and version
+   one personal-data export reads the migrated records.
+3. Visit `/reminders` and check the redirect to Alerts. The retired write
+   route returns 404. The Current rules tab and item editor show the
+   migrated entry in the shared rule list.
+4. Run two due checks on an enabled, overdue rule. Expect one occurrence.
+   Add its saved two packs with AEON to Cart. Snooze and confirm Add is
+   unavailable. Dismiss while snoozed and check that the due date moves
+   seven days from now and that the occurrence remains in history.
+5. Remove AEON's current price. The time event keeps the pinned retailer
+   and disables Add. Edit the saved choice to JASONS and the quantity to
+   three. Verify the pending occurrence reflects that change. Deleting the
+   rule retains its dismissed occurrence.
+6. Force the new history insert to fail with an H2 constraint. Verify that
+   the rule transfer rolls back and both source rows survive. Remove the
+   constraint and retry. Verify that personal-data reset clears migrated
+   records and a later upgrade does not recreate them.
 
-The tests advance the application clock and call the due check directly.
-They exercise in-app alert history and Cart, including the legacy form routes.
-
-Sources [ReminderControllerTest](../../../src/test/java/com/pricewatch/reminder/ReminderControllerTest.java),
-[ReminderPersistenceRestartTest](../../../src/test/java/com/pricewatch/reminder/ReminderPersistenceRestartTest.java).
+Source [LegacyReminderMigrationTest](../../../src/test/java/com/pricewatch/notifications/persistence/LegacyReminderMigrationTest.java).

@@ -17,10 +17,7 @@ import com.pricewatch.notifications.ProductTargetService;
 import com.pricewatch.notifications.WatchRuleService;
 import com.pricewatch.notifications.WatchRuleView;
 import com.pricewatch.notifications.persistence.ProductTargetRetailerPrice;
-import com.pricewatch.reminder.ReminderOccurrenceView;
-import com.pricewatch.reminder.ReminderOverview;
-import com.pricewatch.reminder.ReminderService;
-import com.pricewatch.reminder.ReminderView;
+import com.pricewatch.notifications.WatchPriceKind;
 import com.pricewatch.shopping.ItemView;
 import com.pricewatch.shopping.ShoppingService;
 import com.pricewatch.tracking.SavedProductView;
@@ -65,7 +62,6 @@ class AskShoppingToolsTest {
     private final TrackingService tracking = mock(TrackingService.class);
     private final WatchRuleService watches = mock(WatchRuleService.class);
     private final ProductTargetService targets = mock(ProductTargetService.class);
-    private final ReminderService reminders = mock(ReminderService.class);
     private final AlertService alerts = mock(AlertService.class);
     private final CatalogService catalogue = mock(CatalogService.class);
     private final BudgetService budgets = mock(BudgetService.class);
@@ -78,11 +74,10 @@ class AskShoppingToolsTest {
         messages.setDefaultEncoding(StandardCharsets.UTF_8.name());
         messages.setFallbackToSystemLocale(false);
         tools = new AskShoppingTools(catalogue, shopping, tracking, watches, targets,
-                reminders, alerts, budgets, messages, Clock.fixed(NOW, ZoneOffset.UTC));
+                alerts, budgets, messages, Clock.fixed(NOW, ZoneOffset.UTC));
         when(shopping.lists()).thenReturn(List.of(new ShoppingService.ListChoice(null, "My list"),
                 new ShoppingService.ListChoice(LIST, "Weekend groceries")));
         when(catalogue.find(CODE)).thenReturn(product());
-        when(reminders.overview()).thenReturn(new ReminderOverview(List.of()));
     }
 
     @Test
@@ -269,25 +264,39 @@ class AskShoppingToolsTest {
     }
 
     @Test
+    void preparesADailyPercentageDropAndWritesOnlyAfterConfirmation() throws Exception {
+        when(tracking.savedProducts()).thenReturn(List.of(new SavedProductView(product(), NOW)));
+        var turn = tools.open(ENGLISH, CODE, null);
+        var result = execute(turn, "propose_alert", """
+                {"operation":"create","condition":"price","price_kind":"DROP_PERCENT","target":25}
+                """);
+        assertEquals("awaiting_confirmation", result.path("status").asText());
+        verifyNoInteractions(watches);
+        tools.apply(turn.operations().getFirst(), ENGLISH);
+        verify(watches).save(CODE, null, new BigDecimal("25.0000"), null, "DAILY", WatchPriceKind.DROP_PERCENT);
+    }
+
+    @Test
     void existingAlertTypesCanBeListedAndDispatchedToTheirOwningServices() throws Exception {
         var price = new BigDecimal("28");
         when(watches.allRules()).thenReturn(List.of(new WatchRuleView(7L, CODE, price, null, NOW,
-                true, true, true, "WEEKLY", LocalDateTime.parse("2026-11-23T17:30"), false)));
+                true, true, true, "WEEKLY", LocalDateTime.parse("2026-11-23T17:30"), false),
+                new WatchRuleView(9L, CODE, null, 7, NOW, true, false, true, null, null, false,
+                        1, "AEON", null, WatchPriceKind.TARGET)));
         when(targets.rules()).thenReturn(List.of(new ProductTargetService.RuleView(CODE, price, true)));
         when(tracking.legacyRules()).thenReturn(List.of(new TrackingView(8L, CODE, "Milk 2 L", "AEON",
                 true, NOW, null, price, true, true, List.of())));
-        when(reminders.overview()).thenReturn(new ReminderOverview(List.of(
-                new ReminderView(9L, CODE, "Milk 2 L", "", 1, 7, "AEON", true, true, NOW, NOW, false, true))));
 
         var turn = tools.open(ENGLISH, CODE, null);
         var rules = execute(turn, "get_alerts", """
                 {"view":"rules","product_code":"MILK-2L"}
                 """).path("rules");
-        assertEquals(List.of("watch:7", "target:MILK-2L", "retailer:8", "reminder:9"),
+        assertEquals(List.of("watch:7", "watch:9", "target:MILK-2L", "retailer:8"),
                 java.util.stream.StreamSupport.stream(rules.spliterator(), false)
                         .map(rule -> rule.path("rule_id").asText()).toList());
         var calendarDetail = rules.get(0).path("detail").asText();
         assertTrue(calendarDetail.contains("Waiting for a qualifying live price"), calendarDetail);
+        assertEquals("TARGET", rules.get(0).path("price_kind").asText());
 
         confirmAlert("""
                 {"operation":"toggle","rule_id":"watch:7","enabled":false}
@@ -302,9 +311,9 @@ class AskShoppingToolsTest {
                 """);
         verify(tracking).configureTarget(8L, new BigDecimal("23.0000"));
         confirmAlert("""
-                {"operation":"update","rule_id":"reminder:9","interval_days":14,"retailer":"automatic"}
+                {"operation":"update","rule_id":"watch:9","interval_days":14,"retailer":"automatic"}
                 """);
-        verify(reminders).update(9L, 1, 14, null);
+        verify(watches).updateMigratedTimeRule(CODE, 9L, 14, 1, null);
     }
 
     @Test
@@ -317,10 +326,9 @@ class AskShoppingToolsTest {
         when(targets.events(NOW)).thenReturn(List.of(
                 new ProductTargetEventView(3L, CODE, BigDecimal.TEN, NOW, NOW.minusSeconds(60),
                         List.of(new ProductTargetRetailerPrice("AEON", BigDecimal.TEN)),
-                        false, true, null, null, 7L, null)));
-        when(reminders.occurrences(NOW)).thenReturn(List.of(
-                new ReminderOccurrenceView(4L, 9L, CODE, 2, "AEON", NOW, NOW,
-                        false, true, true, true)));
+                        false, true, null, null, 7L, null),
+                new ProductTargetEventView(4L, CODE, null, null, NOW, List.of(),
+                        false, true, null, null, 9L, NOW, 2, "AEON", true, true, WatchPriceKind.TARGET)));
         var turn = tools.open(ENGLISH, CODE, null);
         var events = execute(turn, "get_alerts", """
                 {"view":"history","product_code":"MILK-2L"}
@@ -398,9 +406,9 @@ class AskShoppingToolsTest {
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
             "{\"operation\":\"create\",\"condition\":\"custom\"}|Choose price, calendar, or combined",
-            "{\"operation\":\"create\",\"condition\":\"price\",\"target\":\"-1\"}|target amount in HKD",
+            "{\"operation\":\"create\",\"condition\":\"price\",\"target\":\"-1\"}|valid decimal threshold",
             "{\"operation\":\"create\",\"condition\":\"price\",\"target\":\"12.34567\"}|four decimal places",
-            "{\"operation\":\"create\",\"condition\":\"price\",\"target\":\"9999999999999999\"}|target amount in HKD",
+            "{\"operation\":\"create\",\"condition\":\"price\",\"target\":\"9999999999999999\"}|valid decimal threshold",
             "{\"operation\":\"create\",\"condition\":\"calendar\",\"start_at\":\"2026-02-30T23:00\"}|YYYY-MM-DDTHH:mm",
             "{\"operation\":\"create\",\"condition\":\"calendar\",\"start_at\":\"0000-01-01T00:00\"}|valid Hong Kong calendar",
             "{\"operation\":\"create\",\"condition\":\"calendar\",\"start_at\":\"+10000-01-01T00:00\"}|valid Hong Kong calendar",

@@ -33,7 +33,7 @@ class AlertTimelineTest {
         var first = entry("2026-11-21T12:30:42Z");
         var sameTrigger = entry("2026-11-21T12:30:42Z");
         var differentProduct = new AlertCenterController.TimelineEntry(
-                first.createdAt(), "P000000125", null, null, null);
+                first.createdAt(), "P000000125", null, null);
         var differentSecond = entry("2026-11-21T12:30:41Z");
 
         var group = AlertCenterController.timelineDays(
@@ -46,6 +46,6 @@ class AlertTimelineTest {
     }
 
     private static AlertCenterController.TimelineEntry entry(String createdAt) {
-        return new AlertCenterController.TimelineEntry(Instant.parse(createdAt), "P000000124", null, null, null);
+        return new AlertCenterController.TimelineEntry(Instant.parse(createdAt), "P000000124", null, null);
     }
 }

@@ -4,6 +4,33 @@ Dated observations are preserved here. They describe the code and environment
 used for each run, not current coverage. Use the [current catalogue](test-case-catalog.md)
 for maintained cases.
 
+## Issue 27 Alerts and daily refresh retest — 23 November 2026
+
+All 341 Maven tests passed, including H2 upgrade, rollback, price drop,
+daily refresh, and Ask confirmation checks. The H2 migration fixture
+covers absent, empty, and populated legacy tables. A separate file database
+created by the previous packaged app also upgraded and kept the same
+snoozed reminder occurrence across restart.
+
+| JaCoCo measure | Demo history retest | Issue 27 retest |
+|---|---:|---:|
+| Java tests passed | 339 | 341 |
+| Java source lines | 3,705/3,939 (94.06%) | 3,731/3,982 (93.70%) |
+| Java branch outcomes | 1,769/2,097 (84.36%) | 1,849/2,193 (84.31%) |
+
+JaCoCo 0.8.14 measured all 165 application classes without exclusions.
+Ask shopping tools and watch-rule handling have the largest remaining
+branch gaps. The 100% target remains open.
+
+Chrome passed 22 shopper and 14 milestone scenarios. The milestone run
+opened the rule editor by keyboard, saved both drop types, and verified
+retailer evidence at desktop and phone widths in all three languages.
+The isolated H2 restart and J01–J08 upgrade checks passed. The automatic
+refresh tests used a controlled feed and clock.
+
+See [price drops](cases/TC-ALERT-005.md), [daily refresh](cases/TC-DATA-006.md),
+and [legacy reminder upgrade](cases/TC-REMINDER-001.md).
+
 ## Demo history review retest — 23 November 2026
 
 Two regressions from PR #24 failed before the fix and passed after it.

@@ -7,6 +7,7 @@ import com.pricewatch.catalog.repository.OfferRepository;
 import com.pricewatch.catalog.repository.ProductRepository;
 import com.pricewatch.catalog.repository.RetailerListingRepository;
 import com.pricewatch.notifications.persistence.AlertEventEntity;
+import com.pricewatch.notifications.persistence.NotificationSettingsEntity;
 import com.pricewatch.notifications.repository.AlertEventRepository;
 import com.pricewatch.notifications.repository.NotificationSettingsRepository;
 import com.pricewatch.tracking.TrackingService;
@@ -179,7 +180,7 @@ class AlertServiceTest {
 
     @Test
     void savedQuietHoursLeaveNewAndPreviouslyDelayedPriceAlertsAvailable() {
-        settings().update(LocalTime.of(22, 0), LocalTime.of(8, 0), LocalTime.of(7, 45));
+        saveHistoricalNotificationSettings();
         now.set(Instant.parse("2026-11-06T15:00:00Z")); // 23:00 Hong Kong.
         replaceLive("ALERT-LEGACY-TIMING", "5.00");
         var period = tracking.start("ALERT-LEGACY-TIMING", "STORE-A");
@@ -219,7 +220,7 @@ class AlertServiceTest {
 
     @Test
     void snoozeHidesAnAlertForExactlyTwentyFourHours() {
-        settings().update(LocalTime.of(22, 0), LocalTime.of(8, 0), LocalTime.of(7, 45));
+        saveHistoricalNotificationSettings();
         now.set(Instant.parse("2026-11-06T15:00:00Z"));
         replaceLive("ALERT-HIDDEN", "5.00");
         var period = tracking.start("ALERT-HIDDEN", "STORE-A");
@@ -237,8 +238,9 @@ class AlertServiceTest {
         assertEquals(new BigDecimal("5.0000"), view(event.getId()).price());
     }
 
-    private NotificationPolicy settings() {
-        return new NotificationPolicy(settingsRepository);
+    private void saveHistoricalNotificationSettings() {
+        settingsRepository.save(new NotificationSettingsEntity(
+                LocalTime.of(22, 0), LocalTime.of(8, 0), LocalTime.of(7, 45)));
     }
 
     private void replaceLive(String code, String price) {

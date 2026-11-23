@@ -15,6 +15,10 @@ public enum WatchRepeat {
         return time.atZone(HONG_KONG).toInstant();
     }
 
+    public static Instant nextHongKongDay(Instant now) {
+        return now.atZone(HONG_KONG).toLocalDate().plusDays(1).atStartOfDay(HONG_KONG).toInstant();
+    }
+
     public Instant nextAfter(Instant anchor, Instant now) {
         return nextAfter(LocalDateTime.ofInstant(anchor, HONG_KONG), now);
     }

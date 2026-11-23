@@ -1,6 +1,7 @@
 package com.pricewatch.notifications.repository;
 
 import com.pricewatch.notifications.persistence.WatchRuleEntity;
+import com.pricewatch.notifications.WatchPriceKind;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -14,6 +15,13 @@ public interface WatchRuleRepository extends JpaRepository<WatchRuleEntity, Long
     List<WatchRuleEntity> findByProductCodeOrderById(String productCode);
 
     List<WatchRuleEntity> findAllByOrderById();
+
+    @Query("""
+            select distinct rule.productCode from WatchRuleEntity rule
+            where rule.target is not null and rule.priceKind in :kinds
+                and rule.completedAt is null and (rule.paused is null or rule.paused = false)
+            """)
+    List<String> priceBaselineProductCodes(List<WatchPriceKind> kinds);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select rule from WatchRuleEntity rule where rule.id = :id and rule.productCode = :code")

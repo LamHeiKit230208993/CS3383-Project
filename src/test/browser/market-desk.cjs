@@ -1247,7 +1247,7 @@ async function main() {
   await check("J12 exports personal records, cancels reset, then clears them and keeps the catalogue", async () => {
     for (const [route, form] of [
       ["/budget", { period: "MONTHLY", limit: "250" }],
-      ["/reminders/create", { code: "P000000124", quantity: "1", intervalDays: "14", retailerCode: "AEON" }],
+      ["/alerts/watch-rules/save", { code: "P000000124", condition: "time", startAt: "2000-01-01T09:00", repeat: "ONCE" }],
       ["/preferences", { language: "en", highContrast: "true" }]
     ]) {
       assert.equal((await page.request.post(base + route, { form, maxRedirects: 0 })).status(), 302, route);
@@ -1259,6 +1259,7 @@ async function main() {
     assert.equal(priceRule.status(), 302);
     await go("/data");
     await page.getByRole("button", { name: "Refresh live prices" }).click();
+    await go("/alerts");
     await page.locator(".main-nav").getByRole("link", { name: "Settings", exact: true }).click();
     await page.locator("main").getByRole("link", { name: /Personal data/ }).click();
     const exportData = async () => {
@@ -1268,10 +1269,11 @@ async function main() {
     };
     const before = await exportData();
     assert.equal(before.version, 1);
-    for (const key of ["lists", "wishlist", "tracking", "observations", "watchRules", "productPriceAlerts", "reminders", "budgets", "chats"]) {
+    for (const key of ["lists", "wishlist", "tracking", "observations", "watchRules", "productPriceAlerts", "timeAlerts", "budgets", "chats"]) {
       assert.ok(before[key].length > 0, key);
     }
-    assert.ok(before.productPriceAlerts.some(event => event.ruleId === before.watchRules[0].id));
+    assert.ok(before.productPriceAlerts.some(event => before.watchRules.some(rule => rule.id === event.ruleId)));
+    assert.ok(before.timeAlerts.some(event => before.watchRules.some(rule => rule.id === event.reminderId)));
     assert.ok(before.lists.some(list => list.entries.some(entry => entry.productCode === "P000000124")));
     assert.ok(before.chats.flatMap(chat => chat.messages).flatMap(message => message.priceCards)
       .some(card => card.productCode === "P000000124" && card.rows.some(row => row.retailer === "AEON" && row.price === 7.5)));

@@ -4,7 +4,7 @@
   function showField(form, selector, visible) {
     const label = form.querySelector(selector);
     if (!label) return;
-    const input = label.querySelector("input");
+    const input = label.querySelector("input, select");
     label.hidden = !visible;
     input.disabled = !visible;
     input.required = visible;
@@ -13,6 +13,7 @@
   function adjustCondition(form) {
     const condition = form.elements.condition.value;
     showField(form, "[data-rule-price]", condition !== "time");
+    showField(form, "[data-rule-price-kind]", condition !== "time");
     showField(form, "[data-rule-schedule]", condition === "time" || condition === "combined");
   }
 
@@ -22,7 +23,11 @@
 
   prepareForms(document);
   document.addEventListener("change", (event) => {
-    if (event.target.matches("[data-rule-condition]")) adjustCondition(event.target.form);
+    if (!event.target.matches("[data-rule-condition]")) return;
+    const form = event.target.form;
+    const repeat = form.querySelector("select[data-new-rule]");
+    if (repeat) repeat.value = event.target.value === "price" ? "DAILY" : "ONCE";
+    adjustCondition(form);
   });
 
   async function renderEditor(dialog, url, options) {

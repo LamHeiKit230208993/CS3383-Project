@@ -156,12 +156,12 @@ async function main() {
     await go("/products/E2E-NOODLE");
     await page.getByRole("link", { name: "Set rules" }).click();
     await page.waitForURL(url => url.pathname === "/alerts/rules");
-    await postRule("/reminders/create", {
-      code: "E2E-NOODLE", quantity: "2", intervalDays: "7", retailerCode: "NOODLE-STORE"
+    await postRule("/alerts/watch-rules/save", {
+      code: "E2E-NOODLE", condition: "time", startAt: "2099-01-01T09:00", repeat: "WEEKLY"
     });
     await go("/alerts?tab=rules");
     const reminderCard = page.locator(".alarm-rule-compact").filter({ hasText: "Instant Noodles 70g" });
-    assert.match(await reminderCard.innerText(), /Every 7 days[\s\S]*Type: Time reminder/);
+    assert.match(await reminderCard.innerText(), /Weekly[\s\S]*Type: Time reminder/);
     const reminderSwitch = reminderCard.getByRole("switch");
     await submit(reminderSwitch, "/alerts");
     assert.equal(await reminderSwitch.getAttribute("aria-checked"), "false");
@@ -172,18 +172,19 @@ async function main() {
     assert.equal(await retailerSwitch.getAttribute("aria-checked"), "false");
     await submit(retailerSwitch, "/alerts");
     await go("/alerts/rules?code=E2E-NOODLE");
-    const editorSwitch = page.locator('form[action^="/reminders/"][action$="/enabled"]').getByRole("switch");
+    const editorSwitch = page.locator('form[action="/alerts/watch-rules/enabled"]').getByRole("switch");
     assert.equal(await editorSwitch.getAttribute("aria-checked"), "false");
     await submit(editorSwitch, "/alerts/rules");
     assert.equal(await editorSwitch.getAttribute("aria-checked"), "true");
-    await page.getByText("2 packs · every 7 days", { exact: true }).click();
-    const edit = page.locator('form[action$="/update"]');
-    await edit.locator('[name="intervalDays"]').fill("14");
-    await submit(edit.getByRole("button", { name: "Save reminder" }), "/alerts/rules");
-    await page.getByText("2 packs · every 14 days", { exact: true }).click();
+    const editor = page.locator(".alarm-rule");
+    await editor.getByText("Edit", { exact: true }).click();
+    const edit = editor.locator('form[action="/alerts/watch-rules/save"]');
+    await edit.locator('[name="repeat"]').selectOption("FORTNIGHTLY");
+    await submit(edit.getByRole("button", { name: "Save rule" }), "/alerts/rules");
+    assert.match(await editor.innerText(), /Every two weeks/);
     await capture("reminders");
-    await submit(page.getByRole("button", { name: "Delete reminder" }), "/alerts/rules");
-    assert.equal(await page.locator('form[action$="/update"]').count(), 0);
+    await submit(editor.getByRole("button", { name: "Delete rule" }), "/alerts/rules");
+    assert.equal(await editor.count(), 0);
     await go("/products/E2E-NOODLE");
     await page.locator(".retailer-option").first().click();
     await page.locator("#quantity").fill("2");
@@ -347,8 +348,8 @@ async function main() {
   });
 
   await check("invalid form parameters return client errors or validation redirects, never 500", async () => {
-    const invalidReminder = await context.request.post(`${base}/reminders/create`, {
-      form: { code: "E2E-NOODLE", quantity: "0", intervalDays: "7" }, maxRedirects: 0
+    const invalidReminder = await context.request.post(`${base}/alerts/watch-rules/save`, {
+      form: { code: "E2E-NOODLE", condition: "time", startAt: "not-a-date", repeat: "WEEKLY" }, maxRedirects: 0
     });
     assert.equal(invalidReminder.status(), 302);
     await go("/alerts/rules?code=E2E-MILK");
@@ -437,6 +438,43 @@ async function main() {
       assert.match(await nativePage.locator("main").innerText(), /within your planned limit/);
     } finally {
       await nativeContext.close();
+    }
+  });
+
+  await check("daily drop rules save from the editor and keep retailer evidence", async () => {
+    milkPrice = "12.00";
+    secondMilkPrice = "8.00";
+    await go("/data");
+    await submit(page.getByRole("button", { name: "Refresh live prices" }), "/data");
+    for (const [kind, amount] of [["DROP_AMOUNT", "3"], ["DROP_PERCENT", "25"]]) {
+      await go("/alerts/rules?code=E2E-MILK");
+      const editor = page.locator("#add-watch-rule");
+      await editor.locator("summary").focus();
+      await page.keyboard.press("Enter");
+      await editor.locator('[name="condition"]').selectOption("price");
+      assert.equal(await editor.locator('[name="repeat"]').inputValue(), "DAILY");
+      await editor.locator('[name="priceKind"]').selectOption(kind);
+      await editor.locator('[name="targetPrice"]').fill(amount);
+      await submit(editor.getByRole("button", { name: "Save rule" }), "/alerts/rules");
+    }
+    milkPrice = "9.00";
+    secondMilkPrice = "6.00";
+    await go("/data");
+    await submit(page.getByRole("button", { name: "Refresh live prices" }), "/data");
+    for (const [language, width, label] of [["en", 1440, "Drops by 25%"],
+      ["zh-Hant", 375, "下跌 25%"], ["zh-Hans", 375, "下跌 25%"]]) {
+      const changed = await page.request.post(base + "/preferences", {
+        form: { language }, maxRedirects: 0
+      });
+      assert.equal(changed.status(), 302);
+      await page.setViewportSize({ width, height: 1000 });
+      await go("/alerts");
+      assert.equal(await page.locator("html").getAttribute("lang"), language);
+      const evidence = page.locator(".alert-row").filter({ hasText: label }).first();
+      assert.match(await evidence.innerText(), /HK\$12\.00\s*→\s*HK\$9\.00/);
+      assert.match(await evidence.innerText(), /HK\$8\.00\s*→\s*HK\$6\.00/);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await capture(`price-drop-history-${language}`);
     }
   });
 

@@ -25,9 +25,9 @@ the selected category keeps the same filter value and shows the matching source
 label. An unsupported language leaves the previous settings in place.
 
 The secondary page test loads the sample, saves and tracks the milk pack, and
-creates a reminder. It checks rendered Chinese text on the data, planned,
-budget, saved, Alert history, Current rules, and reminders pages. It submits invalid reminder and
-budget inputs to check localized validation.
+checks rendered Chinese text on Price data, Ask, Personal data, Wishlist,
+Alert history, Current rules, and the item editor. It submits invalid rule
+and budget inputs to check localized validation.
 
 Sources [browser suite](../../../src/test/browser/market-desk.cjs) and
 [display preferences controller test](../../../src/test/java/com/pricewatch/web/DisplayPreferencesControllerTest.java),

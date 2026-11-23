@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -122,13 +123,27 @@ public class ProductTargetService {
 
     @Transactional(readOnly = true)
     public List<ProductTargetEventView> events(Instant now) {
-        return events.findTop100ByOrderByCreatedAtDescIdDesc().stream()
-                .map(event -> new ProductTargetEventView(event.getId(), event.getProductCode(), event.getTarget(),
-                        event.getRetrievedAt(), event.getCreatedAt(), event.getRetailers(), event.getReadAt() != null,
-                        !now.isBefore(event.getCreatedAt())
-                                && (event.getSnoozedUntil() == null || !now.isBefore(event.getSnoozedUntil())),
-                        event.getReadAt(), event.getSnoozedUntil(), event.getRuleId(), event.getScheduledDueAt()))
-                .toList();
+        var activeReminders = events.findActiveCartReminders();
+        var activeIds = activeReminders.stream().map(ProductTargetEventEntity::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        var entries = new LinkedHashMap<Long, ProductTargetEventEntity>();
+        events.findTop100ByOrderByCreatedAtDescIdDesc().forEach(event -> entries.put(event.getId(), event));
+        activeReminders.forEach(event -> entries.putIfAbsent(event.getId(), event));
+        return entries.values().stream().map(event -> view(event, now, activeIds.contains(event.getId()))).toList();
+    }
+
+    private ProductTargetEventView view(ProductTargetEventEntity event, Instant now, boolean activeReminder) {
+        boolean available = !now.isBefore(event.getCreatedAt())
+                && (event.getSnoozedUntil() == null || !now.isBefore(event.getSnoozedUntil()));
+        String retailer = event.getCartRetailer();
+        boolean cartAvailable = activeReminder && available && products.findWithListingsByCode(event.getProductCode())
+                .filter(product -> product.isActive()).stream().flatMap(product -> product.getListings().stream())
+                .anyMatch(listing -> listing.getPrice() != null
+                        && (retailer == null || retailer.equals(listing.getRetailerCode())));
+        return new ProductTargetEventView(event.getId(), event.getProductCode(), event.getTarget(),
+                event.getRetrievedAt(), event.getCreatedAt(), event.getRetailers(), event.getReadAt() != null,
+                available, event.getReadAt(), event.getSnoozedUntil(), event.getRuleId(), event.getScheduledDueAt(),
+                event.getCartQuantity(), retailer, activeReminder, cartAvailable, event.getPriceKind());
     }
 
     @Transactional
