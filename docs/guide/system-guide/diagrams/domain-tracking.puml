@@ -55,12 +55,16 @@ class WatchRuleEntity {
   id: Long {PK}
   productCode: String {no FK}
   target: BigDecimal {nullable}
+  priceKind: WatchPriceKind
   intervalDays: Integer {nullable}
   startAt: LocalDateTime {nullable}
   repeat: ONCE \| DAILY \| WEEKLY \| FORTNIGHTLY \| MONTHLY
   nextDueAt, nextPriceAt: Instant
   armed, waitingForLive: boolean
   completedAt: Instant
+  legacyReminderId: Long {nullable, unique}
+  cartQuantity, cartRetailer
+  snoozedUntil: Instant
 }
 
 class ProductTargetRuleEntity <<legacy>> {
@@ -73,34 +77,24 @@ class ProductTargetEventEntity {
   id: Long {PK}
   productCode: String {no FK}
   target: BigDecimal
+  priceKind: WatchPriceKind
   retrievedAt, createdAt: Instant
   ruleId: Long {nullable}
   scheduledDueAt: Instant
+  legacyOccurrenceId: Long {nullable, unique}
+  cartQuantity, cartRetailer
 }
 
 class ProductTargetRetailerPrice <<embeddable>> {
   retailerCode: String
   price: BigDecimal
+  previousPrice: BigDecimal {nullable}
 }
 
-class ReminderEntity {
-  id: Long {PK}
-  quantity: int
-  intervalDays: int
-  selectedRetailerCode: String {nullable}
-  nextDueAt: Instant
-  snoozedUntil: Instant {nullable}
-  paused: Boolean
-}
-
-class ReminderOccurrenceEntity {
-  id: Long {PK}
-  reminderId: long {no FK}
-  productCode: String
-  quantity: int
-  retailerCode: String
-  dueAt: Instant {unique with reminderId}
-  readAt, snoozedUntil: Instant
+class DailyRefreshState <<catalog>> {
+  id: 1
+  refreshDay: LocalDate
+  outcome: STARTED | ACCEPTED | FAILED
 }
 
 class BudgetSettingsEntity {
@@ -109,7 +103,7 @@ class BudgetSettingsEntity {
   limitAmount: BigDecimal
 }
 
-class NotificationSettingsEntity {
+class NotificationSettingsEntity <<historical>> {
   id: 1
   quietStart, quietEnd: LocalTime
   summaryTime: LocalTime
@@ -124,18 +118,16 @@ class DisplayPreferencesEntity {
 ProductEntity "1" -- "0..*" TrackingEntity : tracked at
 TrackingEntity "1" *-- "0..*" PriceObservationEntity : records
 TrackingEntity "0..1" -- "0..*" AlertEventEntity : legacy alerts
-ProductEntity "1" -- "0..*" ReminderEntity : replenish
-ReminderEntity "1" .. "0..*" ReminderOccurrenceEntity : history outlives rule
 WatchRuleEntity ..> ProductEntity : productCode, no FK
 ProductTargetRuleEntity ..> ProductEntity : productCode, no FK
 ProductTargetEventEntity ..> ProductEntity : productCode, no FK
 ProductTargetEventEntity "1" *-- "0..*" ProductTargetRetailerPrice : qualifying prices
-ReminderOccurrenceEntity ..> ReminderEntity : reminderId, no FK
+ProductTargetEventEntity ..> WatchRuleEntity : ruleId, no FK
 
 note right of WatchRuleEntity
-  The current unified rule. Price-only,
-  calendar-only and combined conditions
-  share one table and one evaluator.
+  Price, calendar and combined rules share
+  one evaluator. Existing interval reminders
+  retain their Cart defaults after migration.
 end note
 
 note bottom of ProductTargetRuleEntity

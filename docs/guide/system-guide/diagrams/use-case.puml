@@ -38,7 +38,7 @@ rectangle "Market Desk — one local user, one Spring Boot process" {
   package "Track" {
     usecase "Save products and\ntrack retailers" as U6
     usecase "Set price or calendar\nwatch rules" as U7
-    usecase "Review alerts and\nreplenishment reminders" as U8
+    usecase "Review alerts and\ntime reminders" as U8
   }
   package "Ask" {
     usecase "Ask a grounded\nprice question" as U9

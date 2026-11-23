@@ -1,9 +1,8 @@
 # Market Desk: J01–J04 implementation
 
-Updated: 6 November 2026. This records the J01–J04 baseline for issue #13,
-merged through PR #15. The [J05–J08 implementation guide](implementation-j05-j08.md)
-describes the extension now under verification. Read both for the current branch;
-this file preserves the first milestone's behaviour and evidence.
+This historical record describes the J01–J04 baseline for issue #13,
+merged through PR #15. For current workflows, use the [setup walkthrough](SETUP.md)
+and [UML index](diagrams/README.md).
 
 ## What the first baseline does
 
@@ -85,12 +84,7 @@ selection target. Chinese offer details are a separate disclosure and do not
 change the selected retailer. Missing-price cards show No current price and
 remain unavailable for a new explicit choice.
 
-The J05–J08 extension updates navigation: Shopping contains Discover, My list,
-Saved, and Budget; Assistance contains Alerts, Reminders, and planned Ask; App
-contains Price data & updates. Phone navigation uses Discover, My list, Price
-data, and More. See the [extension guide](implementation-j05-j08.md#web-interface)
-for its routes. Old `/planned/saved` and `/planned/updates` links redirect to
-Saved and Alerts.
+Current navigation and later milestone workflows are in the [setup guide](SETUP.md).
 
 ### Code structure
 

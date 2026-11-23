@@ -1,31 +1,19 @@
 # UML views
 
-The accepted [J01–J04 diagrams](baseline/) remain the historical baseline.
+The [system design guide](../guide/system-guide.html) embeds the current views
+and their editable PlantUML. Use these when updating the implementation.
 
-The J09 sequence shows checked catalogue answers, shopping tools, confirmation,
-and the retry path.
-[Editable PlantUML](j10-j12/ask-sequence.puml) · [SVG](j10-j12/ask-sequence.svg) · [PNG](j10-j12/ask-sequence.png)
-
-The J10–J12 sequence covers selected-list transfer, the offline HTML checklist,
-display preferences, retained history, and personal-data export or reset.
-[Editable PlantUML](j10-j12/shopper-sequence.puml) · [SVG](j10-j12/shopper-sequence.svg) · [PNG](j10-j12/shopper-sequence.png)
-
-The [J01–J08 implementation views](j05-j08/README.md) describe the baseline
-code, including the tracking, alert, budget and reminder additions. Their
-meaning, relationships and rendered layouts have been reviewed against the
-source. Official PlantUML 1.2026.9 syntax checking and SVG/PNG rendering passed.
-The integrator also reviewed all four rendered views on 6 November 2026.
-A diagram does not prove that the application's implementation tests pass.
-
-| View | Editable source | Export |
+| View | Editable source | SVG |
 |---|---|---|
-| Shopper goals | [use-case.puml](j05-j08/use-case.puml) | [SVG](j05-j08/use-case.svg) / [PNG](j05-j08/use-case.png) |
-| Persisted records | [class.puml](j05-j08/class.puml) | [SVG](j05-j08/class.svg) / [PNG](j05-j08/class.png) |
-| Application classes | [application-class.puml](j05-j08/application-class.puml) | [SVG](j05-j08/application-class.svg) / [PNG](j05-j08/application-class.png) |
-| Import and reminder behaviour | [sequence.puml](j05-j08/sequence.puml) | [SVG](j05-j08/sequence.svg) / [PNG](j05-j08/sequence.png) |
+| Shopper goals | [PlantUML](../guide/system-guide/diagrams/use-case.puml) | [SVG](../guide/system-guide/diagrams/use-case.svg) |
+| Application components | [PlantUML](../guide/system-guide/diagrams/component.puml) | [SVG](../guide/system-guide/diagrams/component.svg) |
+| Catalogue and Cart data | [PlantUML](../guide/system-guide/diagrams/domain-catalog.puml) | [SVG](../guide/system-guide/diagrams/domain-catalog.svg) |
+| Tracking and Alerts data | [PlantUML](../guide/system-guide/diagrams/domain-tracking.puml) | [SVG](../guide/system-guide/diagrams/domain-tracking.svg) |
+| Live import and daily refresh | [PlantUML](../guide/system-guide/diagrams/sequence-import.puml) | [SVG](../guide/system-guide/diagrams/sequence-import.svg) |
+| Tracking and Alerts | [PlantUML](../guide/system-guide/diagrams/sequence-alerts.puml) | [SVG](../guide/system-guide/diagrams/sequence-alerts.svg) |
+| Ask and confirmation | [PlantUML](j10-j12/ask-sequence.puml) | [SVG](j10-j12/ask-sequence.svg) |
+| Sharing, offline and personal data | [PlantUML](j10-j12/shopper-sequence.puml) | [SVG](j10-j12/shopper-sequence.svg) |
 
-The persisted model separates database constraints from service rules. In the
-application view, typed private fields show repository dependencies, while
-dashed arrows show calls between controllers and services. This keeps shared
-repository relationships readable. See the [view notes](j05-j08/README.md)
-for omissions, time semantics and the rendering command.
+The [J01–J04 views](baseline/README.md) and [J05–J08 sources](j05-j08/README.md)
+preserve prior milestone evidence. The [test history](../Test/history.md)
+records application verification.

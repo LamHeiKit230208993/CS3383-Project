@@ -25,14 +25,13 @@ participant "Saved / Alerts page" as Web
 participant "TrackingService" as Tracking
 database "H2" as DB
 participant "Scheduler" as Scheduler
-participant "ReminderService" as Reminders
 participant "WatchRuleService" as Watch
 participant "AlertCenter" as Center
 
-group Start tracking a retailer
-  Shopper -> Web : Track product at retailer
-  Web -> Tracking : start(code, retailer)
-  Tracking -> DB : open a tracking period
+group Save an exact pack
+  Shopper -> Web : Save to Wishlist
+  Web -> Tracking : save(code)
+  Tracking -> DB : open tracking periods
 end
 
 group A LIVE import adds an observation
@@ -43,15 +42,18 @@ end
 
 group Every 60 seconds (fixed delay)
   loop while the app runs
-    Scheduler -> Reminders : recordDue()
-    Reminders -> DB : insert occurrence once per (reminder, dueAt)
     Scheduler -> Watch : checkDue()
     Watch -> DB : read due rules + accepted LIVE prices
-    alt Calendar rule
+    alt Migrated interval reminder
+      Watch -> DB : keep one event for the due time
+      note right of Watch
+        Dismissal advances the interval.
+      end note
+    else Calendar rule
       Watch -> DB : event + advance schedule
     else Price rule with a qualifying price
       Watch -> DB : event + advance or re-arm
-    else No accepted LIVE price
+    else No qualifying evidence
       Watch -> Watch : waitForLive()
     end
   end
@@ -60,8 +62,7 @@ end
 group One merged timeline
   Shopper -> Center : Open /alerts
   Center -> DB : legacy retailer alerts (latest 100)
-  Center -> DB : price-target events (latest 100)
-  Center -> DB : reminder occurrences (active + recent)
+  Center -> DB : watch events and product targets
   Center --> Shopper : dated timeline grouped by trigger
 end
 
@@ -69,7 +70,7 @@ note over Watch, DB
   Calendar-only rules need no price.
   Price rules require the product on the
   Wishlist. One-time rules complete after
-  firing; repeating rules re-arm.
+  firing. New price rules default to Daily.
 end note
 
 @enduml

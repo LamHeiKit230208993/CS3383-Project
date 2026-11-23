@@ -22,6 +22,7 @@ title Market Desk · LIVE catalogue refresh
 
 actor Shopper
 participant "Data page" as Web
+participant "DailyCatalogueRefresh" as Daily
 participant "CatalogService" as Catalog
 participant "SourceClient" as Source
 participant "Consumer Council" as Feed
@@ -31,8 +32,15 @@ database "H2" as DB
 participant "TrackingService" as Tracking
 participant "Rule engines" as Rules
 
-Shopper -> Web : Refresh LIVE
-Web -> Catalog : refreshLive()
+alt First use on a Hong Kong date
+  Web -> Daily : queue background check
+  Daily -> DB : check catalogue mode and daily state
+  Daily -> DB : record attempt when due
+else Manual refresh
+  Shopper -> Web : Refresh LIVE
+  Web -> Daily : refreshManually()
+end
+Daily -> Catalog : one shared refreshLive()
 Catalog -> Source : fetch()
 Source -> Feed : HTTPS GET pricewatch.json
 Feed --> Source : JSON bytes (max 10 MB)
@@ -42,6 +50,7 @@ Parser --> Catalog : ImportedCatalog
 Catalog -> Replace : replace(catalog, LIVE, retrievedAt, checksum)
 
 group One transaction
+  Replace -> DB : read previous accepted LIVE listings
   Replace -> DB : delete offers + listings,\ndeactivate products
   Replace -> DB : upsert products, listings, offers
   Replace -> Tracking : recordLiveImport(...)
@@ -49,11 +58,12 @@ group One transaction
   Tracking -> Rules : evaluate target / drop
   Rules -> DB : deduplicated alert events
   Replace -> Rules : evaluateLive(...)
-  Rules -> DB : qualifying watch-rule events,\nadvance calendar rules
+  Rules -> DB : qualifying events with prior and current prices
   Replace -> DB : save accepted_import (id = 1)
 end
 
 Replace --> Catalog : ImportStatus
-Catalog --> Web : counts + origin + retrieval time
-Web --> Shopper : redirect with status banner
+Catalog --> Daily : counts + origin + retrieval time
+Daily -> DB : save daily outcome
+Daily --> Web : status available in Price data
 @enduml

@@ -31,10 +31,10 @@ const diagrams = {
     alt: "UML class diagram of the catalogue, shopping list and wishlist entities.",
   },
   "domain-tracking": {
-    alt: "UML class diagram of tracking, price observations, alerts, watch rules, reminders and settings.",
+    alt: "UML class diagram of tracking, watch rules, event evidence and daily refresh state.",
   },
   "sequence-import": {
-    alt: "UML sequence diagram of a LIVE catalogue refresh inside one transaction.",
+    alt: "UML sequence diagram of automatic and manual refresh sharing one live import.",
   },
   "sequence-cart": {
     alt: "UML sequence diagram of adding to a cart, pricing it, transferring JSON and rendering an offline checklist.",

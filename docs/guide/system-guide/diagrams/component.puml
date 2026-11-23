@@ -26,7 +26,8 @@ title Market Desk · runtime components
 
 package "One Spring Boot process" {
   [Web layer\ncontrollers · LocalRequestGuard · locale] as Web
-  [Domain services\ncatalog · shopping · tracking · notifications\nreminders · budget · preferences · personal] as Services
+  [Domain services\ncatalog · shopping · tracking · notifications\nbudget · preferences · personal] as Services
+  [DailyCatalogueRefresh\nfirst use each Hong Kong day] as Refresh
   [Ask tool layer\n11 tools · DeepSeekChatClient] as Ask
   [NotificationScheduler\nfixed delay 60 s] as Scheduler
   database "Spring Data repositories" as Repos
@@ -41,7 +42,10 @@ Web --> Services
 Web --> Ask
 Ask --> Services : read / propose
 Ask --> LLM : HTTPS
-Scheduler --> Services : due reminders + rules
+Scheduler --> Services : due watch rules
+Web --> Refresh : page use or manual refresh
+Refresh --> Services : accepted live import
+Refresh --> Repos : daily attempt state
 Services --> Repos
 Repos --> DB
 Services --> Feed : LIVE import
