@@ -1140,6 +1140,7 @@ async function main() {
       await page.keyboard.press("Enter");
       await page.waitForURL(url => url.searchParams.get("q") === query);
       assert.ok((await milk.innerText()).includes(sourceLabel), await milk.innerText());
+      if (language === "en") assert.doesNotMatch(await milk.innerText(), /[鮮鲜]牛奶 236毫升/);
       assert.equal(await page.locator("body").evaluate(body => body.scrollWidth <= body.clientWidth), true);
       await go("/ask");
       await page.locator("#price-question").fill("P000000124");
@@ -1151,6 +1152,9 @@ async function main() {
       if (language !== "en") assert.doesNotMatch(reply, /Lowest listed/);
       await page.screenshot({ path: path.join(artifacts, `j12-ask-${language}.png`), fullPage: true });
       await go("/products/P000000124");
+      const productIdentity = page.locator(".product-identity");
+      assert.equal(await productIdentity.locator("h2").innerText(), sourceLabel);
+      if (language === "en") assert.doesNotMatch(await productIdentity.innerText(), /[鮮鲜]牛奶 236毫升/);
       const retailerRadio = page.locator('input[name=retailerCode][value=AEON]');
       const retailerCard = page.locator(".retailer-option").filter({ has: retailerRadio });
       await tabTo(page, retailerRadio);

@@ -26,6 +26,18 @@ class DisplayPreferencesControllerTest {
     @Autowired MockMvc mvc;
     @Autowired CatalogService catalogue;
 
+    @Test void englishProductViewsUseOneLocalizedName() throws Exception {
+        catalogue.importSample();
+        mvc.perform(post("/preferences").param("language", "en"))
+                .andExpect(redirectedUrl("/preferences"));
+        for (String route : new String[]{"/", "/?q=milk", "/products/P000000124"}) {
+            mvc.perform(get(route)).andExpect(status().isOk())
+                    .andExpect(content().string(containsString("100 %Fresh Milk 236mL")))
+                    .andExpect(content().string(not(containsString("鮮牛奶 236毫升"))))
+                    .andExpect(content().string(not(containsString("鲜牛奶 236毫升"))));
+        }
+    }
+
     @Test void languageAndContrastAreSavedForNewLocalSessions() throws Exception {
         catalogue.importSample();
         for (var language : new String[][]{

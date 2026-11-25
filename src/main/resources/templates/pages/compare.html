@@ -28,8 +28,6 @@
         </div>
         <p class="product-brand" th:text="${product.brand.forLocale(#locale)}" translate="no"></p>
         <h2 th:text="${product.name.forLocale(#locale)}"></h2>
-        <p lang="zh-Hant" th:if="${#locale.language == 'en'}" th:text="${product.name.zhHant}"></p>
-        <p lang="zh-Hans" th:if="${#locale.language == 'en' and product.name.zhHans != product.name.zhHant}" th:text="${product.name.zhHans}"></p>
         <p class="product-code" th:text="${product.code}" translate="no"></p>
         <p class="helper" th:text="#{compare.packDetails}">Pack details are part of the original product name.</p>
         <form th:action="@{/saved/save}" method="post">

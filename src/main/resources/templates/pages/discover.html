@@ -84,8 +84,6 @@
           <div class="product-details">
             <p class="product-brand" th:text="${p.brand.forLocale(#locale)}" translate="no"></p>
             <h3><a th:href="${compareUrl}" th:text="${p.name.forLocale(#locale)}"></a></h3>
-            <p class="alternate-name" lang="zh-Hant" th:if="${#locale.language == 'en' and p.name.zhHant != p.name.forLocale(#locale)}"
-               th:text="${p.name.zhHant}"></p>
             <p class="product-code" th:text="${p.code}" translate="no"></p>
             <div class="product-price-row">
               <div>

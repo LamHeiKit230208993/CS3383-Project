@@ -3,6 +3,9 @@
 Use the isolated browser app with the controlled catalogue. Select English,
 Traditional Chinese, and Simplified Chinese. Check the document language,
 the matching source label for P000000124, and localized Ask feedback.
+In English, Discover and Compare show the English name with no secondary
+Chinese name. Both pages still use the selected source name in each Chinese
+display mode. Search continues to match names across all three languages.
 Enable high contrast. Use Tab and Enter to submit preferences and search on
 desktop and at 375 px. Check that keyboard focus has an outline, the mobile
 page fits the viewport, and the setting remains selected on return.
@@ -23,6 +26,8 @@ The server test uses a sample catalogue and separate sessions to confirm that
 the language and contrast setting apply to the whole local app. It checks that
 the selected category keeps the same filter value and shows the matching source
 label. An unsupported language leaves the previous settings in place.
+It checks the English catalogue, filtered results, and Compare against a
+sample product with distinct names in all three languages.
 
 The secondary page test loads the sample, saves and tracks the milk pack, and
 checks rendered Chinese text on Price data, Ask, Personal data, Wishlist,
