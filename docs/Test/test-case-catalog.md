@@ -14,7 +14,7 @@ checked prices, pack choices and follow-ups, chat history, and send and reply re
 [TC-USABILITY-001](cases/TC-USABILITY-001.md) records a Cart and Settings walkthrough at desktop and phone widths, including the mobile Done control retest.
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.
-[TC-DATA-005](cases/TC-DATA-005.md) checks demo products in Wishlist, chronological price history, latest state, confirmation, and recorded price gaps.
+[TC-DATA-005](cases/TC-DATA-005.md) checks demo products in Wishlist, chronological price history, latest state, repeat loads without duplicate records, confirmation, and recorded price gaps.
 [TC-DATA-006](cases/TC-DATA-006.md) checks automatic refresh on first use in Hong Kong, failure recovery, and catalogue protection.
 
 This index describes maintained checks. Use the [test strategy](strategy.md)

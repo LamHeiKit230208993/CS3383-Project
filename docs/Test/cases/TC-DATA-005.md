@@ -19,8 +19,9 @@ history for demonstrating tracking and alerts.
 4. Inspect the demo catalogue and tracking periods.
 5. Inspect history for milk, bread, and coffee, including the unknown coffee row.
 6. With a fixed clock, check the order of AEON milk prices and its saved
-   latest observation. Load the demo again and check for duplicate Wishlist
-   entries or new tracking periods.
+   latest observation. Advance the clock one hour and load Demo again. Expect
+   the same 40 observations, 2 alerts, 5 tracking periods, and 3 Wishlist
+   entries. The saved observation timestamps are unchanged.
 7. Load a checked sample and submit demo data without confirmation.
 8. Submit demo data again with the confirmation checkbox.
 
@@ -44,3 +45,5 @@ are replaced only after server-side confirmation.
 
 Demo values are synthetic and do not represent current shopping prices or live
 provider availability.
+Reloading keeps saved demo records. Duplicate records already saved by older
+builds stay in history.

@@ -462,6 +462,8 @@ class TrackingServiceTest {
         assertEquals("DEMO", catalog.status().origin());
         assertEquals(5, tracking.trackingPeriods().size());
         assertEquals(3, tracking.allRetailersProducts().size());
+        assertEquals(40, observationRepository.count());
+        assertEquals(2, alertEventRepository.count());
         var milk = tracking.priceHistory("DEMO-MILK").stream()
                 .filter(entry -> "AEON".equals(entry.retailerCode()))
                 .sorted(Comparator.comparing(PriceHistoryEntry::retrievedAt))
@@ -482,6 +484,9 @@ class TrackingServiceTest {
 
         now.set(START.plusSeconds(3600));
         assertEquals(new DemoHistoryService.DemoResult(3, 40), demo.seed());
+        assertEquals(40, observationRepository.count());
+        assertEquals(2, alertEventRepository.count());
+        assertEquals(coffee, tracking.priceHistory("DEMO-COFFEE"));
         assertEquals(originalIds, tracking.trackingPeriods().stream().map(TrackingView::id).sorted().toList());
         assertEquals(3, tracking.savedProducts().size());
     }

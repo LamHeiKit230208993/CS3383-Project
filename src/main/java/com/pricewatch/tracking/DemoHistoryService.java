@@ -79,13 +79,17 @@ public class DemoHistoryService {
             trackingService.save(product.code());
         }
 
-        TrackingEntity milkAtAeon = periods.get("DEMO-MILK|AEON");
-        if (milkAtAeon != null) milkAtAeon.setTargetPrice(new BigDecimal("9.00"));
-
         int recorded = 0;
         for (Map.Entry<String, List<BigDecimal>> series : demoSeries().entrySet()) {
             TrackingEntity period = periods.get(series.getKey());
             if (period == null) continue;
+            int retained = observationRepository.countByTracking_Product_CodeAndTracking_RetailerCodeAndSourceUrl(
+                    period.getProductCode(), period.getRetailerCode(), DEMO_SOURCE);
+            if (retained > 0) {
+                recorded += retained;
+                continue;
+            }
+            if ("DEMO-MILK|AEON".equals(series.getKey())) period.setTargetPrice(new BigDecimal("9.00"));
             PriceObservationEntity previous = null;
             for (int index = 0; index < DEMO_DAYS.size(); index++) {
                 Instant observedAt = now.minus(Duration.ofDays(DEMO_DAYS.get(index)));
