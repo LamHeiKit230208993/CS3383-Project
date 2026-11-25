@@ -9,7 +9,9 @@
         <th:block th:replace="~{fragments/back-link :: link(@{/saved}, #{app.nav.saved})}"></th:block>
       </th:block>
       <th:block th:if="${!fromCart and !fromWishlist}">
-        <th:block th:replace="~{fragments/back-link :: link(@{/}, #{app.scene.discover})}"></th:block>
+        <th:block th:replace="~{fragments/back-link :: link(
+          ${q == null} ? @{/} : @{/(q=${q},category=${category},related=${related},page=${pageNumber})},
+          #{app.scene.discover})}"></th:block>
       </th:block>
     </th:block>
     <div class="page-heading">

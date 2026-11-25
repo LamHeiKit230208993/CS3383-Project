@@ -70,7 +70,10 @@
            th:text="${importStatus == null} ? #{discover.load} : #{discover.clear}"></a>
       </div>
       <div class="product-grid" th:unless="${products.isEmpty()}">
-        <article class="product-card" th:each="p : ${products}">
+        <article class="product-card" th:each="p : ${products}"
+                 th:with="compareUrl=${q.isEmpty() and category.isEmpty() and !related and pageNumber == 1}
+                   ? @{/products/{code}(code=${p.code})}
+                   : @{/products/{code}(code=${p.code},q=${q},category=${category},related=${related},page=${pageNumber})}">
           <div class="product-art">
             <span class="small-tag" th:unless="${p.category2.forLocale(#locale).isBlank()}"
                   th:text="${p.category2.forLocale(#locale)}"></span>
@@ -80,7 +83,7 @@
           </div>
           <div class="product-details">
             <p class="product-brand" th:text="${p.brand.forLocale(#locale)}" translate="no"></p>
-            <h3><a th:href="@{/products/{code}(code=${p.code})}" th:text="${p.name.forLocale(#locale)}"></a></h3>
+            <h3><a th:href="${compareUrl}" th:text="${p.name.forLocale(#locale)}"></a></h3>
             <p class="alternate-name" lang="zh-Hant" th:if="${#locale.language == 'en' and p.name.zhHant != p.name.forLocale(#locale)}"
                th:text="${p.name.zhHant}"></p>
             <p class="product-code" th:text="${p.code}" translate="no"></p>
@@ -93,7 +96,7 @@
                 <span class="retailer-label" th:if="${p.lowestListings.size() == 1}"
                       th:text="${p.lowestListings[0].retailerCode}"></span>
               </div>
-              <a class="compare-link" th:href="@{/products/{code}(code=${p.code})}"
+              <a class="compare-link" th:href="${compareUrl}"
                  th:attr="aria-label=#{discover.compareLabel(${p.name.forLocale(#locale)})}" th:text="#{discover.compare}">Compare →</a>
             </div>
           </div>

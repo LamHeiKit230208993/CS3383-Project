@@ -20,6 +20,11 @@ The baseline screen checks cover:
    rows lock their product link, editing and deletion until reopened.
 4. Native card selection and forms with JavaScript disabled.
 5. Search normalization, both Chinese source labels, Related results, and category URL state. A new query from Related returns to Best matches; clearing it restores the catalogue, including when opening a stale blank Related URL.
+   Open Compare from the product name in filtered Matches and from the Compare
+   link in Related. Use the Discover back arrow and check that the query, category,
+   result mode, page, and displayed product codes match the original results.
+   [HelloControllerTest](../../../src/test/java/com/pricewatch/web/HelloControllerTest.java)
+   checks both outgoing links and the fallback for a direct Compare URL.
 6. Exact four-decimal and large-price previews; invalid exponent quantities.
 7. A disappeared selected price stays unknown without retailer fallback; its card clearly reports unavailable pricing.
 8. Check desktop and mobile layouts at four widths and keep prices in view.

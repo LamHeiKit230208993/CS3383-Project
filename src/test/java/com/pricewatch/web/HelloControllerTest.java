@@ -44,6 +44,21 @@ class HelloControllerTest {
 
     private final ObjectMapper json = new ObjectMapper();
 
+    @Test void discoverLinksCarrySearchStateAndCompareReturnsToIt() throws Exception {
+        catalog.importSample();
+        String expectedQuery = "q=milk&amp;category=Milk&amp;related=false&amp;page=1";
+        mvc.perform(get("/").param("q", "milk"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("<h3><a href=\"/products/P000000124?q=milk&amp;")))
+                .andExpect(content().string(containsString("class=\"compare-link\" href=\"/products/P000000124?q=milk&amp;")));
+        mvc.perform(get("/products/P000000124").param("q", "milk").param("category", "Milk")
+                        .param("related", "false").param("page", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("class=\"back-link\" href=\"/?" + expectedQuery + "\"")));
+        mvc.perform(get("/products/P000000124"))
+                .andExpect(content().string(containsString("class=\"back-link\" href=\"/\"")));
+    }
+
     @Test void namedCartCanBeCreatedSelectedRenamedAndDeleted() throws Exception {
         catalog.importSample();
         var result = mvc.perform(post("/list/new").param("name", "Weekend groceries"))

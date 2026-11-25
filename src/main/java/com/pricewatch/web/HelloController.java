@@ -92,13 +92,21 @@ public class HelloController {
     @GetMapping("/products/{code}")
     String compare(@PathVariable String code, @RequestParam(defaultValue = "false") boolean fromCart,
                    @RequestParam(defaultValue = "false") boolean fromWishlist,
-                   @RequestParam(required = false) Long listId, Model model) {
+                   @RequestParam(required = false) Long listId,
+                   @RequestParam(required = false) String q,
+                   @RequestParam(defaultValue = "") String category,
+                   @RequestParam(defaultValue = "false") boolean related,
+                   @RequestParam(defaultValue = "1") int page, Model model) {
         try { model.addAttribute("product", catalog.find(code)); }
         catch (IllegalArgumentException exception) { throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"); }
         model.addAttribute("fromCart", fromCart);
         model.addAttribute("fromWishlist", !fromCart && fromWishlist);
         model.addAttribute("returnListId", listId);
         model.addAttribute("cartChoices", shopping.lists());
+        model.addAttribute("q", q);
+        model.addAttribute("category", category);
+        model.addAttribute("related", related);
+        model.addAttribute("pageNumber", page);
         return screen(model, "compare", "Compare listed prices");
     }
     @GetMapping("/list")

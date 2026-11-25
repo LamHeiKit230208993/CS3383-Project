@@ -703,6 +703,28 @@ async function main() {
     }
   });
 
+  await check("Compare back arrow restores Discover search, category, and result mode", async () => {
+    for (const { query, category, related, entry } of [
+      { query: " ＮＯＯＤＬＥ ", category: "Instant noodles", related: false, entry: "h3 a" },
+      { query: "NOODLE", category: "", related: true, entry: ".compare-link" }
+    ]) {
+      const params = new URLSearchParams({ q: query, category, related, page: "1" });
+      await go("/?" + params);
+      const results = page.locator(".product-card .product-code");
+      const before = await results.allTextContents();
+      assert.ok(before.length > 0);
+      await page.locator(".product-card").first().locator(entry).click();
+      await page.waitForURL(url => url.pathname.startsWith("/products/"));
+      await page.locator("main .back-link").click();
+      await page.waitForURL(url => url.pathname === "/");
+      const returned = new URL(page.url()).searchParams;
+      for (const [key, value] of params) assert.equal(returned.get(key), value, key);
+      assert.equal(await page.locator("#product-search").inputValue(), query);
+      assert.equal(await page.locator("#category-filter").inputValue(), category);
+      assert.deepEqual(await results.allTextContents(), before);
+    }
+  });
+
   await check("Cart summary follows desktop scrolling and stays in the mobile flow", async () => {
     const created = await page.request.post(base + "/list/new", {
       form: { name: "Scroll test" }, maxRedirects: 0
