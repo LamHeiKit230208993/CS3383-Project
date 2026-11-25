@@ -11,6 +11,5 @@ public interface ShoppingListItemRepository extends JpaRepository<ShoppingListIt
     @EntityGraph(attributePaths = {"product", "product.listings", "product.listings.offers"})
     List<ShoppingListItemEntity> findAllByShoppingList_NameOrderByIdAsc(String listName);
     Optional<ShoppingListItemEntity> findByShoppingList_NameAndProduct_Code(String listName, String productCode);
-    void deleteByShoppingList_NameAndProduct_Code(String listName, String productCode);
     void deleteByShoppingList_Id(long listId);
 }

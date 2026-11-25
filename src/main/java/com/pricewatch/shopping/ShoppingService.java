@@ -26,6 +26,7 @@ import java.util.Objects;
 
 @Service
 public class ShoppingService {
+    public static final String DONE_ITEM_ERROR = "Reopen this Done item in Cart before changing it.";
     private static final String LIST_NAME = "My list";
     private static final int MIN_QUANTITY = 1;
     private static final int MAX_QUANTITY = 999;
@@ -218,6 +219,7 @@ public class ShoppingService {
             ShoppingListItemEntity existing = itemRepository
                     .findByShoppingList_NameAndProduct_Code(list.getName(), productCode).orElse(null);
             if (existing != null) {
+                requireOpen(existing);
                 if (retailerCode != null && !Objects.equals(existing.getSelectedRetailerCode(), requestedRetailer)) {
                     throw new IllegalArgumentException("This product is already in your list with another retailer; "
                             + "change retailer in My list.");
@@ -270,6 +272,7 @@ public class ShoppingService {
             ShoppingListItemEntity item = itemRepository
                     .findByShoppingList_NameAndProduct_Code(LIST_NAME, productCode)
                     .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."));
+            requireOpen(item);
             item.setQuantity(quantity);
             item.setChecked(checked);
         });
@@ -294,6 +297,7 @@ public class ShoppingService {
             ShoppingListItemEntity item = itemRepository
                     .findByShoppingList_NameAndProduct_Code(listName(listId), productCode)
                     .orElseThrow(() -> new IllegalArgumentException("That item is not on your list."));
+            requireOpen(item);
             if (!Objects.equals(item.getSelectedRetailerCode(), requestedRetailer)) {
                 if (requestedRetailer != null) {
                     validateRetailer(item.getProduct(), requestedRetailer);
@@ -316,7 +320,15 @@ public class ShoppingService {
     }
 
     public void remove(Long listId, String productCode) {
-        mutate(() -> itemRepository.deleteByShoppingList_NameAndProduct_Code(listName(listId), productCode));
+        mutate(() -> itemRepository.findByShoppingList_NameAndProduct_Code(listName(listId), productCode)
+                .ifPresent(item -> {
+                    requireOpen(item);
+                    itemRepository.delete(item);
+                }));
+    }
+
+    private static void requireOpen(ShoppingListItemEntity item) {
+        if (item.isChecked()) throw new IllegalArgumentException(DONE_ITEM_ERROR);
     }
 
     @Transactional(readOnly = true)

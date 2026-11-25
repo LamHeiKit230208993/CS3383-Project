@@ -615,7 +615,18 @@ async function main() {
       assert.equal(await item.locator("[data-cart-edit]").evaluate(form => form.inert), checked);
       assert.equal(await item.locator(".cart-remove").evaluate(menu => menu.inert), checked);
     };
-    await checkDone(true);
+    const staleCart = await context.newPage();
+    try {
+      await staleCart.goto(base + "/list");
+      await checkDone(true);
+      const staleItem = staleCart.locator(".cart-line").filter({ hasText: "P000000124" });
+      await waitForCartNavigation(staleCart, () => staleItem.getByRole("button", { name: "Add one pack" }).click());
+      await staleCart.getByText("Reopen this Done item in Cart before changing it.", { exact: true }).waitFor();
+      assert.equal(await staleItem.locator("[name=quantity]").inputValue(), "3");
+      assert.equal(await staleItem.getByRole("checkbox").isChecked(), true);
+    } finally {
+      await staleCart.close();
+    }
     assert.match(await item.locator("h3").evaluate(heading => getComputedStyle(heading).textDecorationLine), /line-through/);
     await checkDone(false);
     await checkDone(true);

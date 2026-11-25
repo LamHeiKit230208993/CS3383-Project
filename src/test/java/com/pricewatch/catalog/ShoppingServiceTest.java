@@ -94,6 +94,32 @@ class ShoppingServiceTest {
     }
 
     @Test
+    void doneRowsRejectAddsEditsAndRemovalsUntilExplicitlyReopened() {
+        catalog.importSample();
+        String code = "P000000124";
+        shopping.add(code, 1, "AEON");
+        shopping.checkOff(null, code, true);
+
+        assertThrows(IllegalArgumentException.class, () -> shopping.add(code, 2, "AEON"));
+        assertThrows(IllegalArgumentException.class, () -> shopping.addFromReminder(code, 2, "AEON"));
+        assertThrows(IllegalArgumentException.class, () -> shopping.editDetails(null, code, 4, "JASONS"));
+        assertThrows(IllegalArgumentException.class, () -> shopping.update(code, 4, false));
+        assertThrows(IllegalArgumentException.class, () -> shopping.update(null, code, 4, false, "JASONS"));
+        assertThrows(IllegalArgumentException.class, () -> shopping.remove(code));
+        var unchanged = shopping.items().getFirst();
+        assertEquals(1, unchanged.quantity());
+        assertEquals("AEON", unchanged.selectedRetailerCode());
+        assertTrue(unchanged.checked());
+        assertEquals(new BigDecimal("7.5000"), shopping.summary().knownSubtotal());
+
+        shopping.checkOff(null, code, false);
+        shopping.editDetails(null, code, 4, "JASONS");
+        assertEquals(4, shopping.items().getFirst().quantity());
+        shopping.remove(code);
+        assertTrue(shopping.items().isEmpty());
+    }
+
+    @Test
     void addUpdateAndRemovePersistQuantitiesAndCheckedState() {
         catalog.importSample();
 
@@ -111,6 +137,7 @@ class ShoppingServiceTest {
         assertEquals(new BigDecimal("30.0000"), shopping.summary().knownSubtotal());
         assertEquals(4, shopping.summary().totalQuantity());
 
+        shopping.checkOff(null, "P000000124", false);
         shopping.remove("P000000124");
         assertTrue(shopping.items().isEmpty());
         assertEquals(BigDecimal.ZERO.setScale(4), shopping.summary().knownSubtotal());
@@ -147,6 +174,7 @@ class ShoppingServiceTest {
         assertEquals(new BigDecimal("12.0000"), changed.unitPrice());
         assertEquals(new BigDecimal("24.0000"), changed.lineTotal());
 
+        shopping.checkOff(null, "P000000124", false);
         shopping.update("P000000124", 2, true, " ");
         ItemView automatic = shopping.items().getFirst();
         assertNull(automatic.selectedRetailerCode());

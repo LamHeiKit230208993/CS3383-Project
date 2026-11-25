@@ -74,6 +74,7 @@ class ShoppingListTransferTest {
         assertEquals(transfer.items(), shopping.exportList(copy).items());
         assertEquals(new BigDecimal("12.5000"), shopping.items(copy).getFirst().unitPrice());
 
+        shopping.checkOff(copy, "P000000124", false);
         shopping.update(copy, "P000000124", 4, false, "WELLCOME");
         shopping.remove(copy, "P000000229");
         assertEquals(1, shopping.items(copy).size());
@@ -100,6 +101,7 @@ class ShoppingListTransferTest {
         assertEquals("JASONS", saved.selectedRetailerCode());
         assertNull(saved.unitPrice());
         assertNull(saved.lineTotal());
+        shopping.checkOff(copy, "P000000124", false);
         shopping.update(copy, "P000000124", 3, true, "JASONS");
 
         catalog.importSample();

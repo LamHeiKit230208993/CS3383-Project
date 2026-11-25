@@ -310,6 +310,10 @@ public class HelloController {
             if (listId == null) shopping.remove(code);
             else shopping.remove(listId, code);
         } catch (IllegalArgumentException exception) {
+            if (ShoppingService.DONE_ITEM_ERROR.equals(exception.getMessage())) {
+                redirect.addFlashAttribute("error", shoppingError(exception));
+                return existingListRedirect(listId);
+            }
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
         redirect.addFlashAttribute("notice", text("feedback.list.removed"));
@@ -379,6 +383,7 @@ public class HelloController {
             case "This product is already in your list with another retailer; change retailer in My list." ->
                     "feedback.list.retailerConflict";
             case "That item is not on your list." -> "feedback.list.itemMissing";
+            case ShoppingService.DONE_ITEM_ERROR -> "feedback.list.doneItem";
             case "Choose a retailer with a current price for this product." -> "feedback.list.invalidRetailer";
             case "Quantity must be a whole number from 1 to 999." -> "feedback.list.invalidQuantity";
             default -> "feedback.input";

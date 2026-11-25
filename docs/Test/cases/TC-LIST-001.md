@@ -7,8 +7,23 @@ Source: [`ShoppingServiceTest`](../../../src/test/java/com/pricewatch/catalog/Sh
 
 Add the same milk code with quantities 2 and 3. Expect one item with quantity 5,
 the lowest known retailer and unit price, and a decimal line total. Update its
-quantity and checked state; then remove it. Checking an item does not remove its
+quantity and checked state, reopen it, then remove it. Checking an item does not remove its
 cost from the planned subtotal.
+
+For issue #31, use the checked sample and mark one AEON milk pack Done.
+The service rejects adds, reminder adds, details edits, legacy updates, and
+row removal while the item is Done. Verify the count, retailer, checked
+state, and HK$7.50 subtotal stay the same. Reopen the row with the Done
+control and verify editing and removal work again.
+[HelloControllerTest](../../../src/test/java/com/pricewatch/web/HelloControllerTest.java)
+checks the Cart error and reopen path.
+[AskShoppingToolsTest](../../../src/test/java/com/pricewatch/web/AskShoppingToolsTest.java)
+checks a pending removal after the row becomes Done and rejects a new proposal
+while the row is locked.
+The [Chrome shopper suite](../../../src/test/browser/market-desk.cjs) opens
+Cart in two tabs, checks off the row in one tab, and attempts to increase
+the quantity from the stale tab. The app shows a reopen message, keeps the
+original quantity, and leaves Done selected.
 
 Reject zero, values above 999, and a combined quantity above 999. Combine known
 and unknown-price items. Expect only known amounts in `knownSubtotal` and a

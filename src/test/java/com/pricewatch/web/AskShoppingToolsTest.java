@@ -112,6 +112,22 @@ class AskShoppingToolsTest {
     }
 
     @Test
+    void cartProposalCannotChangeARowMarkedDoneBeforeConfirmation() throws Exception {
+        when(shopping.items(LIST)).thenReturn(List.of(item(3)));
+        var turn = tools.open(ENGLISH, null, null);
+        String removal = """
+                {"operation":"remove","list_id":25,"product_code":"MILK-2L","quantity":1}
+                """;
+        turn.execute("propose_cart", json.readTree(removal));
+        var proposal = turn.operations().getFirst();
+        when(shopping.items(LIST)).thenReturn(List.of(new ItemView(product(), 3, true, BigDecimal.TEN,
+                "AEON", new BigDecimal("30"), "AEON")));
+        var rejected = assertThrows(IllegalArgumentException.class, () -> tools.apply(proposal, ENGLISH));
+        assertEquals(ShoppingService.DONE_ITEM_ERROR, rejected.getMessage());
+        assertRejected(tools.open(ENGLISH, null, null), "propose_cart", removal, ShoppingService.DONE_ITEM_ERROR);
+    }
+
+    @Test
     void retainsAlertDraftAcrossTurnsAndOnlySavesWhenApplied() throws Exception {
         when(tracking.savedProducts()).thenReturn(List.of(new SavedProductView(product(), NOW)));
         var first = tools.open(ENGLISH, null, null);

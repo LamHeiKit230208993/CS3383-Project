@@ -414,6 +414,11 @@ class HelloControllerTest {
         mvc.perform(get("/list")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("22.50")))
                 .andExpect(content().string(containsString("Estimated list cost")));
+        mvc.perform(post("/list/items/P000000124/remove"))
+                .andExpect(redirectedUrl("/list"))
+                .andExpect(flash().attribute("error", ShoppingService.DONE_ITEM_ERROR));
+        mvc.perform(post("/list/items/check").param("code", "P000000124").param("checked", "false"))
+                .andExpect(redirectedUrl("/list"));
         mvc.perform(post("/list/items/P000000124/remove")).andExpect(redirectedUrl("/list"));
         assertTrue(shopping.items().isEmpty());
     }

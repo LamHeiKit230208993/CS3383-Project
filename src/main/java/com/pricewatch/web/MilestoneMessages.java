@@ -1,5 +1,6 @@
 package com.pricewatch.web;
 
+import com.pricewatch.shopping.ShoppingService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
@@ -30,6 +31,7 @@ final class MilestoneMessages {
             case "That interval is outside the supported date range." -> "milestone.error.intervalRange";
             case "That reminder no longer exists." -> "milestone.error.reminderMissing";
             case "Choose a retailer with a current price for this product." -> "milestone.error.noPrice";
+            case ShoppingService.DONE_ITEM_ERROR -> "feedback.list.doneItem";
             case "This product is already in your list with another retailer; change retailer in My list." ->
                     "milestone.error.listRetailerConflict";
             case "Choose a weekly or monthly budget period." -> "milestone.error.budgetPeriod";

@@ -437,6 +437,7 @@ public class AskShoppingTools {
     private Operation prepareItem(Change change, Locale locale) {
         var list = cartById(locale, change.listId());
         var existing = cartItem(list.id(), change.productCode());
+        if (existing != null && existing.checked()) throw invalid(ShoppingService.DONE_ITEM_ERROR);
         if (change.kind() == Kind.REMOVE_CART && existing == null) throw invalid("That item is no longer in the list.");
         ProductView product = change.kind() == Kind.ADD_CART ? activeProduct(change.productCode()) : existing.product();
         if (change.kind() == Kind.ADD_CART) {
