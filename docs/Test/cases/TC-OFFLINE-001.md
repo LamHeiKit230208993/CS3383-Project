@@ -15,6 +15,11 @@
    the limit. Check horizontal fit at 320, 375, and 1280 px.
 5. The HTTP tests check the initial estimate and budget, a missing retrieval
    time, safe HTML escaping, and redirects for the old offline routes.
+6. Export Cart copies from the historical sample and Demo catalogues. After
+   stopping the app, open both copies offline. Each header shows its source
+   label and retrieval timestamp. Check that the saved AEON amounts remain
+   HK$7.50 in the sample and HK$10.00 in Demo. The HTTP regression also
+   checks that the Demo export uses **Synthetic demo catalogue**.
 
 ## Optional JavaScript coverage
 

@@ -1024,6 +1024,25 @@ async function main() {
       const download = await downloading;
       const localFile = path.join(artifacts, "j11-offline-checklist.html");
       await download.saveAs(localFile);
+      const sourceCopies = [];
+      for (const [origin, code, label, price] of [
+        ["sample", "P000000124", /^Historical sample/, "HK$7.50"],
+        ["demo", "DEMO-MILK", /^Synthetic demo catalogue$/, "HK$10.00"]
+      ]) {
+        const loaded = await offlinePage.request.post(offlineBase + "/data/" + origin, {
+          form: { confirmSample: "true" }, maxRedirects: 0
+        });
+        assert.equal(loaded.status(), 302);
+        const added = await offlinePage.request.post(offlineBase + "/list/items", {
+          form: { code, quantity: "1", retailerCode: "AEON" }, maxRedirects: 0
+        });
+        assert.equal(added.status(), 302);
+        const copy = await offlinePage.request.get(offlineBase + "/list/offline");
+        assert.equal(copy.status(), 200);
+        const file = path.join(artifacts, "j11-offline-" + origin + ".html");
+        fs.writeFileSync(file, await copy.body());
+        sourceCopies.push({ file, code, label, price });
+      }
       const stopped = once(offlineServer, "exit");
       offlineServer.kill();
       await stopped;
@@ -1032,6 +1051,13 @@ async function main() {
       offlinePage.on("request", incoming => {
         if (/^https?:/.test(incoming.url())) remoteRequests.push(incoming.url());
       });
+      for (const { file, code, label, price } of sourceCopies) {
+        await offlinePage.goto(pathToFileURL(file).href);
+        assert.match(await offlinePage.locator("header.heading .badge").innerText(), label);
+        assert.ok(await offlinePage.locator("header.heading time").getAttribute("datetime"));
+        const row = offlinePage.locator(".checklist-item").filter({ hasText: code });
+        assert.equal(await row.locator("[data-line-total]").innerText(), price);
+      }
       await coverage.start(offlinePage);
       await offlinePage.goto(pathToFileURL(localFile).href);
       assert.equal(await offlinePage.locator("time").innerText(), cachedRetrieved);

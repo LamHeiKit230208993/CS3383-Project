@@ -126,7 +126,8 @@
         <p class="helper" th:text="#{offline.intro}">Changes apply while this file is open.</p>
       </div>
       <div>
-        <span class="badge" th:if="${sampleCatalogue}" th:text="#{source.sample}">Historical sample</span>
+        <span class="badge" th:if="${catalogueOrigin == 'SAMPLE'}" th:text="#{source.sample}">Historical sample</span>
+        <span class="badge" th:if="${catalogueOrigin == 'DEMO'}" th:text="#{data.demo.origin}">Synthetic demo catalogue</span>
         <p class="helper" th:if="${retrievedAt != null}">
           <strong th:text="#{offline.retrieval}">Prices retrieved</strong>
           <time th:datetime="${retrievedAt}" th:text="${format.time(retrievedAt)}"></time>

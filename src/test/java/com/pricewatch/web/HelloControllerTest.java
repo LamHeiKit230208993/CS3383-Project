@@ -126,6 +126,17 @@ class HelloControllerTest {
         assertEquals(2, shopping.items().getFirst().quantity());
     }
 
+    @Test void offlineChecklistIdentifiesSyntheticDemoPrices() throws Exception {
+        demoHistory.seed();
+        shopping.add("DEMO-MILK", 1, "AEON");
+        mvc.perform(get("/list/offline")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Synthetic demo catalogue")))
+                .andExpect(content().string(containsString("Prices retrieved")))
+                .andExpect(content().string(containsString(catalog.status().retrievedAt().toString())))
+                .andExpect(content().string(containsString("HK$10.00")))
+                .andExpect(content().string(not(containsString("Historical sample"))));
+    }
+
     @Test void offlineChecklistEscapesImportedLabelsAndKeepsUnknownPrices() throws Exception {
         long listId = shopping.importList(new ByteArrayInputStream("""
                 {"version":1,"name":"<b>Trip</b>","items":[{"productCode":"MISSING",

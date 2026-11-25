@@ -56,7 +56,7 @@ class OfflineListController {
         model.addAttribute("completed", items.stream().filter(ItemView::checked).count());
         model.addAttribute("scriptNonce", UUID.randomUUID().toString());
         model.addAttribute("retrievedAt", accepted == null ? null : accepted.retrievedAt());
-        model.addAttribute("sampleCatalogue", accepted != null && "SAMPLE".equals(accepted.origin()));
+        model.addAttribute("catalogueOrigin", accepted == null ? null : accepted.origin());
         return "offline-checklist";
     }
 
