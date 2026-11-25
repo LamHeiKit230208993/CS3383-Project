@@ -478,6 +478,45 @@ async function main() {
     }
   });
 
+  await check("in-app alerts appear on Discover, dismiss once, and clear the phone dock", async () => {
+    const toastContext = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+    try {
+      const preview = await toastContext.newPage();
+      await postRule("/preferences", { language: "en" });
+      let reminders = [];
+      await preview.route("**/alerts/toasts", route => route.fulfill({ json: reminders }));
+      await preview.clock.install();
+      await preview.goto(base + "/");
+      await preview.locator("#product-search").fill("milk");
+      reminders = [{ id: "fixture-price", title: "Price drop", product: "Fresh Milk", detail: "AEON · HK$12.00 → HK$9.00" }];
+      await preview.clock.fastForward(15000);
+      const toast = preview.locator("[data-alert-toast]");
+      await toast.getByText("Price drop", { exact: true }).waitFor();
+      assert.equal(await preview.locator("#product-search").inputValue(), "milk");
+      const desktop = await toast.boundingBox();
+      assert.ok(desktop.x + desktop.width > 1400 && desktop.y + desktop.height > 920);
+      await preview.screenshot({ path: path.join(artifacts, "alert-toast-desktop.png"), animations: "disabled" });
+      await toast.getByRole("button", { name: "Dismiss notification" }).click();
+      await Promise.all([preview.waitForResponse("**/alerts/toasts"), preview.reload()]);
+      await preview.clock.runFor(250);
+      assert.equal(await toast.isVisible(), false);
+
+      await preview.setViewportSize({ width: 375, height: 840 });
+      reminders = [{ id: "fixture-reminder", title: "Time reminder", product: "Fresh Milk", detail: "", reminder: true }];
+      await preview.clock.fastForward(15000);
+      await toast.getByText("Time reminder", { exact: true }).waitFor();
+      const mobile = await toast.boundingBox();
+      const dock = await preview.locator(".mobile-nav").boundingBox();
+      assert.ok(mobile.x >= 0 && mobile.x + mobile.width <= 375);
+      assert.ok(mobile.y + mobile.height < dock.y);
+      await preview.screenshot({ path: path.join(artifacts, "alert-toast-mobile.png"), animations: "disabled" });
+      await toast.getByRole("link", { name: "View alert" }).click();
+      await preview.waitForURL("**/alerts");
+    } finally {
+      await toastContext.close();
+    }
+  });
+
   await check("no browser script or console errors", async () => assert.deepEqual(browserErrors, []));
   console.log(`${passed} milestone browser scenarios passed. Artifacts: ${path.relative(root, artifacts)}`);
 }

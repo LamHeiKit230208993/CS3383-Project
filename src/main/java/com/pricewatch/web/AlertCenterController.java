@@ -13,6 +13,8 @@ import com.pricewatch.tracking.TrackingService;
 import com.pricewatch.tracking.TrackingView;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +26,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -103,6 +106,44 @@ class AlertCenterController {
                 .forEach(visible::add);
         model.addAttribute("timelineDays", timelineDays(visible, locale));
     }
+
+    @GetMapping("/alerts/toasts")
+    ResponseEntity<List<AlertToast>> toasts(Locale locale) {
+        Instant now = clock.instant();
+        Instant cutoff = now.minus(Duration.ofMinutes(2));
+        var recent = new ArrayList<AlertToast>();
+        for (var alert : legacyAlerts.events(now)) {
+            if (alert.productCode() == null || alert.read() || !alert.available()
+                    || alert.createdAt().isBefore(cutoff) || alert.price() == null) continue;
+            boolean drop = "DROP".equals(alert.type());
+            recent.add(new AlertToast("retailer:" + alert.id(), alert.productCode(),
+                    text(messages, drop ? "toast.drop" : "toast.target"),
+                    toastPrice(alert.retailerCode(), alert.previousPrice(), alert.price()),
+                    alert.createdAt(), false));
+        }
+        for (var alert : priceTargets.events(now)) {
+            if (alert.read() || !alert.available() || alert.createdAt().isBefore(cutoff)) continue;
+            boolean reminder = alert.target() == null;
+            String title = reminder ? "alertCenter.time"
+                    : alert.priceKind() == WatchPriceKind.TARGET ? "toast.target" : "toast.drop";
+            var retailer = alert.retailers().stream().findFirst().orElse(null);
+            String detail = retailer == null ? "" : toastPrice(retailer.retailerCode(), retailer.previousPrice(), retailer.price());
+            recent.add(new AlertToast("product:" + alert.id(), alert.productCode(), text(messages, title),
+                    detail, alert.createdAt(), reminder));
+        }
+        var latest = recent.stream().sorted(Comparator.comparing(AlertToast::createdAt).reversed()).limit(5).toList();
+        var labels = catalog.localizedLabels(latest.stream().map(AlertToast::product).distinct().toList(), locale);
+        var toasts = latest.stream().map(alert -> new AlertToast(alert.id(), name(labels, alert.product()),
+                alert.title(), alert.detail(), alert.createdAt(), alert.reminder())).toList();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toasts);
+    }
+
+    private String toastPrice(String retailer, BigDecimal previous, BigDecimal current) {
+        String price = previous == null ? format.money(current) : format.money(previous) + " → " + format.money(current);
+        return retailer == null ? price : retailer + " · " + price;
+    }
+
+    record AlertToast(String id, String product, String title, String detail, Instant createdAt, boolean reminder) {}
 
     private List<RuleProduct> ruleProducts(Locale locale) {
         var existingRules = watchRules.allRules().stream().collect(Collectors.groupingBy(WatchRuleView::productCode));

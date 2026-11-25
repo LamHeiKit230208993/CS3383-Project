@@ -23,6 +23,7 @@
     <link rel="stylesheet" th:if="${scene == 'ask'}" th:href="@{/css/ask-chat.css}">
     <link rel="stylesheet" th:if="${scene == 'history'}" th:href="@{/css/price-history.css}">
     <script th:src="@{/js/market-desk.js}" defer></script>
+    <script th:src="@{/js/alert-toast.js}" defer></script>
     <script th:if="${scene == 'settings'}" th:src="@{/js/settings-ui.js}" defer></script>
     <script th:if="${scene == 'alerts' or scene == 'rules' or scene == 'saved'}" th:src="@{/js/alert-rules.js}" defer></script>
     <script th:if="${scene == 'ask'}" th:src="@{/js/ask-chat.js}" defer></script>
@@ -88,5 +89,22 @@
       </div>
     </div>
     <th:block th:replace="~{fragments/navigation :: mobile-navigation}"></th:block>
+    <div class="sr-only" role="status" aria-atomic="true" data-toast-status></div>
+    <aside class="alert-toast" data-alert-toast th:unless="${scene == 'error' or (scene == 'alerts' and !currentRules)}"
+           th:attr="data-endpoint=@{/alerts/toasts}" hidden>
+      <span class="alert-toast-icon" aria-hidden="true">
+        <svg class="icon"><use href="#i-bell"/></svg>
+      </span>
+      <div class="alert-toast-copy">
+        <div>
+          <strong data-toast-title></strong>
+          <p data-toast-product></p>
+          <p class="helper" data-toast-detail></p>
+        </div>
+        <a class="button secondary" th:href="@{/alerts}" th:text="#{toast.view}">View alert</a>
+      </div>
+      <button class="button secondary alert-toast-dismiss" type="button" data-toast-dismiss
+              th:attr="aria-label=#{toast.dismiss}">×</button>
+    </aside>
   </body>
 </html>

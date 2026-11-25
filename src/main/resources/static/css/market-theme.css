@@ -904,3 +904,44 @@ body.high-contrast {
 @media (prefers-reduced-motion: reduce) {
   .wishlist-action span { transition: none; }
 }
+.alert-toast {
+  position: fixed;
+  inset-inline-end: 1.25rem;
+  inset-block-end: 1.25rem;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: start;
+  width: min(23rem, calc(100% - 2.5rem));
+  padding: .85rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgb(22 63 51 / 20%);
+  animation: alert-toast-arrive .2s ease-out;
+}
+.alert-toast[hidden] { display: none; }
+.alert-toast-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green);
+}
+.alert-toast[data-kind="reminder"] .alert-toast-icon { background: var(--amber-soft, var(--green-soft)); color: var(--ink); }
+.alert-toast-copy { overflow-wrap: anywhere; }
+.alert-toast-copy p { margin: .15rem 0; }
+.alert-toast-copy p:empty { display: none; }
+.alert-toast-copy .button { margin-top: .55rem; }
+.alert-toast-dismiss.button { min-width: 44px; min-height: 44px; padding: 0; }
+.high-contrast .alert-toast { border-color: var(--ink); }
+@keyframes alert-toast-arrive { from { transform: translateY(8px); opacity: .2; } }
+@media (max-width: 767px) {
+  .alert-toast { inset-block-end: calc(92px + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alert-toast { animation: none; }
+}

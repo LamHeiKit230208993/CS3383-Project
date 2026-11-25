@@ -38,6 +38,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -183,6 +185,31 @@ class AlertCenterControllerTest {
                 Arguments.of(Map.of("condition", "time", "repeat", "ONCE")),
                 Arguments.of(Map.of("condition", "time", "startAt", "not-a-date", "repeat", "ONCE")),
                 Arguments.of(Map.of("condition", "legacy", "targetPrice", "10", "intervalDays", "soon")));
+    }
+
+    @Test
+    void toastFeedShowsNewPriceAndTimeEventsAndExpiresThemWithoutChangingHistory() throws Exception {
+        targets.setTarget(MILK, BigDecimal.TEN);
+        var label = new LocalizedText("Milk", "鮮奶", "鲜奶");
+        var pack = new ImportedProduct(MILK, label, label, label, label, label,
+                List.of(new ImportedListing("AEON", BigDecimal.ONE, List.of())));
+        replacement.replace(new ImportedCatalog(List.of(pack), 1, 0), "LIVE", "fixture", NOW, "toast-live");
+        watchRules.save(MILK, null, null, java.time.LocalDateTime.parse("2026-11-22T07:55"), "ONCE");
+        watchRules.checkDue();
+
+        mvc.perform(get("/alerts/toasts")).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(content().json("""
+                        [{"reminder": true, "title": "Time reminder", "product": "Milk"},
+                         {"reminder": false, "title": "Price target reached", "detail": "AEON · HK$1.00"}]
+                        """));
+
+        var priceAlert = targets.events(NOW).stream().filter(event -> event.target() != null).findFirst().orElseThrow();
+        targets.markRead(priceAlert.id());
+        mvc.perform(get("/alerts/toasts")).andExpect(jsonPath("$.length()").value(1));
+        when(clock.instant()).thenReturn(NOW.plusSeconds(121));
+        mvc.perform(get("/alerts/toasts")).andExpect(jsonPath("$.length()").value(0));
+        assertEquals(2, targets.events(NOW.plusSeconds(121)).size());
     }
 
     @Test

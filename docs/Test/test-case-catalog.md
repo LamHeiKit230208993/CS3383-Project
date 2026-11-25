@@ -40,7 +40,7 @@ restart and upgrade checks, including a populated legacy reminder database.
 | [TC-LIST-001](cases/TC-LIST-001.md) | Shopping rules and layout | Saved quantities and prices, incomplete totals, and a sticky desktop summary | `ShoppingServiceTest`, Chrome shopper suite |
 | [TC-SEARCH-001](cases/TC-SEARCH-001.md) | Search relevance | Ranked Matches/Related, multilingual normalization, and exact source-category filtering | `SearchRelevanceTest` |
 | [TC-STRUCTURE-001](cases/TC-STRUCTURE-001.md) | Read/query contract | One Cart read supplies rows, preview totals and budget; products, listings, and offers are fetched together | `ShoppingServiceTest`, `HelloControllerModelTest` |
-| [TC-BROWSER-001](cases/TC-BROWSER-001.md) | Browser regression | Native forms, compact Cart edits and done state, Discover budget, responsive navigation, and exact estimates | `market-desk.cjs` |
+| [TC-BROWSER-001](cases/TC-BROWSER-001.md) | Browser regression | Native forms, compact Cart edits and done state, Discover search return, responsive navigation, and exact estimates | `market-desk.cjs` |
 
 Case descriptions state expected behaviour; they do not prove a later build passed.
 
@@ -56,6 +56,7 @@ Case descriptions state expected behaviour; they do not prove a later build pass
 | [TC-BUDGET-001](cases/TC-BUDGET-001.md) | Planned budget | Settings card, selected-retailer totals, Discover and Cart progress, validation, and H2 file reopen | `BudgetServiceTest`, `BudgetPageTest`, `BudgetSettingsPersistenceTest` |
 | [TC-REMINDER-001](cases/TC-REMINDER-001.md) | Time alerts | H2 migration and rollback, active and orphan history, snooze, dismissal, and migrated Cart defaults | `LegacyReminderMigrationTest`, `SecondaryDisplayTest` |
 | [TC-ALERT-005](cases/TC-ALERT-005.md) | Price drops | HKD and percentage thresholds, matched retailers, saved evidence, Daily default, and Ask confirmation | `WatchRuleServiceTest`, `AlertCenterControllerTest`, `AskShoppingToolsTest`, Chrome milestone suite |
+| [TC-ALERT-006](cases/TC-ALERT-006.md) | In-app pop-ups | Fresh price and reminder events, dismissal, phone placement, and History link | `AlertCenterControllerTest`, Chrome milestone suite |
 | [TC-MILESTONE-001](cases/TC-MILESTONE-001.md) | Combined browser flow | Wishlist tracking, shared alert editor and history, one-time and calendar rules, legacy rules, budget, and responsive pages | `milestone-check.cjs` |
 | [TC-UPGRADE-001](cases/TC-UPGRADE-001.md) | Existing database upgrade | An old baseline's catalogue, selected retailer, quantity and checked state survive the new schema | `persistence-check.cjs` with `BASELINE_JAR` |
 
