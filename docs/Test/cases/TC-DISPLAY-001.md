@@ -9,6 +9,9 @@ display mode. Search continues to match names across all three languages.
 Enable high contrast. Use Tab and Enter to submit preferences and search on
 desktop and at 375 px. Check that keyboard focus has an outline, the mobile
 page fits the viewport, and the setting remains selected on return.
+With English and high contrast selected at desktop width, check the sidebar
+and Compare panel have 28 px corners and navigation links and Discover tags
+keep their pill corners.
 Tab to a retailer card and press Space. Check that the card has a focus
 outline before selection and a visible selected label and translated
 estimate after selection.

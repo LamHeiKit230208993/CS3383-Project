@@ -10,7 +10,7 @@ checked prices, pack choices and follow-ups, chat history, and send and reply re
 
 [TC-SHARE-001](cases/TC-SHARE-001.md) checks list creation, switching, renaming, confirmed deletion, scoped budget estimates, export, and imported copies.
 [TC-OFFLINE-001](cases/TC-OFFLINE-001.md) checks a downloaded Cart, catalogue source labels, local edits, and budget calculations with the app stopped.
-[TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks Settings navigation, saved languages, localized product names, contrast, and keyboard use.
+[TC-DISPLAY-001](cases/TC-DISPLAY-001.md) checks Settings navigation, localized names, high-contrast styling and corner shapes, and keyboard use.
 [TC-USABILITY-001](cases/TC-USABILITY-001.md) records a Cart and Settings walkthrough at desktop and phone widths, including the mobile Done control retest.
 [TC-HISTORY-001](cases/TC-HISTORY-001.md) checks exact-pack charts, date and retailer filters, interactive observation selection, recorded gaps, and retention.
 [TC-PERSONAL-001](cases/TC-PERSONAL-001.md) checks export, reset confirmation, rollback, and catalogue preservation.

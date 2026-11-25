@@ -1146,6 +1146,12 @@ async function main() {
       await go("/");
       assert.equal(await page.locator("html").getAttribute("lang"), language);
       assert.match(await page.locator("html").getAttribute("class"), /\bhigh-contrast\b/);
+      if (language === "en") {
+        const radius = selector => page.locator(selector).first().evaluate(element => getComputedStyle(element).borderRadius);
+        assert.equal(await radius(".sidebar"), "28px");
+        assert.equal(await radius(".main-nav a"), "999px");
+        assert.equal(await radius(".small-tag"), "999px");
+      }
       await tabTo(page, search);
       await page.keyboard.insertText(query);
       await page.keyboard.press("Enter");
@@ -1163,6 +1169,10 @@ async function main() {
       if (language !== "en") assert.doesNotMatch(reply, /Lowest listed/);
       await page.screenshot({ path: path.join(artifacts, `j12-ask-${language}.png`), fullPage: true });
       await go("/products/P000000124");
+      if (language === "en") {
+        assert.equal(await page.locator(".product-identity").evaluate(element =>
+          getComputedStyle(element).borderRadius), "28px");
+      }
       const productIdentity = page.locator(".product-identity");
       assert.equal(await productIdentity.locator("h2").innerText(), sourceLabel);
       if (language === "en") assert.doesNotMatch(await productIdentity.innerText(), /[鮮鲜]牛奶 236毫升/);
